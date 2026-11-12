@@ -1,6 +1,6 @@
 # Autonomous Pass@1 Benchmark Telemetry: ballistics/water-balloon
 
-> Head-to-head evaluation under hardened Unobstructed Viewport specification enforcement.
+> Autonomous evaluation under hardened Unobstructed Viewport specification enforcement.
 
 ---
 

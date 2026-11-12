@@ -6,7 +6,7 @@
 
 ## 🎯 Purpose & Methodology
 
-This repository houses head-to-head, reproducible evaluations comparing frontier AI models across native agentic developer harnesses on demanding single-file 3D applications, physics simulations, and complex interactive systems. Specific harness versions and runtime environments are dynamically captured at execution time and preserved in the benchmark telemetry.
+This repository houses reproducible evaluations comparing frontier AI models across native agentic developer harnesses on demanding single-file 3D applications, physics simulations, and complex interactive systems. Specific harness versions and runtime environments are dynamically captured at execution time and preserved in the benchmark telemetry.
 
 ### The Autonomous Pass@1 Benchmark Protocol
 
