@@ -57,8 +57,8 @@ Each benchmark test directory contains:
 
 | Model | Developer Harness | Verification | Wall-Clock | Deliverable |
 | :--- | :--- | :---: | :---: | :---: |
-| **Claude Fable 5.2 (Max)** | Claude Code | **PASS (100%)** | 5835.3s | [`ballistics/water-balloon/claude-fable-5.2/`](ballistics/water-balloon/claude-fable-5.2/) |
-| **Claude Fable 5.1 (Max)** | Claude Code | **PASS (100%)** | 4423.1s | [`ballistics/water-balloon/claude-fable-5.1/`](ballistics/water-balloon/claude-fable-5.1/) |
-| **Gemini 4 Carbon (High)** | Antigravity CLI | **PASS (100%)** | 1559.0s | [`ballistics/water-balloon/gemini-4-carbon/`](ballistics/water-balloon/gemini-4-carbon/) |
+| **Gemini 4 Hydrogen (High)** | Antigravity CLI | **PASS (100%)** | 260.4s | [`ballistics/water-balloon/gemini-4-hydrogen/`](ballistics/water-balloon/gemini-4-hydrogen/) |
+| **GLM 5.3 (Max)** | OpenCode | **PASS (100%)** | 1058.0s | [`ballistics/water-balloon/glm-5.3/`](ballistics/water-balloon/glm-5.3/) |
+| **Codex GPT 6.1 Sol (Max)** | Codex CLI | **PASS (100%)** | 1250.4s | [`ballistics/water-balloon/codex-gpt-6.1-sol/`](ballistics/water-balloon/codex-gpt-6.1-sol/) |
 
 *Showing the 3 most recent benchmark deliverables. See [`TELEMETRY.md`](ballistics/water-balloon/TELEMETRY.md) for the complete multi-model leaderboard, full token metrics, cache ratios, and runtime verification logs.*
