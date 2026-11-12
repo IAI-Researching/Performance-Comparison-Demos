@@ -1,0 +1,1066 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Ballistics: Water Balloon in Slow Motion</title>
+<style>
+*, *::before, *::after {
+  box-sizing: border-box;
+}
+html, body {
+  margin: 0;
+  padding: 0;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  background: radial-gradient(circle at center, #161922 0%, #090a0f 100%);
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -webkit-user-select: none;
+  user-select: none;
+}
+#stage {
+  display: block;
+  width: 100vw;
+  height: 100vh;
+}
+
+#countdown {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 50;
+  pointer-events: none;
+  font-size: 96px;
+  font-weight: 700;
+  line-height: 1;
+  color: rgba(255, 255, 255, 0.35);
+  font-variant-numeric: tabular-nums;
+}
+
+#dock {
+  position: fixed;
+  bottom: 24px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 100;
+  width: 536px;
+  height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 0 14px;
+  background: rgba(15, 17, 23, 0.78);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 9999px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.35);
+}
+
+#dock button {
+  font-family: inherit;
+  line-height: 1;
+  margin: 0;
+  flex-shrink: 0;
+  white-space: nowrap;
+  appearance: none;
+  -webkit-appearance: none;
+}
+
+.dock-sep {
+  width: 1px;
+  height: 18px;
+  flex-shrink: 0;
+  background: rgba(255, 255, 255, 0.12);
+}
+
+#btn-refire {
+  width: 78px;
+  height: 28px;
+  padding: 0 10px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 9999px;
+  color: #ffffff;
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+}
+#btn-refire:hover {
+  background: rgba(255, 255, 255, 0.16);
+}
+
+#btn-toggle {
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 9999px;
+  color: #ffffff;
+  cursor: pointer;
+}
+#btn-toggle:hover {
+  background: rgba(255, 255, 255, 0.16);
+}
+
+#speed-group {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  flex-shrink: 0;
+}
+.speed-pill {
+  width: 42px;
+  height: 24px;
+  padding: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 9999px;
+  color: rgba(255, 255, 255, 0.6);
+  font-size: 11px;
+  font-weight: 500;
+  font-variant-numeric: tabular-nums;
+  cursor: pointer;
+}
+.speed-pill:hover {
+  color: #ffffff;
+  background: rgba(255, 255, 255, 0.06);
+}
+.speed-pill.is-active {
+  color: #ffffff;
+  background: rgba(255, 255, 255, 0.18);
+  border-color: rgba(255, 255, 255, 0.2);
+}
+
+#scrubber {
+  width: 157px;
+  height: 4px;
+  margin: 0;
+  padding: 0;
+  flex-shrink: 0;
+  appearance: none;
+  -webkit-appearance: none;
+  background: rgba(255, 255, 255, 0.22);
+  border-radius: 9999px;
+  outline: none;
+  cursor: pointer;
+}
+#scrubber::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: #ffffff;
+  border: none;
+  cursor: pointer;
+}
+#scrubber::-moz-range-thumb {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: #ffffff;
+  border: none;
+  cursor: pointer;
+}
+</style>
+</head>
+<body>
+<canvas id="stage"></canvas>
+<div id="countdown" aria-hidden="true">3</div>
+
+<div id="dock" role="toolbar" aria-label="Simulation Controls">
+  <button id="btn-refire" type="button" aria-label="Re-fire" title="Re-fire">
+    <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+      <path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.19"/>
+    </svg>
+    <span>Re-fire</span>
+  </button>
+  <span class="dock-sep" aria-hidden="true"></span>
+  <button id="btn-toggle" type="button" aria-label="Pause" title="Play / Pause">
+    <svg id="icon-pause" viewBox="0 0 24 24" width="14" height="14" fill="currentColor" aria-hidden="true">
+      <rect x="6" y="4" width="4" height="16" rx="1"/>
+      <rect x="14" y="4" width="4" height="16" rx="1"/>
+    </svg>
+    <svg id="icon-play" viewBox="0 0 24 24" width="14" height="14" fill="currentColor" aria-hidden="true" style="display:none;">
+      <path d="M8 5v14l11-7z"/>
+    </svg>
+  </button>
+  <span class="dock-sep" aria-hidden="true"></span>
+  <div id="speed-group" role="radiogroup" aria-label="Playback Speed">
+    <button class="speed-pill" type="button" role="radio" aria-checked="false" data-speed="0.25">0.25×</button>
+    <button class="speed-pill" type="button" role="radio" aria-checked="false" data-speed="0.5">0.5×</button>
+    <button class="speed-pill is-active" type="button" role="radio" aria-checked="true" data-speed="1.0">1.0×</button>
+    <button class="speed-pill" type="button" role="radio" aria-checked="false" data-speed="2.0">2.0×</button>
+  </div>
+  <span class="dock-sep" aria-hidden="true"></span>
+  <input id="scrubber" type="range" min="0" max="8.000" step="0.001" value="0" aria-label="Timeline Scrubber">
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+(function () {
+'use strict';
+
+/* ------------------------------------------------------------------ */
+/*  Constants, deterministic PRNG (Mulberry32, seed 42), helpers       */
+/* ------------------------------------------------------------------ */
+var DURATION = 8.000;
+var SEED = 42;
+function mulberry32(a) {
+  return function () {
+    a |= 0; a = a + 0x6D2B79F5 | 0;
+    var t = Math.imul(a ^ a >>> 15, 1 | a);
+    t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t;
+    return ((t ^ t >>> 14) >>> 0) / 4294967296;
+  };
+}
+var rand = mulberry32(SEED);                 // used ONLY during deterministic build (init)
+function rrange(a, b) { return a + (b - a) * rand(); }
+function clamp(x, a, b) { return x < a ? a : (x > b ? b : x); }
+function smooth(a, b, x) { var t = clamp((x - a) / (b - a), 0, 1); return t * t * (3 - 2 * t); }
+function lerp(a, b, t) { return a + (b - a) * t; }
+
+/* Key timeline moments (seconds of simTime) */
+var T_CONTACT = 1.0, T_PUNCT = 1.06, T_EXIT = 3.8;
+
+/* Balloon (teardrop) parameters */
+var BAL_RY = 1.5, BAL_RS = 1.35, BAL_M = 0.7;
+var Y_IMP = -0.2;                                   // impact height
+var THETA_IMP = Math.acos(Y_IMP / BAL_RY);          // polar angle of impact
+function profileR(theta) {
+  return BAL_RS * Math.sin(theta) * Math.pow(Math.max(Math.sin(theta * 0.5), 1e-6), BAL_M);
+}
+var XR = profileR(THETA_IMP);                       // right (entry) surface x
+var XL = -XR;                                       // left (exit) surface x
+var DIAM = XR - XL;
+
+/* Bullet kinematics: constant approach speed, exponential deceleration in water, constant after exit */
+var V_APPROACH = 4.2, DECEL = 5.0, T_IN = T_EXIT - T_CONTACT;
+var V_FLOOR = (DIAM - V_APPROACH * (1 - Math.exp(-DECEL * T_IN)) / DECEL) / T_IN;
+function bulletTipX(t) {
+  if (t <= T_CONTACT) return XR + V_APPROACH * (T_CONTACT - t);
+  if (t <= T_EXIT) {
+    var s = t - T_CONTACT;
+    return XR - (V_APPROACH * (1 - Math.exp(-DECEL * s)) / DECEL + V_FLOOR * s);
+  }
+  return XL - V_FLOOR * (t - T_EXIT);
+}
+var BULLET_LEN = 0.66;
+
+/* Water-mass deformation schedule (shared by shaders' uniforms and particle emitters) */
+var G_MASS = 0.1;
+function fallAt(t) { var s = Math.max(0, t - 1.55); return 0.5 * G_MASS * s * s; }
+function slumpAt(t) { return 0.12 * smooth(1.6, 5.0, t); }
+function burstAt(t) { return 0.9 * smooth(4.7, 6.5, t); }
+
+/* ------------------------------------------------------------------ */
+/*  DOM                                                                 */
+/* ------------------------------------------------------------------ */
+var stage = document.getElementById('stage');
+var elCountdown = document.getElementById('countdown');
+var btnRefire = document.getElementById('btn-refire');
+var btnToggle = document.getElementById('btn-toggle');
+var iconPlay = document.getElementById('icon-play');
+var iconPause = document.getElementById('icon-pause');
+var scrubber = document.getElementById('scrubber');
+var pills = Array.prototype.slice.call(document.querySelectorAll('.speed-pill'));
+
+/* ------------------------------------------------------------------ */
+/*  Renderer / scene / camera                                           */
+/* ------------------------------------------------------------------ */
+var renderer = new THREE.WebGLRenderer({ canvas: stage, antialias: true, alpha: true });
+renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+renderer.setSize(window.innerWidth, window.innerHeight, false);
+renderer.outputEncoding = THREE.sRGBEncoding;
+renderer.setClearColor(0x000000, 0);
+renderer.sortObjects = true;
+
+var scene = new THREE.Scene();
+var CAM_FOV = 35, CAM_Z = 9.0;
+var camera = new THREE.PerspectiveCamera(CAM_FOV, window.innerWidth / window.innerHeight, 0.1, 60);
+camera.position.set(0, 0, CAM_Z);
+camera.lookAt(0, 0, 0);
+
+/* Three-point studio lighting (key + fill + dual rims) for standard materials */
+function dirLight(hex, i, x, y, z) {
+  var l = new THREE.DirectionalLight(hex, i); l.position.set(x, y, z); scene.add(l); return l;
+}
+dirLight(0xfff4e6, 1.25, 2.5, 3.5, 4.0);     // key, warm
+dirLight(0x8a94b0, 0.35, -2.0, 0.5, 3.0);    // fill, dim cool
+dirLight(0xd9ecff, 1.6, -3.0, 2.5, -2.5);    // rim 1, cool white
+dirLight(0x9ff0ff, 1.15, 3.0, -1.0, -3.0);   // rim 2, cyan
+dirLight(0xff80d0, 0.45, -2.0, -2.5, 1.0);   // magenta accent
+scene.add(new THREE.AmbientLight(0x3a3f4c, 0.6));
+
+/* Same lights as uniforms for custom shaders (direction toward light, linear colour * intensity) */
+function ldir(x, y, z) { return new THREE.Vector3(x, y, z).normalize(); }
+var LIGHT_UNIFORMS = {
+  uL0: { value: ldir(2.5, 3.5, 4.0) },  uC0: { value: new THREE.Vector3(1.00, 0.95, 0.88).multiplyScalar(1.15) },
+  uL1: { value: ldir(-3.0, 2.5, -2.5) }, uC1: { value: new THREE.Vector3(0.82, 0.92, 1.00).multiplyScalar(1.6) },
+  uL2: { value: ldir(3.0, -1.0, -3.0) }, uC2: { value: new THREE.Vector3(0.55, 0.93, 1.00).multiplyScalar(1.2) },
+  uL3: { value: ldir(-2.0, -2.5, 1.0) }, uC3: { value: new THREE.Vector3(1.00, 0.45, 0.80).multiplyScalar(0.45) }
+};
+
+/* Procedural studio environment cube (for the metallic bullet) - six detached canvases */
+function envFace(fn) {
+  var c = document.createElement('canvas'); c.width = c.height = 64;
+  var g = c.getContext('2d'); fn(g, 64); return c;
+}
+function vgrad(g, s, top, bot) {
+  var gr = g.createLinearGradient(0, 0, 0, s); gr.addColorStop(0, top); gr.addColorStop(1, bot);
+  g.fillStyle = gr; g.fillRect(0, 0, s, s);
+}
+function blob(g, s, x, y, r, col) {
+  var gr = g.createRadialGradient(x * s, y * s, 0, x * s, y * s, r * s);
+  gr.addColorStop(0, col); gr.addColorStop(1, 'rgba(0,0,0,0)');
+  g.fillStyle = gr; g.fillRect(0, 0, s, s);
+}
+var envFaces = [
+  envFace(function (g, s) { vgrad(g, s, '#9aa4b8', '#161a22'); blob(g, s, 0.3, 0.5, 0.45, 'rgba(150,230,255,0.75)'); }),  // +X cyan rim
+  envFace(function (g, s) { vgrad(g, s, '#a8b0c0', '#1a1c24'); blob(g, s, 0.7, 0.35, 0.5, 'rgba(230,240,255,0.85)'); blob(g, s, 0.4, 0.85, 0.35, 'rgba(255,120,210,0.4)'); }), // -X cool rim + magenta
+  envFace(function (g, s) { vgrad(g, s, '#f2f0ea', '#cfd3dc'); blob(g, s, 0.5, 0.5, 0.6, 'rgba(255,255,255,1)'); }),       // +Y softbox
+  envFace(function (g, s) { vgrad(g, s, '#141318', '#08080c'); }),                                                       // -Y floor
+  envFace(function (g, s) { vgrad(g, s, '#50545e', '#141620'); blob(g, s, 0.72, 0.22, 0.45, 'rgba(255,245,225,0.9)'); }),   // +Z key
+  envFace(function (g, s) { vgrad(g, s, '#30343e', '#0c0e14'); blob(g, s, 0.25, 0.4, 0.35, 'rgba(210,230,255,0.8)'); blob(g, s, 0.78, 0.6, 0.35, 'rgba(120,230,255,0.6)'); }) // -Z rims
+];
+var envTex = new THREE.CubeTexture(envFaces);
+envTex.encoding = THREE.sRGBEncoding;
+envTex.needsUpdate = true;
+
+/* ------------------------------------------------------------------ */
+/*  Shared GLSL                                                         */
+/* ------------------------------------------------------------------ */
+var GLSL_LIGHTS = [
+  'uniform vec3 uL0, uC0, uL1, uC1, uL2, uC2, uL3, uC3;'
+].join('\n');
+var GLSL_NOISE = [
+  'float hash3(vec3 p){ p = fract(p * 0.3183099 + vec3(0.1, 0.2, 0.3)); p *= 17.0; return fract(p.x * p.y * p.z * (p.x + p.y + p.z)); }',
+  'float vnoise(vec3 x){ vec3 i = floor(x); vec3 f = fract(x); f = f * f * (3.0 - 2.0 * f);',
+  '  return mix(mix(mix(hash3(i), hash3(i + vec3(1,0,0)), f.x), mix(hash3(i + vec3(0,1,0)), hash3(i + vec3(1,1,0)), f.x), f.y),',
+  '             mix(mix(hash3(i + vec3(0,0,1)), hash3(i + vec3(1,0,1)), f.x), mix(hash3(i + vec3(0,1,1)), hash3(i + vec3(1,1,1)), f.x), f.y), f.z); }'
+].join('\n');
+var GLSL_TUNNEL = [
+  'uniform float uTX0, uTX1, uTR, uTY, uTFlare;',
+  'float tshape(float u){',
+  '  return 0.42 + 0.58 * pow(max(sin(3.14159265 * u), 0.0), 0.75) + 0.4 * smoothstep(0.22, 0.0, u) + uTFlare * smoothstep(0.78, 1.0, u);',
+  '}'
+].join('\n');
+/* premultiplied-alpha output: colour is computed in linear space, encoded, then premultiplied */
+var GLSL_OUT = 'gl_FragColor = vec4(col, a);\n#include <encodings_fragment>\ngl_FragColor.rgb *= gl_FragColor.a;';
+
+function premulBlend(mat) {
+  mat.transparent = true;
+  mat.depthWrite = false;
+  mat.blending = THREE.CustomBlending;
+  mat.blendEquation = THREE.AddEquation;
+  mat.blendSrc = THREE.OneFactor;
+  mat.blendDst = THREE.OneMinusSrcAlphaFactor;
+  return mat;
+}
+function mergeUniforms() {
+  var out = {};
+  for (var i = 0; i < arguments.length; i++) {
+    var src = arguments[i];
+    for (var k in src) if (Object.prototype.hasOwnProperty.call(src, k)) out[k] = src[k];
+  }
+  return out;
+}
+
+/* ------------------------------------------------------------------ */
+/*  Teardrop surface grid with per-vertex tear / impact attributes      */
+/* ------------------------------------------------------------------ */
+function splitTheta(ph) {
+  return THETA_IMP + 0.22 * Math.sin(2 * ph + 0.7) + 0.13 * Math.sin(5 * ph + 2.1) + 0.07 * Math.sin(9 * ph + 4.0);
+}
+function buildTeardrop(radiusScale, segT, segP) {
+  var nv = (segT + 1) * (segP + 1);
+  var pos = new Float32Array(nv * 3), nrm = new Float32Array(nv * 3);
+  var aD = new Float32Array(nv), aDX = new Float32Array(nv), aSide = new Float32Array(nv), aEdge = new Float32Array(nv);
+  var sI = Math.sin(THETA_IMP), cI = Math.cos(THETA_IMP);
+  function P(th, ph, o) { var r = profileR(th) * radiusScale; o[0] = r * Math.cos(ph); o[1] = BAL_RY * Math.cos(th); o[2] = -r * Math.sin(ph); }
+  var p = [0, 0, 0], pa = [0, 0, 0], pb = [0, 0, 0], pc = [0, 0, 0], pd = [0, 0, 0];
+  var k = 0;
+  for (var i = 0; i <= segT; i++) {
+    var th = Math.PI * i / segT;
+    for (var j = 0; j <= segP; j++) {
+      var ph = 2 * Math.PI * j / segP;
+      P(th, ph, p);
+      var e = 1e-3, nx, ny, nz;
+      if (i === 0) { nx = 0; ny = 1; nz = 0; }
+      else if (i === segT) { nx = 0; ny = -1; nz = 0; }
+      else {
+        P(th - e, ph, pa); P(th + e, ph, pb); P(th, ph - e, pc); P(th, ph + e, pd);
+        var tx = pb[0] - pa[0], ty = pb[1] - pa[1], tz = pb[2] - pa[2];
+        var qx = pd[0] - pc[0], qy = pd[1] - pc[1], qz = pd[2] - pc[2];
+        nx = ty * qz - tz * qy; ny = tz * qx - tx * qz; nz = tx * qy - ty * qx;
+        var len = Math.sqrt(nx * nx + ny * ny + nz * nz) || 1; nx /= len; ny /= len; nz /= len;
+      }
+      pos[k * 3] = p[0]; pos[k * 3 + 1] = p[1]; pos[k * 3 + 2] = p[2];
+      nrm[k * 3] = nx; nrm[k * 3 + 1] = ny; nrm[k * 3 + 2] = nz;
+      var ux = Math.sin(th) * Math.cos(ph), uy = Math.cos(th), uz = -Math.sin(th) * Math.sin(ph);
+      aD[k] = Math.acos(clamp(ux * sI + uy * cI, -1, 1));
+      aDX[k] = Math.acos(clamp(-ux * sI + uy * cI, -1, 1));
+      var ts = splitTheta(ph);
+      aSide[k] = th < ts ? 1 : -1;
+      aEdge[k] = Math.exp(-Math.pow((th - ts) / 0.1, 2));
+      k++;
+    }
+  }
+  var idx = new Uint32Array(segT * segP * 6), q = 0;
+  for (i = 0; i < segT; i++) for (j = 0; j < segP; j++) {
+    var a = i * (segP + 1) + j, b = a + 1, c = a + segP + 1, d = c + 1;
+    idx[q++] = a; idx[q++] = c; idx[q++] = b; idx[q++] = b; idx[q++] = c; idx[q++] = d;
+  }
+  var g = new THREE.BufferGeometry();
+  g.setAttribute('position', new THREE.BufferAttribute(pos, 3));
+  g.setAttribute('normal', new THREE.BufferAttribute(nrm, 3));
+  g.setAttribute('aD', new THREE.BufferAttribute(aD, 1));
+  g.setAttribute('aDX', new THREE.BufferAttribute(aDX, 1));
+  g.setAttribute('aSide', new THREE.BufferAttribute(aSide, 1));
+  g.setAttribute('aEdge', new THREE.BufferAttribute(aEdge, 1));
+  g.setIndex(new THREE.BufferAttribute(idx, 1));
+  g.boundingSphere = new THREE.Sphere(new THREE.Vector3(0, 0, 0), 6);
+  return g;
+}
+var latexGeo = buildTeardrop(1.0, 96, 128);
+var waterGeo = buildTeardrop(0.985, 96, 128);
+
+/* ------------------------------------------------------------------ */
+/*  Latex membrane: dent, tear propagation, retraction to tether/base   */
+/* ------------------------------------------------------------------ */
+var LATEX_VS = [
+  'attribute float aD; attribute float aSide; attribute float aEdge;',
+  'uniform float uTime, uDent;',
+  'varying vec3 vN, vP; varying float vD, vSide, vEdge, vC;',
+  'const float TP = 1.06; const float TEARV = 9.8; const float RET = 0.2;',
+  GLSL_NOISE,
+  'void main(){',
+  '  vec3 p = position;',
+  '  p.x -= uDent * exp(-pow(aD / 0.32, 2.0));',
+  '  float c = 0.0;',
+  '  if (uTime > TP) { float tt = clamp((uTime - TP - aD / TEARV) / RET, 0.0, 1.0); c = 1.0 - pow(1.0 - tt, 3.0); }',
+  '  vec3 center = aSide > 0.0 ? vec3(0.0, 1.40, 0.0) : vec3(0.0, -1.52, 0.0);',
+  '  float shrink = aSide > 0.0 ? 0.86 : 0.88;',
+  '  vec3 q = center + (p - center) * (1.0 - shrink * c);',
+  '  vec3 cr = vec3(vnoise(position * 3.0) - 0.5, vnoise(position * 3.0 + 7.1) - 0.5, vnoise(position * 3.0 + 13.7) - 0.5);',
+  '  q += cr * 0.09 * c;',
+  '  if (aSide < 0.0) {',
+  '    float tf = max(0.0, uTime - 1.45) * c;',
+  '    vec3 rel = q - center; float ang = 0.9 * tf; float cs = cos(ang); float sn = sin(ang);',
+  '    rel = vec3(rel.x * cs - rel.y * sn, rel.x * sn + rel.y * cs, rel.z);',
+  '    q = center + rel + vec3(-0.18 * tf, -0.45 * tf * tf - 0.5 * tf, 0.0);',
+  '  }',
+  '  vC = c; vD = aD; vSide = aSide; vEdge = aEdge;',
+  '  vec4 wp = modelMatrix * vec4(q, 1.0); vP = wp.xyz;',
+  '  vN = normalize(mat3(modelMatrix) * normal);',
+  '  gl_Position = projectionMatrix * viewMatrix * wp;',
+  '}'
+].join('\n');
+var LATEX_FS = [
+  GLSL_LIGHTS,
+  'uniform float uTime, uTear;',
+  'varying vec3 vN, vP; varying float vD, vSide, vEdge, vC;',
+  'const float TP = 1.06;',
+  'void latexLight(vec3 L, vec3 C, vec3 n, vec3 v, vec3 base, inout vec3 col, inout vec3 spec){',
+  '  float wrap = clamp((dot(n, L) + 0.45) / 1.45, 0.0, 1.0);',
+  '  col += base * C * wrap * 0.75;',
+  '  vec3 h = normalize(L + v); float nh = max(dot(n, h), 0.0);',
+  '  spec += C * (pow(nh, 110.0) * 1.0 + pow(nh, 14.0) * 0.06);',
+  '  float tr = pow(max(dot(v, -normalize(L + n * 0.5)), 0.0), 4.0);',
+  '  col += vec3(1.0, 0.30, 0.18) * C * tr * 0.30;',
+  '}',
+  'void main(){',
+  '  if (uTime > TP) {',
+  '    if (abs(vSide) < 0.999 && vD < uTear) discard;',
+  '    if (vD < 0.1) discard;',
+  '  }',
+  '  vec3 n = normalize(vN);',
+  '#ifdef FLIP_SIDED',
+  '  n = -n;',
+  '#endif',
+  '  vec3 v = normalize(cameraPosition - vP);',
+  '  float ndv = max(dot(n, v), 0.0);',
+  '  float fres = pow(1.0 - ndv, 3.0);',
+  '  vec3 base = vec3(0.79, 0.012, 0.018);',
+  '  vec3 col = base * 0.10; vec3 spec = vec3(0.0);',
+  '  latexLight(uL0, uC0, n, v, base, col, spec);',
+  '  latexLight(uL1, uC1, n, v, base, col, spec);',
+  '  latexLight(uL2, uC2, n, v, base, col, spec);',
+  '  latexLight(uL3, uC3, n, v, base, col, spec);',
+  '  col += fres * vec3(1.0, 0.55, 0.5) * 0.28;',
+  '  col += spec;',
+  '  col *= 1.0 - 0.35 * vC;',
+  '  float torn = step(TP, uTime);',
+  '  col = mix(col, col * 1.6 + vec3(0.10, 0.02, 0.02), vEdge * torn);',
+  '  float a = 0.84 + 0.16 * fres;',
+  '  a = mix(a, 0.985, vC);',
+  '  a = min(1.0, a + dot(spec, vec3(0.33)) * 0.25);',
+  GLSL_OUT,
+  '}'
+].join('\n');
+var latexUniforms = mergeUniforms(LIGHT_UNIFORMS, {
+  uTime: { value: 0 }, uDent: { value: 0 }, uTear: { value: 0 }
+});
+function latexMat(side) {
+  return premulBlend(new THREE.ShaderMaterial({ uniforms: latexUniforms, vertexShader: LATEX_VS, fragmentShader: LATEX_FS, side: side }));
+}
+
+/* ------------------------------------------------------------------ */
+/*  Free-standing water mass: holes, crowns, bulge, ripples, dissolve   */
+/* ------------------------------------------------------------------ */
+var WATER_VS = [
+  'attribute float aD; attribute float aDX;',
+  'uniform float uTime, uDent, uHoleIn, uCrownIn, uHoleOut, uBulge, uCrownOut, uRipple, uSlosh, uSlump, uFall, uBurst;',
+  'varying vec3 vN, vP, vP0; varying float vD, vDX;',
+  GLSL_NOISE,
+  'void main(){',
+  '  vec3 p = position; vec3 n = normal;',
+  '  p.x -= uDent * exp(-pow(aD / 0.32, 2.0));',
+  '  float disp = 0.0;',
+  '  disp += uCrownIn * exp(-pow((aD - uHoleIn - 0.04) / 0.09, 2.0));',
+  '  disp += uCrownOut * exp(-pow((aDX - uHoleOut - 0.04) / 0.09, 2.0));',
+  '  disp += uBulge * exp(-pow(aDX / 0.3, 2.0));',
+  '  disp += uRipple * sin(aD * 16.0 - (uTime - 1.06) * 11.0) * exp(-aD * 0.8);',
+  '  disp += uRipple * 0.6 * sin(aDX * 14.0 - (uTime - 3.8) * 10.0) * exp(-aDX * 0.9) * step(3.8, uTime);',
+  '  float cth = position.y / 1.5;',
+  '  disp += uSlosh * (2.0 * cth * cth - 1.0);',
+  '  disp += uBurst * (0.45 + 0.55 * vnoise(position * 2.5 + 3.0));',
+  '  p += n * disp;',
+  '  p.y *= (1.0 - uSlump); p.xz *= (1.0 + 0.5 * uSlump);',
+  '  p.y -= uFall;',
+  '  vD = aD; vDX = aDX; vP0 = position;',
+  '  vec4 wp = modelMatrix * vec4(p, 1.0); vP = wp.xyz;',
+  '  vN = normalize(mat3(modelMatrix) * n);',
+  '  gl_Position = projectionMatrix * viewMatrix * wp;',
+  '}'
+].join('\n');
+var WATER_FS = [
+  GLSL_LIGHTS, GLSL_NOISE,
+  'uniform float uTime, uHoleIn, uHoleOut, uDissolve, uRipple;',
+  'varying vec3 vN, vP, vP0; varying float vD, vDX;',
+  'void waterLight(vec3 L, vec3 C, vec3 n, vec3 v, float ndv, vec3 tint, inout vec3 spec, inout vec3 glow){',
+  '  vec3 h = normalize(L + v); float nh = max(dot(n, h), 0.0);',
+  '  spec += C * (pow(nh, 180.0) * 1.5 + pow(nh, 16.0) * 0.05);',
+  '  glow += C * tint * pow(1.0 - ndv, 2.5) * max(dot(-L, n) * 0.5 + 0.5, 0.0) * 0.22;',
+  '}',
+  'void main(){',
+  '  if (vD < uHoleIn || vDX < uHoleOut) discard;',
+  '  float dEdge = 1.0;',
+  '  if (uDissolve > 0.0) {',
+  '    float nz = 0.65 * vnoise(vP0 * 4.5 + vec3(0.0, uTime * 0.15, 0.0)) + 0.35 * vnoise(vP0 * 11.0 + 5.0);',
+  '    if (nz < uDissolve) discard;',
+  '    dEdge = smoothstep(0.0, 0.1, nz - uDissolve);',
+  '  }',
+  '  vec3 n = normalize(vN);',
+  '#ifdef FLIP_SIDED',
+  '  n = -n;',
+  '#endif',
+  '  float pa = uRipple * 5.0;',
+  '  n = normalize(n + pa * vec3(vnoise(vP0 * 7.0 + uTime * 0.6) - 0.5, vnoise(vP0 * 7.0 + 11.0 - uTime * 0.5) - 0.5, vnoise(vP0 * 7.0 + 23.0) - 0.5));',
+  '  vec3 v = normalize(cameraPosition - vP);',
+  '  float ndv = max(dot(n, v), 0.0);',
+  '  float fres = 0.03 + 0.97 * pow(1.0 - ndv, 5.0);',
+  '  vec3 tint = vec3(0.55, 0.78, 0.9);',
+  '  vec3 col = tint * 0.03; vec3 spec = vec3(0.0); vec3 glow = vec3(0.0);',
+  '  waterLight(uL0, uC0, n, v, ndv, tint, spec, glow);',
+  '  waterLight(uL1, uC1, n, v, ndv, tint, spec, glow);',
+  '  waterLight(uL2, uC2, n, v, ndv, tint, spec, glow);',
+  '  waterLight(uL3, uC3, n, v, ndv, tint, spec, glow);',
+  '  col += fres * vec3(0.72, 0.86, 1.0) * 0.5 * (0.55 + 0.45 * n.y);',
+  '  col += tint * 0.10 * pow(max(-n.y, 0.0), 2.0);',
+  '  col += spec * (0.3 + 0.7 * fres) + glow * 1.3;',
+  '  float a = 0.07 + 0.55 * fres + dot(spec, vec3(0.3)) * 0.35 + dot(glow, vec3(0.6));',
+  '#ifdef FLIP_SIDED',
+  '  a *= 0.6;',
+  '#endif',
+  '  float eg = 1.0 - dEdge;',
+  '  col += vec3(0.75, 0.88, 1.0) * eg * 0.45;',
+  '  a = clamp(a + eg * 0.35, 0.0, 1.0) * max(dEdge, 0.35);',
+  GLSL_OUT,
+  '}'
+].join('\n');
+var waterUniforms = mergeUniforms(LIGHT_UNIFORMS, {
+  uTime: { value: 0 }, uDent: { value: 0 }, uHoleIn: { value: 0 }, uCrownIn: { value: 0 }, uHoleOut: { value: 0 },
+  uBulge: { value: 0 }, uCrownOut: { value: 0 }, uRipple: { value: 0 }, uSlosh: { value: 0 }, uSlump: { value: 0 },
+  uFall: { value: 0 }, uBurst: { value: 0 }, uDissolve: { value: 0 }
+});
+function waterMat(side) {
+  return premulBlend(new THREE.ShaderMaterial({ uniforms: waterUniforms, vertexShader: WATER_VS, fragmentShader: WATER_FS, side: side }));
+}
+var waterBack = new THREE.Mesh(waterGeo, waterMat(THREE.BackSide)); waterBack.renderOrder = 1;
+var waterFront = new THREE.Mesh(waterGeo, waterMat(THREE.FrontSide)); waterFront.renderOrder = 4;
+waterBack.frustumCulled = false; waterFront.frustumCulled = false;
+scene.add(waterBack); scene.add(waterFront);
+
+/* ------------------------------------------------------------------ */
+/*  Tether group (pivot off-screen above): string, knot, latex meshes   */
+/* ------------------------------------------------------------------ */
+var PIVOT_Y = 4.2;
+var tether = new THREE.Group();
+tether.position.set(0, PIVOT_Y, 0);
+scene.add(tether);
+var stringLen = PIVOT_Y - 1.56 + 0.5;
+var stringMesh = new THREE.Mesh(
+  new THREE.CylinderGeometry(0.012, 0.012, stringLen, 8),
+  new THREE.MeshStandardMaterial({ color: new THREE.Color(0xd6d6dc).convertSRGBToLinear(), roughness: 0.55, metalness: 0.0 })
+);
+stringMesh.position.y = (1.56 - PIVOT_Y + 0.5) / 2;
+tether.add(stringMesh);
+var knotMat = new THREE.MeshStandardMaterial({
+  color: new THREE.Color(0xe61c24).convertSRGBToLinear(), roughness: 0.3, metalness: 0.0, envMap: envTex, envMapIntensity: 0.5
+});
+var knot = new THREE.Mesh(new THREE.SphereGeometry(0.09, 20, 14), knotMat);
+knot.position.y = 1.52 - PIVOT_Y; knot.scale.set(1, 0.78, 1);
+tether.add(knot);
+var knotNeck = new THREE.Mesh(new THREE.CylinderGeometry(0.035, 0.05, 0.1, 12), knotMat);
+knotNeck.position.y = 1.47 - PIVOT_Y;
+tether.add(knotNeck);
+var latexBack = new THREE.Mesh(latexGeo, latexMat(THREE.BackSide)); latexBack.renderOrder = 0;
+var latexFront = new THREE.Mesh(latexGeo, latexMat(THREE.FrontSide)); latexFront.renderOrder = 5;
+latexBack.position.y = -PIVOT_Y; latexFront.position.y = -PIVOT_Y;
+latexBack.frustumCulled = false; latexFront.frustumCulled = false;
+tether.add(latexBack); tether.add(latexFront);
+
+/* ------------------------------------------------------------------ */
+/*  Bullet: lathe-turned copper/brass ogive, tip pointing -X            */
+/* ------------------------------------------------------------------ */
+var bulletPts = [
+  new THREE.Vector2(0.0, -0.06), new THREE.Vector2(0.072, -0.06), new THREE.Vector2(0.085, 0.0),
+  new THREE.Vector2(0.085, 0.10), new THREE.Vector2(0.079, 0.11), new THREE.Vector2(0.079, 0.14),
+  new THREE.Vector2(0.085, 0.15), new THREE.Vector2(0.085, 0.32)
+];
+for (var bi = 1; bi <= 14; bi++) {
+  var bu = bi / 14;
+  bulletPts.push(new THREE.Vector2(0.012 + 0.073 * Math.pow(1 - bu, 0.6), 0.32 + 0.28 * bu));
+}
+bulletPts.push(new THREE.Vector2(0.0, 0.6));
+var bulletMat = new THREE.MeshStandardMaterial({
+  color: new THREE.Color(0xd08a3c).convertSRGBToLinear(), metalness: 0.92, roughness: 0.3,
+  envMap: envTex, envMapIntensity: 1.0
+});
+var bulletMesh = new THREE.Mesh(new THREE.LatheGeometry(bulletPts, 48), bulletMat);
+bulletMesh.rotation.z = Math.PI / 2;      // local +Y (tip) -> world -X
+bulletMesh.position.x = 0.27;             // centre of mass at the group origin
+var BULLET_TIP_OFF = 0.6 - 0.27;          // tip sits at group.x - BULLET_TIP_OFF
+var bullet = new THREE.Group();
+bullet.add(bulletMesh);
+scene.add(bullet);
+
+/* ------------------------------------------------------------------ */
+/*  Cavitation tunnel (vapour cavity between entry hole and bullet)     */
+/* ------------------------------------------------------------------ */
+function buildTube(segU, segP) {
+  var nv = (segU + 1) * (segP + 1), pos = new Float32Array(nv * 3), k = 0;
+  for (var i = 0; i <= segU; i++) for (var j = 0; j <= segP; j++) {
+    var ph = 2 * Math.PI * j / segP;
+    pos[k++] = i / segU; pos[k++] = Math.cos(ph); pos[k++] = Math.sin(ph);
+  }
+  var idx = new Uint32Array(segU * segP * 6), q = 0;
+  for (i = 0; i < segU; i++) for (j = 0; j < segP; j++) {
+    var a = i * (segP + 1) + j, b = a + 1, c = a + segP + 1, d = c + 1;
+    idx[q++] = a; idx[q++] = b; idx[q++] = c; idx[q++] = b; idx[q++] = d; idx[q++] = c;
+  }
+  var g = new THREE.BufferGeometry();
+  g.setAttribute('position', new THREE.BufferAttribute(pos, 3));
+  g.setIndex(new THREE.BufferAttribute(idx, 1));
+  return g;
+}
+var tunnelUniforms = { uTX0: { value: XR }, uTX1: { value: XR - 0.1 }, uTR: { value: 0 }, uTY: { value: Y_IMP }, uTFlare: { value: 0 } };
+var TUNNEL_VS = [
+  GLSL_TUNNEL, GLSL_NOISE,
+  'uniform float uTime;',
+  'varying vec3 vN, vP; varying float vU;',
+  'void main(){',
+  '  float u = position.x; float cph = position.y; float sph = position.z;',
+  '  float nz = vnoise(vec3(u * 6.0 + uTime * 1.5, cph * 2.0 + 1.0, sph * 2.0));',
+  '  float wob = 0.85 + 0.3 * nz;',
+  '  float r = uTR * tshape(u) * wob + 0.012;',
+  '  float r2 = uTR * tshape(u + 0.01) * wob + 0.012;',
+  '  float adx = abs(uTX1 - uTX0) + 1e-4;',
+  '  vec3 n = normalize(vec3((r2 - r) / 0.01, adx * cph, adx * sph));',
+  '  vec3 p = vec3(mix(uTX0, uTX1, u), uTY + r * cph, r * sph);',
+  '  vU = u; vP = p; vN = n;',
+  '  gl_Position = projectionMatrix * viewMatrix * vec4(p, 1.0);',
+  '}'
+].join('\n');
+var TUNNEL_FS = [
+  GLSL_LIGHTS, GLSL_NOISE,
+  'uniform float uTime;',
+  'varying vec3 vN, vP; varying float vU;',
+  'void main(){',
+  '  vec3 n = normalize(vN); if (!gl_FrontFacing) n = -n;',
+  '  vec3 v = normalize(cameraPosition - vP);',
+  '  float ndv = max(dot(n, v), 0.0);',
+  '  float edge = pow(1.0 - ndv, 1.6);',
+  '  float bub = smoothstep(0.45, 0.8, vnoise(vP * 14.0 + vec3(uTime * 2.0, 0.0, 0.0)));',
+  '  vec3 col = vec3(0.80, 0.92, 1.0) * (0.25 + 0.55 * edge) + vec3(1.0) * bub * 0.35;',
+  '  vec3 h = normalize(uL1 + v); col += uC1 * pow(max(dot(n, h), 0.0), 40.0) * 0.4;',
+  '  h = normalize(uL2 + v); col += uC2 * pow(max(dot(n, h), 0.0), 40.0) * 0.4;',
+  '  h = normalize(uL0 + v); col += uC0 * pow(max(dot(n, h), 0.0), 60.0) * 0.3;',
+  '  float a = (0.14 + 0.5 * edge + 0.3 * bub) * smoothstep(0.0, 0.06, vU);',
+  '  if (!gl_FrontFacing) a *= 0.6;',
+  '  a = clamp(a, 0.0, 1.0);',
+  GLSL_OUT,
+  '}'
+].join('\n');
+var tunnelMat = premulBlend(new THREE.ShaderMaterial({
+  uniforms: mergeUniforms(LIGHT_UNIFORMS, tunnelUniforms, { uTime: { value: 0 } }),
+  vertexShader: TUNNEL_VS, fragmentShader: TUNNEL_FS, side: THREE.DoubleSide
+}));
+var tunnel = new THREE.Mesh(buildTube(64, 36), tunnelMat);
+tunnel.renderOrder = 2; tunnel.frustumCulled = false; tunnel.visible = false;
+scene.add(tunnel);
+
+/* ------------------------------------------------------------------ */
+/*  Particle sprite (detached 2D canvas: radial drop + specular spot)   */
+/* ------------------------------------------------------------------ */
+function makeSprite() {
+  var s = 128, c = document.createElement('canvas'); c.width = c.height = s;
+  var g = c.getContext('2d');
+  var gr = g.createRadialGradient(s / 2, s / 2, 0, s / 2, s / 2, s / 2);
+  gr.addColorStop(0.0, 'rgba(255,255,255,0.55)');
+  gr.addColorStop(0.5, 'rgba(200,225,255,0.40)');
+  gr.addColorStop(0.82, 'rgba(235,245,255,0.75)');
+  gr.addColorStop(0.95, 'rgba(255,255,255,0.35)');
+  gr.addColorStop(1.0, 'rgba(255,255,255,0)');
+  g.fillStyle = gr; g.fillRect(0, 0, s, s);
+  g.globalCompositeOperation = 'lighter';
+  var hs = g.createRadialGradient(s * 0.37, s * 0.35, 0, s * 0.37, s * 0.35, s * 0.2);
+  hs.addColorStop(0, 'rgba(255,255,255,1)'); hs.addColorStop(0.4, 'rgba(255,255,255,0.5)'); hs.addColorStop(1, 'rgba(255,255,255,0)');
+  g.fillStyle = hs; g.fillRect(0, 0, s, s);
+  var tex = new THREE.CanvasTexture(c);
+  tex.minFilter = THREE.LinearMipmapLinearFilter; tex.magFilter = THREE.LinearFilter; tex.generateMipmaps = true;
+  return tex;
+}
+var spriteTex = makeSprite();
+
+/* ------------------------------------------------------------------ */
+/*  Particle emitters: every initial state drawn from the seeded PRNG   */
+/*  kind 0 = droplet, 1 = mist, 2 = cavity bubble (tunnel-space)        */
+/* ------------------------------------------------------------------ */
+function makeList() { return { p0: [], v0: [], t: [], k: [], n: 0 }; }
+function emit(L, px, py, pz, vx, vy, vz, birth, life, size, drag, kind) {
+  L.p0.push(px, py, pz); L.v0.push(vx, vy, vz); L.t.push(birth, life, size, drag); L.k.push(kind, rand()); L.n++;
+}
+var drops = makeList(), bubbles = makeList();
+var TWO_PI = Math.PI * 2;
+
+/* 1) backward cavitation splash venting from the entry hole (+X) */
+for (var i1 = 0; i1 < 1100; i1++) {
+  var early = rand() < 0.35;
+  var b1 = early ? rrange(1.08, 2.4) : rrange(2.4, 3.9);
+  var ang1 = rand() < 0.75 ? rrange(0, 0.5) : rrange(0.5, 0.9);
+  var az1 = rrange(0, TWO_PI);
+  var spd1 = early ? rrange(1.2, 3.4) : rrange(0.8, 2.6);
+  var mist1 = rand() < 0.3;
+  var jr1 = rrange(0, 0.07), ja1 = rrange(0, TWO_PI);
+  emit(drops, XR + 0.02, Y_IMP + jr1 * Math.cos(ja1), jr1 * Math.sin(ja1),
+    spd1 * Math.cos(ang1), spd1 * Math.sin(ang1) * Math.cos(az1), spd1 * Math.sin(ang1) * Math.sin(az1),
+    b1, rrange(1.4, 3.2), mist1 ? rrange(0.012, 0.03) : rrange(0.025, 0.08), mist1 ? rrange(2.5, 3.5) : rrange(0.7, 1.4), mist1 ? 1 : 0);
+}
+/* 2) forward conical plume from the exit hole (-X) */
+for (var i2 = 0; i2 < 1700; i2++) {
+  var r2 = rand(), b2 = 3.78 + 1.22 * r2 * r2;
+  var earlyF = b2 < 4.05;
+  var ang2 = earlyF ? rrange(0, 0.3) : rrange(0.05, 0.6);
+  var az2 = rrange(0, TWO_PI);
+  var spd2 = earlyF ? rrange(2.5, 4.5) : rrange(1.0, 2.8);
+  var mist2 = rand() < (earlyF ? 0.6 : 0.3);
+  var jr2 = rrange(0, 0.05), ja2 = rrange(0, TWO_PI);
+  emit(drops, XL - 0.02, Y_IMP + jr2 * Math.cos(ja2), jr2 * Math.sin(ja2),
+    -spd2 * Math.cos(ang2), spd2 * Math.sin(ang2) * Math.cos(az2), spd2 * Math.sin(ang2) * Math.sin(az2),
+    b2, rrange(1.5, 3.5), mist2 ? rrange(0.012, 0.03) : rrange(0.02, 0.07), mist2 ? rrange(2.2, 3.2) : rrange(0.5, 1.0), mist2 ? 1 : 0);
+}
+/* 3) Plateau-Rayleigh ligaments: bead chains shed from the disintegrating mass */
+function surfaceAt(th, ph, out) {
+  var r = profileR(th);
+  out.p = [r * Math.cos(ph), BAL_RY * Math.cos(th), -r * Math.sin(ph)];
+  var e = 1e-3, ra = profileR(th - e), rb = profileR(th + e);
+  var tx = (rb - ra) * Math.cos(ph), ty = BAL_RY * (Math.cos(th + e) - Math.cos(th - e)), tz = -(rb - ra) * Math.sin(ph);
+  var qx = -r * Math.sin(ph) * 2 * e, qy = 0, qz = -r * Math.cos(ph) * 2 * e;
+  var nx = ty * qz - tz * qy, ny = tz * qx - tx * qz, nz = tx * qy - ty * qx;
+  var len = Math.sqrt(nx * nx + ny * ny + nz * nz) || 1;
+  out.n = [nx / len, ny / len, nz / len];
+}
+var surf = { p: null, n: null };
+for (var ci = 0; ci < 290; ci++) {
+  var th3 = rrange(0.2, Math.PI - 0.1), ph3 = rrange(0, TWO_PI);
+  var b3 = 4.9 + 1.3 * Math.pow(rand(), 1.5);
+  surfaceAt(th3, ph3, surf);
+  var fl = fallAt(b3), sl = slumpAt(b3), bst = burstAt(b3);
+  var ox = surf.p[0] * (1 + 0.5 * sl) + surf.n[0] * bst * 0.7;
+  var oy = surf.p[1] * (1 - sl) - fl + surf.n[1] * bst * 0.7;
+  var oz = surf.p[2] * (1 + 0.5 * sl) + surf.n[2] * bst * 0.7;
+  var dx = surf.n[0] + rrange(-0.5, 0.5) - 0.35, dy = surf.n[1] + rrange(-0.5, 0.5) + 0.1, dz = surf.n[2] + rrange(-0.5, 0.5);
+  var dl = Math.sqrt(dx * dx + dy * dy + dz * dz) || 1; dx /= dl; dy /= dl; dz /= dl;
+  var spd3 = rrange(0.25, 1.1), vin = -G_MASS * (b3 - 1.55);
+  var nb = 5 + Math.floor(rand() * 4), drag3 = rrange(0.4, 0.7);
+  for (var bk = 0; bk < nb; bk++) {
+    var sp = spd3 * (1 - 0.1 * bk) * rrange(0.92, 1.08), off = -0.02 * bk * rrange(0.6, 1.6);
+    emit(drops, ox + dx * off, oy + dy * off, oz + dz * off, dx * sp, dy * sp + vin, dz * sp,
+      b3, 8.5 - b3, bk === 0 ? rrange(0.05, 0.11) : rrange(0.025, 0.06), drag3, 0);
+  }
+}
+/* 4) vapour bubbles inside the cavitation tunnel (tunnel-space coordinates) */
+for (var i4 = 0; i4 < 350; i4++) {
+  emit(bubbles, rrange(0.05, 0.95), rrange(0, TWO_PI), rrange(0.15, 0.85),
+    rrange(-0.25, -0.05), rrange(-2, 2), 0, rrange(1.15, 3.6), rrange(0.5, 1.6), rrange(0.015, 0.045), 1, 2);
+}
+
+var PART_VS = [
+  'attribute vec3 aP0; attribute vec3 aV0; attribute vec4 aT; attribute vec2 aK;',
+  'uniform float uTime, uScale, uG;',
+  GLSL_TUNNEL,
+  'varying float vA, vKind;',
+  'void main(){',
+  '  float tau = uTime - aT.x;',
+  '  vKind = aK.x;',
+  '  bool dead = (tau < 0.0 || tau > aT.y);',
+  '  if (aK.x > 1.5 && (uTR < 0.01 || uTX1 > uTX0 - 0.03)) dead = true;',
+  '  if (dead) { gl_Position = vec4(2.0, 2.0, 2.0, 1.0); gl_PointSize = 0.0; vA = 0.0; return; }',
+  '  vec3 p;',
+  '  if (aK.x > 1.5) {',
+  '    float u = clamp(aP0.x + aV0.x * tau, 0.02, 0.98);',
+  '    float r = uTR * tshape(u) * aP0.z * (0.85 + 0.15 * sin(tau * 7.0 + aK.y * 20.0));',
+  '    float ph = aP0.y + aV0.y * tau;',
+  '    p = vec3(mix(uTX0, uTX1, u), uTY + r * cos(ph), r * sin(ph));',
+  '  } else {',
+  '    float k = aT.w;',
+  '    vec3 vt = vec3(0.0, -uG / k, 0.0);',
+  '    float e = (1.0 - exp(-k * tau)) / k;',
+  '    p = aP0 + vt * tau + (aV0 - vt) * e;',
+  '  }',
+  '  float f = tau / aT.y;',
+  '  vec4 mv = modelViewMatrix * vec4(p, 1.0);',
+  '  float grow = (aK.x > 0.5 && aK.x < 1.5) ? (1.0 + 1.5 * f) : 1.0;',
+  '  float size = aT.z * (1.0 - 0.3 * f) * grow;',
+  '  gl_PointSize = max(1.0, size * uScale / -mv.z);',
+  '  gl_Position = projectionMatrix * mv;',
+  '  vA = smoothstep(0.0, 0.05, f) * (1.0 - smoothstep(0.6, 1.0, f));',
+  '}'
+].join('\n');
+var PART_FS = [
+  'uniform sampler2D uTex;',
+  'varying float vA, vKind;',
+  'void main(){',
+  '  if (vA <= 0.001) discard;',
+  '  vec4 s = texture2D(uTex, gl_PointCoord);',
+  '  vec3 col; float a;',
+  '  if (vKind < 0.5) { col = vec3(0.85, 0.95, 1.0) * s.rgb * 1.1; a = s.a * vA * 0.95; }',
+  '  else if (vKind < 1.5) { col = vec3(0.72, 0.86, 1.0) * s.rgb; a = s.a * vA * 0.3; }',
+  '  else { col = vec3(0.9, 0.97, 1.0) * s.rgb; a = s.a * vA * 0.55; }',
+  GLSL_OUT,
+  '}'
+].join('\n');
+var partUniforms = mergeUniforms(tunnelUniforms, { uTime: { value: 0 }, uScale: { value: 1000 }, uG: { value: 1.0 }, uTex: { value: spriteTex } });
+function makePoints(L, order) {
+  var g = new THREE.BufferGeometry();
+  g.setAttribute('aP0', new THREE.BufferAttribute(new Float32Array(L.p0), 3));
+  g.setAttribute('aV0', new THREE.BufferAttribute(new Float32Array(L.v0), 3));
+  g.setAttribute('aT', new THREE.BufferAttribute(new Float32Array(L.t), 4));
+  g.setAttribute('aK', new THREE.BufferAttribute(new Float32Array(L.k), 2));
+  g.setAttribute('position', new THREE.BufferAttribute(new Float32Array(L.n * 3), 3));
+  var m = premulBlend(new THREE.ShaderMaterial({ uniforms: partUniforms, vertexShader: PART_VS, fragmentShader: PART_FS }));
+  var pts = new THREE.Points(g, m);
+  pts.renderOrder = order; pts.frustumCulled = false;
+  scene.add(pts);
+  return pts;
+}
+makePoints(bubbles, 3);
+makePoints(drops, 6);
+
+/* ------------------------------------------------------------------ */
+/*  renderAt(simTime): pure function of simTime -> frame                */
+/* ------------------------------------------------------------------ */
+function renderAt(t) {
+  /* bullet */
+  var tip = bulletTipX(t), yaw = 0;
+  if (t > T_CONTACT) yaw = 0.07 * Math.sin(4 * (t - T_CONTACT)) * smooth(T_CONTACT, 1.5, t);
+  if (t > T_EXIT) yaw += 0.22 * Math.sin(1.6 * (t - T_EXIT)) * (1 - Math.exp(-(t - T_EXIT) * 2));
+  bullet.position.set(tip + BULLET_TIP_OFF, Y_IMP, 0);
+  bullet.rotation.z = yaw;
+
+  /* latex membrane */
+  var dent = 0;
+  if (t > T_CONTACT) dent = Math.max(0, XR - tip) * (1 - smooth(T_PUNCT, 1.18, t));
+  latexUniforms.uTime.value = t;
+  latexUniforms.uDent.value = dent;
+  latexUniforms.uTear.value = t > T_PUNCT ? (t - T_PUNCT) * 9.8 : 0;
+
+  /* tether recoil: small swing + hop once the load is released */
+  var sw = 0, hop = 0;
+  if (t > 1.1) {
+    var ts = t - 1.1;
+    sw = 0.03 * Math.sin(2 * Math.PI * 0.55 * ts) * Math.exp(-0.25 * ts);
+    hop = 0.06 * smooth(1.1, 1.4, t) * (1 - 0.4 * smooth(1.4, 2.5, t));
+  }
+  tether.rotation.z = sw;
+  tether.position.y = PIVOT_Y + hop;
+
+  /* free-standing water mass */
+  var W = waterUniforms;
+  W.uTime.value = t;
+  W.uDent.value = dent;
+  W.uHoleIn.value = t > T_PUNCT ? 0.1 + 0.16 * smooth(T_PUNCT, 2.6, t) - 0.1 * smooth(3.9, 5.0, t) : 0;
+  W.uCrownIn.value = 0.06 * smooth(T_PUNCT, 1.3, t) * (1 - smooth(3.8, 4.8, t));
+  W.uBulge.value = 0.3 * smooth(3.5, T_EXIT, t) * (1 - smooth(T_EXIT, 3.95, t));
+  W.uHoleOut.value = t > T_EXIT ? 0.08 + 0.14 * smooth(T_EXIT, 4.4, t) : 0;
+  W.uCrownOut.value = 0.07 * smooth(T_EXIT, 3.95, t) * (1 - smooth(4.6, 5.2, t));
+  W.uRipple.value = 0.02 * smooth(T_PUNCT, 1.3, t);
+  W.uSlosh.value = 0.03 * smooth(1.5, 2.0, t) * Math.sin(2 * Math.PI * 0.7 * (t - 1.5));
+  W.uSlump.value = slumpAt(t);
+  W.uFall.value = fallAt(t);
+  W.uBurst.value = burstAt(t);
+  W.uDissolve.value = 1.05 * smooth(4.9, 6.4, t);
+  waterBack.visible = waterFront.visible = t < 6.45;
+
+  /* cavitation tunnel between entry hole and bullet */
+  var tr = 0.42 * smooth(T_PUNCT, 2.6, t) * (1 - smooth(3.9, 5.0, t));
+  var tailX = tip + 0.55, exists = tr > 0.005 && tailX < XR - 0.08;
+  tunnelUniforms.uTX0.value = XR - 0.02;
+  tunnelUniforms.uTX1.value = exists ? clamp(tailX, XL + 0.02, XR - 0.08) : XR;
+  tunnelUniforms.uTR.value = tr;
+  tunnelUniforms.uTFlare.value = 0.4 * smooth(T_EXIT, 4.0, t);
+  tunnel.visible = exists;
+  tunnelMat.uniforms.uTime.value = t;
+  partUniforms.uTime.value = t;
+
+  renderer.render(scene, camera);
+}
+
+/* ------------------------------------------------------------------ */
+/*  Playback state machine: COUNTDOWN / PLAYING / PAUSED / REFIRE_HOLD / ENDED */
+/* ------------------------------------------------------------------ */
+var state = 'COUNTDOWN';
+var simTime = 0, playbackSpeed = 1.0, countdownElapsed = 0, holdElapsed = 0;
+var lastTs = null, started = false;
+
+function setIcons(playing) {
+  iconPause.style.display = playing ? '' : 'none';
+  iconPlay.style.display = playing ? 'none' : '';
+  btnToggle.setAttribute('aria-label', playing ? 'Pause' : 'Play');
+}
+function hideCountdown() { elCountdown.style.display = 'none'; elCountdown.textContent = ''; }
+function showCountdown(txt) {
+  if (elCountdown.style.display !== 'block') elCountdown.style.display = 'block';
+  if (elCountdown.textContent !== txt) elCountdown.textContent = txt;
+}
+function advance(dt) {
+  simTime = Math.min(DURATION, simTime + dt * playbackSpeed);
+  if (simTime >= DURATION) {
+    simTime = DURATION;
+    scrubber.value = DURATION.toFixed(3);
+    state = 'ENDED';
+    setIcons(false);
+  } else {
+    scrubber.value = simTime.toFixed(3);
+  }
+}
+function frame(ts) {
+  requestAnimationFrame(frame);
+  var dt = 0;
+  if (lastTs !== null) dt = Math.min(0.1, Math.max(0, (ts - lastTs) / 1000));
+  lastTs = ts;
+  if (!started) { started = true; state = 'COUNTDOWN'; countdownElapsed = 0; dt = 0; }
+  if (state === 'COUNTDOWN') {
+    countdownElapsed += dt;
+    if (countdownElapsed >= 3.0) {
+      hideCountdown();
+      state = 'PLAYING';
+      setIcons(true);
+      simTime = 0;
+      advance(countdownElapsed - 3.0);
+    } else {
+      showCountdown(countdownElapsed < 1.0 ? '3' : (countdownElapsed < 2.0 ? '2' : '1'));
+      simTime = 0;
+      if (scrubber.value !== '0') scrubber.value = '0';
+    }
+  } else if (state === 'REFIRE_HOLD') {
+    holdElapsed += dt;
+    if (holdElapsed >= 1.0) {
+      state = 'PLAYING';
+      setIcons(true);
+      advance(holdElapsed - 1.0);
+    }
+  } else if (state === 'PLAYING') {
+    advance(dt);
+  }
+  renderAt(simTime);
+}
+
+btnToggle.addEventListener('click', function () {
+  if (state === 'PLAYING') {
+    state = 'PAUSED'; setIcons(false);
+  } else if (state === 'COUNTDOWN' || state === 'REFIRE_HOLD') {
+    hideCountdown(); simTime = 0; scrubber.value = '0';
+    state = 'PAUSED'; setIcons(false); renderAt(0);
+  } else if (state === 'PAUSED') {
+    state = 'PLAYING'; setIcons(true);
+  } else if (state === 'ENDED') {
+    hideCountdown(); simTime = 0; scrubber.value = '0';
+    state = 'PLAYING'; setIcons(true); renderAt(0);
+  }
+});
+pills.forEach(function (p) {
+  p.addEventListener('click', function () {
+    playbackSpeed = parseFloat(p.getAttribute('data-speed'));
+    pills.forEach(function (q) {
+      var on = q === p;
+      q.classList.toggle('is-active', on);
+      q.setAttribute('aria-checked', on ? 'true' : 'false');
+    });
+  });
+});
+scrubber.addEventListener('input', function () {
+  if (state === 'COUNTDOWN' || state === 'REFIRE_HOLD') hideCountdown();
+  simTime = clamp(parseFloat(scrubber.value) || 0, 0, DURATION);
+  state = 'PAUSED'; setIcons(false);
+  renderAt(simTime);
+});
+btnRefire.addEventListener('click', function () {
+  hideCountdown();
+  countdownElapsed = 0; holdElapsed = 0;
+  simTime = 0; scrubber.value = '0';
+  setIcons(true);
+  renderAt(0);
+  state = 'REFIRE_HOLD';
+});
+
+function onResize() {
+  var w = window.innerWidth, h = window.innerHeight;
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+  renderer.setSize(w, h, false);
+  camera.aspect = w / h;
+  camera.updateProjectionMatrix();
+  var size = renderer.getDrawingBufferSize(new THREE.Vector2());
+  partUniforms.uScale.value = size.y / (2 * Math.tan(CAM_FOV * Math.PI / 360));
+  renderAt(simTime);
+}
+window.addEventListener('resize', onResize);
+
+/* initial resting scene (simTime = 0) renders synchronously; COUNTDOWN starts on the first rAF */
+showCountdown('3');
+scrubber.value = '0';
+setIcons(true);
+onResize();
+requestAnimationFrame(frame);
+})();
+</script>
+</body>
+</html>
