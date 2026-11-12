@@ -33,20 +33,23 @@ To measure real-world engineering utility without artificial constraints or huma
 
 ---
 
-## 🔬 Benchmark Specification: `ballistics/water-balloon`
+## 🔬 Benchmark Directory
 
-- **Task**: Interactive single-file 3D physics demonstration modeling an elastomeric thin-shell water balloon impacting a rigid barrier.
-- **Specification Enforcement**: Hardened **Unobstructed Viewport** constraint—the viewport contains exclusively the Three.js canvas, center countdown, and bottom dock (all extraneous headers, mastheads, annotation overlays, and phase description panels are strictly forbidden).
-- **Duration**: Exactly 8.000-second timeline scrubbing with sub-millisecond precision.
+| Category | Benchmark | Domain | Specification | Status |
+| :--- | :--- | :--- | :--- | :--- |
+| **Ballistics** | **[Water Balloon](ballistics/water-balloon/)** | 3D Ballistics Physics & High-Speed Fluid Dynamics | [`prompt.md`](ballistics/water-balloon/prompt.md) | Active Cohort Testing |
 
-### 🛡️ Reproducibility Standard
+---
 
-- [`prompt.md`](prompt.md): Canonical, immutable prompt specification.
-- [`parameters.txt`](parameters.txt): Ground-truth CLI execution flags per harness.
-- [`evaluate.py`](evaluate.py): Automated 18-point verification suite.
-- [`TELEMETRY.md`](TELEMETRY.md): Comprehensive executive comparison matrix and compliance audit.
-- [`telemetry.json`](telemetry.json): Machine-readable telemetry array.
-- [`CHECKSUMS.sha256`](CHECKSUMS.sha256): Cryptographic signatures for all deliverables.
+## 🛡️ Reproducibility Standard
+
+Each benchmark test directory contains:
+- [`prompt.md`](ballistics/water-balloon/prompt.md): Canonical, immutable prompt specification.
+- [`parameters.txt`](ballistics/water-balloon/parameters.txt): Ground-truth CLI execution flags per harness.
+- [`evaluate.py`](ballistics/water-balloon/evaluate.py): Automated 18-point verification suite.
+- [`TELEMETRY.md`](ballistics/water-balloon/TELEMETRY.md): Comprehensive executive comparison matrix and compliance audit.
+- [`telemetry.json`](ballistics/water-balloon/telemetry.json): Machine-readable telemetry array.
+- [`CHECKSUMS.sha256`](ballistics/water-balloon/CHECKSUMS.sha256): Cryptographic signatures for all deliverables.
 
 ---
 
@@ -54,8 +57,8 @@ To measure real-world engineering utility without artificial constraints or huma
 
 | Model | Developer Harness | Verification | Wall-Clock | Deliverable |
 | :--- | :--- | :---: | :---: | :---: |
-| **Claude Fable 5.2 (Max)** | Claude Code | **PASS (100%)** | 5835.3s | [`claude-fable-5.2/`](claude-fable-5.2/) |
-| **Claude Fable 5.1 (Max)** | Claude Code | **PASS (100%)** | 4423.1s | [`claude-fable-5.1/`](claude-fable-5.1/) |
-| **Gemini 4 Carbon (High)** | Antigravity CLI | **PASS (100%)** | 1559.0s | [`gemini-4-carbon/`](gemini-4-carbon/) |
+| **Claude Fable 5.2 (Max)** | Claude Code | **PASS (100%)** | 5835.3s | [`ballistics/water-balloon/claude-fable-5.2/`](ballistics/water-balloon/claude-fable-5.2/) |
+| **Claude Fable 5.1 (Max)** | Claude Code | **PASS (100%)** | 4423.1s | [`ballistics/water-balloon/claude-fable-5.1/`](ballistics/water-balloon/claude-fable-5.1/) |
+| **Gemini 4 Carbon (High)** | Antigravity CLI | **PASS (100%)** | 1559.0s | [`ballistics/water-balloon/gemini-4-carbon/`](ballistics/water-balloon/gemini-4-carbon/) |
 
-*Showing the 3 most recent benchmark deliverables. See [`TELEMETRY.md`](TELEMETRY.md) for the complete multi-model leaderboard, full token metrics, cache ratios, and runtime verification logs.*
+*Showing the 3 most recent benchmark deliverables. See [`TELEMETRY.md`](ballistics/water-balloon/TELEMETRY.md) for the complete multi-model leaderboard, full token metrics, cache ratios, and runtime verification logs.*
