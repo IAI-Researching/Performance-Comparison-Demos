@@ -57,8 +57,8 @@ Each benchmark test directory contains:
 
 | Model | Developer Harness | Verification | Wall-Clock | Deliverable |
 | :--- | :--- | :---: | :---: | :---: |
-| **Gemini 4 Hydrogen (High)** | Antigravity CLI | **PASS (100%)** | 260.4s | [`ballistics/water-balloon/gemini-4-hydrogen/`](ballistics/water-balloon/gemini-4-hydrogen/) |
+| **Gemini 4 Hydrogen (XHigh)** | Antigravity CLI | **PASS (100%)** | 497.3s | [`ballistics/water-balloon/gemini-4-hydrogen/`](ballistics/water-balloon/gemini-4-hydrogen/) |
+| **Gemini 4 Carbon (High)** | Antigravity CLI | **FAIL (94%)** | 2226.9s | [`ballistics/water-balloon/gemini-4-carbon/`](ballistics/water-balloon/gemini-4-carbon/) |
 | **GLM 5.3 (Max)** | OpenCode | **PASS (100%)** | 1058.0s | [`ballistics/water-balloon/glm-5.3/`](ballistics/water-balloon/glm-5.3/) |
-| **Codex GPT 6.1 Sol (Max)** | Codex CLI | **PASS (100%)** | 1250.4s | [`ballistics/water-balloon/codex-gpt-6.1-sol/`](ballistics/water-balloon/codex-gpt-6.1-sol/) |
 
 *Showing the 3 most recent benchmark deliverables. See [`TELEMETRY.md`](ballistics/water-balloon/TELEMETRY.md) for the complete multi-model leaderboard, full token metrics, cache ratios, and runtime verification logs.*

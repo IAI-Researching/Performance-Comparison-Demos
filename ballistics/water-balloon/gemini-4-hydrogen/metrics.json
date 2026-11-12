@@ -1,48 +1,48 @@
 {
   "benchmark": "ballistics/water-balloon",
   "model_key": "gemini-4-hydrogen",
-  "display_name": "Gemini 4 Hydrogen (High)",
+  "display_name": "Gemini 4 Hydrogen (XHigh)",
   "requested_config": {
     "harness": "agy",
     "harness_name": "Antigravity CLI",
     "harness_version": "1.5.7",
     "harness_label": "Antigravity CLI 1.5.7",
-    "model_id": "gemini-4-hydrogen-high",
-    "effort": "high"
+    "model_id": "gemini-4-hydrogen-xhigh",
+    "effort": "xhigh"
   },
   "provenance": {
     "prompt_sha256": "6f66c2262cdd63e7e4a962fa94c8d0b989ada574ac1b6d498a5a3858d4091302",
     "evaluator_sha256": "8548ec2a423793ff8c3df9ad9e8911ed262f753b375e376ca617209697619174",
     "runtime_verifier_sha256": "de447e7fd310cb34a077023e427b6280399ccb9a785a4130f1ff87b2f02ff725",
     "sandbox_profile_sha256": "bc16c89f45a5218a83dda0c9ac9547f268112be9fa0b17a22bd873a021ad31f1",
-    "raw_output_sha256": "391e2bcff50f9e60c160bf445d5906485610f568716f4367b9213293b9c6b151",
+    "raw_output_sha256": "79afeaa4017ac77fc9e468bd8765c877ca908e3fb8fd15a2906abf1a7257bf99",
     "raw_output_redacted": false,
     "extra_workdir_files": []
   },
   "execution": {
-    "started_at": "2026-11-12T23:00:39.063234+00:00",
-    "completed_at": "2026-11-12T23:04:59.515555+00:00",
-    "wall_clock_seconds": 260.45,
+    "started_at": "2026-11-12T23:48:24.237449+00:00",
+    "completed_at": "2026-11-12T23:56:41.557343+00:00",
+    "wall_clock_seconds": 497.32,
     "exit_code": 0,
     "timed_out": false,
     "outcome": "PASS"
   },
   "deliverable": {
     "file": "index.html",
-    "bytes": 56435,
-    "lines_of_code": 1625,
-    "sha256": "e5afa1da5bea310837af9bb80ad281636f8580bf03c0166be422133484b412ad"
+    "bytes": 67716,
+    "lines_of_code": 1913,
+    "sha256": "761076827c34661bcab11f5013b209b5a95bc27b61afb26bddb29b90980b51db"
   },
   "usage": {
     "available": true,
-    "agent_turns": 16,
-    "tool_calls": 15,
-    "input_tokens": 102329,
-    "cached_read_tokens": 909185,
+    "agent_turns": 29,
+    "tool_calls": 28,
+    "input_tokens": 226568,
+    "cached_read_tokens": 3285041,
     "cache_creation_tokens": 0,
-    "thinking_tokens": 19317,
-    "output_tokens": 52756,
-    "total_tokens": 1064270
+    "thinking_tokens": 52137,
+    "output_tokens": 132647,
+    "total_tokens": 3644256
   },
   "evaluation": {
     "file": "/Volumes/Projects_mUSB/IAI_Researching/Performance-Comparison-Demos/ballistics/water-balloon/gemini-4-hydrogen/index.html",
@@ -50,7 +50,7 @@
       {
         "name": "Valid UTF-8 Non-Empty Deliverable",
         "passed": true,
-        "detail": "Size: 56,435 bytes, 1625 LOC"
+        "detail": "Size: 67,716 bytes, 1913 LOC"
       },
       {
         "name": "Parsed Single-File HTML Structure",
@@ -85,7 +85,7 @@
       {
         "name": "[Runtime] WebGL Stage, Draw Calls & Three.js r128 Verified",
         "passed": true,
-        "detail": "THREE r128, glStats={'contextsCreated': 1, 'drawCalls': 175, 'clears': 20}, canvases=1, rect={'x': 0, 'y': 0, 'w': 1920, 'h': 1080}"
+        "detail": "THREE r128, glStats={'contextsCreated': 1, 'drawCalls': 171, 'clears': 23}, canvases=1, rect={'x': 0, 'y': 0, 'w': 1920, 'h': 1080}"
       },
       {
         "name": "[Runtime] 3.0s Countdown Sequence (3->2->1->Hidden) Verified",
@@ -105,22 +105,22 @@
       {
         "name": "[Runtime] WebGL Canvas-Only 3D Frame Progression & Scrubber Advance",
         "passed": true,
-        "detail": "canvasHashes=(ba3973ee3a72 -> 043595178eec), drawCalls=(175 -> 368), scrubber=(0.450 -> 1.150)"
+        "detail": "canvasHashes=(6de97e3bb17f -> d88d3c5920f6), drawCalls=(171 -> 539), scrubber=(0.417 -> 1.033)"
       },
       {
         "name": "[Runtime] Pause/Resume Canvas Freeze & 2.0x Playback Rate Verified",
         "passed": true,
-        "detail": "pausedScrub=(1.266 -> 1.266), pausedCanvasFrozen=True, observedRate2x=1.66x"
+        "detail": "pausedScrub=(1.066 -> 1.066), pausedCanvasFrozen=True, observedRate2x=1.99x"
       },
       {
         "name": "[Runtime] Cross-Reload Seed-42 Determinism, Backward Seek & Endpoint Hold",
         "passed": true,
-        "detail": "h(tA)=cb7af4f4bf783ead, backward=cb7af4f4bf783ead, freshReload=cb7af4f4bf783ead, endClamp=8/8, endedCanvasFrozen=True"
+        "detail": "h(tA)=ecf51f825e309372, backward=ecf51f825e309372, freshReload=ecf51f825e309372, endClamp=8/8, endedCanvasFrozen=True"
       },
       {
         "name": "[Runtime] Silent 1.0s Re-Fire Hold & Auto-Restart Verified",
         "passed": true,
-        "detail": "reset=0, at0.82s=0, at1.27s=0.267, silent=True"
+        "detail": "reset=0, at0.82s=0, at1.27s=0.25, silent=True"
       },
       {
         "name": "[Runtime] Pre-Dispatch Network Enforcement (Single Pinned Three.js r128 Only)",

@@ -215,1394 +215,1684 @@ html, body {
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 <script>
 (function () {
-  'use strict';
+  "use strict";
 
   const DURATION = 8.000;
   const SEED = 42;
+  const IMPACT_Y = -0.10;
+  const R_IMPACT = 1.308;
+  const T_IMPACT = 1.000;
+  const T_PUNCTURE = 1.180;
+  const T_TEAR_END = 1.580;
+  const T_EXIT = 3.800;
 
-  // Deterministic Mulberry32 PRNG
-  function createPRNG(seed) {
+  // ---------------------------------------------------------------------------
+  // Deterministic Seeded PRNG (Mulberry32, Seed 42)
+  // ---------------------------------------------------------------------------
+  function createRNG(seed) {
     let a = seed >>> 0;
-    return function () {
-      let t = (a += 0x6D2B79F5);
-      t = Math.imul(t ^ (t >>> 15), t | 1);
-      t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+    return function rand() {
+      a |= 0;
+      a = (a + 0x6D2B79F5) | 0;
+      let t = Math.imul(a ^ (a >>> 15), 1 | a);
+      t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
       return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
     };
   }
-  const rng = createPRNG(SEED);
+  const rng = createRNG(SEED);
 
-  // Math helpers
-  function clamp(v, lo, hi) {
-    return v < lo ? lo : (v > hi ? hi : v);
+  function randRange(lo, hi) {
+    return lo + (hi - lo) * rng();
   }
+
+  function clamp(x, lo, hi) {
+    return x < lo ? lo : (x > hi ? hi : x);
+  }
+
   function smoothstep(edge0, edge1, x) {
     const t = clamp((x - edge0) / (edge1 - edge0), 0, 1);
     return t * t * (3 - 2 * t);
   }
 
-  // Balloon geometry profile: y in [-1.42, +1.22], flight axis at y = -0.18
-  const Y_MIN = -1.42;
-  const Y_MAX = 1.22;
-  const Y_BULLET = -0.18;
+  // ---------------------------------------------------------------------------
+  // Hydrostatic Teardrop Geometry Profile & Analytical Kinematics
+  // ---------------------------------------------------------------------------
+  function balloonProfile(theta, closeTop) {
+    const s = Math.sin(theta);
+    const c = Math.cos(theta);
+    const neckLift = c < 0 ? 0.24 * Math.pow(-c, 2.2) : 0.0;
+    const sagDrop = c > 0 ? 0.04 * Math.pow(c, 2.0) : 0.0;
+    const y = -1.38 * c + neckLift - sagDrop;
 
-  function teardropRadius(v) {
-    const s = Math.sin(Math.PI * clamp(v, 0, 1));
-    const sag = Math.pow(Math.max(s, 0), 0.72);
-    const taper = 1.0 - 0.36 * v - 0.14 * v * v;
-    const belly = 1.0 + 0.18 * Math.exp(-Math.pow((v - 0.38) / 0.24, 2));
-    const neck = 0.055 * Math.pow(smoothstep(0.86, 1.0, v), 1.6);
-    return Math.max(0.0, 1.04 * sag * taper * belly + neck * (1.0 - smoothstep(0.985, 1.0, v) * 0.15));
-  }
-
-  function teardropY(v) {
-    return Y_MIN + (Y_MAX - Y_MIN) * v;
-  }
-
-  const V_BULLET = (Y_BULLET - Y_MIN) / (Y_MAX - Y_MIN);
-  const R_BULLET_WALL = teardropRadius(V_BULLET); // ~1.015
-
-  // Analytical C1-continuous bullet nose X trajectory (+X -> -X)
-  // t = 0.000: x_tip = +6.83 (off-screen right)
-  // t = 1.000: x_tip = +R_BULLET_WALL (contact right wall)
-  // t = 3.800: x_tip = -R_BULLET_WALL (exit left wall)
-  // t = 8.000: x_tip = -3.13 (exited far left with mist wake)
-  const V_ENTRY = 5.80;
-  const V_WATER_MIN = 0.50;
-  const K_DRAG = 8.03;
-  // Exact integral from tau=0 to 2.8:
-  // 2.8*0.50 + ((5.80 - 0.50)/8.03)*(1 - exp(-8.03*2.8)) = 1.40 + 0.660024 = 2.060024
-  // Half span = 1.0300
-  const X_WALL = 1.030;
-  const SPAN_WATER = 2.8 * V_WATER_MIN + ((V_ENTRY - V_WATER_MIN) / K_DRAG) * (1.0 - Math.exp(-K_DRAG * 2.8));
-
-  function bulletTipX(t) {
-    if (t <= 1.0) {
-      return X_WALL + V_ENTRY * (1.0 - t);
+    const belly = Math.exp(0.24 * c);
+    const taper = c < 0 ? (1.0 - 0.56 * Math.pow(-c, 1.55)) : 1.0;
+    let r = 1.29 * s * belly * taper;
+    if (!closeTop) {
+      const topMix = Math.pow(Math.max(0, -c), 12.0);
+      r = r * (1.0 - topMix) + 0.055 * topMix;
     }
-    if (t <= 3.8) {
-      const tau = t - 1.0;
-      const dx = V_WATER_MIN * tau + ((V_ENTRY - V_WATER_MIN) / K_DRAG) * (1.0 - Math.exp(-K_DRAG * tau));
-      return X_WALL - dx * (2.0 * X_WALL / SPAN_WATER);
-    }
-    const tauExit = t - 3.8;
-    const vExit = V_WATER_MIN + (V_ENTRY - V_WATER_MIN) * Math.exp(-K_DRAG * 2.8);
-    return -X_WALL - vExit * tauExit;
+    return { r, y };
   }
 
-  function bulletVelocity(t) {
-    if (t <= 1.0) return V_ENTRY;
-    if (t <= 3.8) {
-      const tau = t - 1.0;
-      return V_WATER_MIN + (V_ENTRY - V_WATER_MIN) * Math.exp(-K_DRAG * tau);
+  // Exact closed-form C1 bullet trajectory matching all physical milestones:
+  // t=0.000: xTip = +7.808 (off-screen right even on ultrawide displays)
+  // t=1.000: xTip = +1.308 (right latex surface)
+  // t=3.800: xTip = -1.308 (left boundary exit puncture)
+  // t=3.800..8.000: smooth low-drag supersonic exit across left frame
+  const V_BULLET_AIR = 6.50;
+  const K_BULLET_WATER = 6.80;
+  const DT_TRAVERSE = T_EXIT - T_IMPACT;
+  const EXP_TRAVERSE = Math.exp(-K_BULLET_WATER * DT_TRAVERSE);
+  const INV_K_TERM = (1.0 - EXP_TRAVERSE) / K_BULLET_WATER;
+  const V_WATER_FLOOR = (2.0 * R_IMPACT - V_BULLET_AIR * INV_K_TERM) / (DT_TRAVERSE - INV_K_TERM);
+
+  function evalBullet(t) {
+    const vAir = V_BULLET_AIR;
+    const kWater = K_BULLET_WATER;
+    const vFloor = V_WATER_FLOOR;
+    let xTip, vx, yTip = IMPACT_Y, vy = 0;
+
+    if (t <= T_IMPACT) {
+      xTip = R_IMPACT + vAir * (T_IMPACT - t);
+      vx = -vAir;
+    } else if (t <= T_EXIT) {
+      const u = t - T_IMPACT;
+      const expTerm = Math.exp(-kWater * u);
+      const dist = vFloor * u + ((vAir - vFloor) / kWater) * (1.0 - expTerm);
+      xTip = R_IMPACT - dist;
+      vx = -(vFloor + (vAir - vFloor) * expTerm);
+    } else {
+      const u = t - T_EXIT;
+      const vExit = vFloor + (vAir - vFloor) * Math.exp(-kWater * (T_EXIT - T_IMPACT));
+      const kAir = 0.032;
+      const expA = Math.exp(-kAir * u);
+      const distExit = (vExit / kAir) * (1.0 - expA);
+      xTip = -R_IMPACT - distExit;
+      vx = -vExit * expA;
+      yTip = IMPACT_Y - 0.0045 * u * u;
+      vy = -0.009 * u;
     }
-    return V_WATER_MIN + (V_ENTRY - V_WATER_MIN) * Math.exp(-K_DRAG * 2.8);
+
+    const roll = t * 44.0;
+    const nutation = t > T_IMPACT ? smoothstep(T_IMPACT, T_EXIT, t) * 0.034 * Math.sin((t - T_IMPACT) * 4.2) : 0.0;
+    return { xTip, yTip, vx, vy, roll, nutation };
   }
 
-  // Three.js Renderer, Scene & Camera Setup
-  const canvas = document.getElementById('stage');
-  const renderer = new THREE.WebGLRenderer({
-    canvas: canvas,
-    antialias: true,
-    alpha: true,
-    powerPreference: 'high-performance'
-  });
+  // Exact closed-form trajectory with linear air drag k and gravity g
+  function integrateBallistic(p0, v0, age, drag, grav) {
+    if (age <= 0) return { x: p0.x, y: p0.y, z: p0.z, vx: v0.x, vy: v0.y, vz: v0.z };
+    const u = drag * age;
+    let e1, e2;
+    if (u < 1e-4) {
+      e1 = 1.0 - 0.5 * u + (u * u) / 6.0;
+      e2 = 1.0 - u / 3.0 + (u * u) / 12.0;
+    } else {
+      const expU = Math.exp(-u);
+      e1 = (1.0 - expU) / u;
+      e2 = 2.0 * (1.0 - e1) / u;
+    }
+    const damp = Math.exp(-u);
+    const x = p0.x + v0.x * age * e1;
+    const z = p0.z + v0.z * age * e1;
+    const y = p0.y + v0.y * age * e1 - 0.5 * grav * age * age * e2;
+    const vx = v0.x * damp;
+    const vz = v0.z * damp;
+    const vy = v0.y * damp - grav * age * e1;
+    return { x, y, z, vx, vy, vz };
+  }
+
+  // Exact knot & tether vertical recoil after rubber snaps
+  function evalKnotPose(t) {
+    if (t <= T_PUNCTURE) {
+      const pull = t > T_IMPACT ? smoothstep(T_IMPACT, T_PUNCTURE, t) * -0.025 : 0.0;
+      return { x: 0, y: 1.62 + pull, scale: 1.0 };
+    }
+    const u = t - T_PUNCTURE;
+    const snap = smoothstep(0.0, 0.36, u);
+    const osc = Math.exp(-1.25 * u) * Math.cos(8.5 * u);
+    const y = 1.62 + 0.28 * snap - 0.22 * osc * snap;
+    const x = -0.11 * Math.exp(-0.45 * u) * Math.sin(3.8 * u) * smoothstep(0.0, 0.25, u);
+    const scale = 1.0 - 0.22 * smoothstep(0.0, 0.45, u);
+    return { x, y, scale };
+  }
+
+  // Surface tear coordinate matched cleanly between GLSL and JS particle emitters
+  function evalTearCoord(px, py, pz) {
+    const dx = px;
+    const dy = py - IMPACT_Y;
+    const dz = pz;
+    const len = Math.sqrt(dx * dx + dy * dy + dz * dz) || 1.0;
+    const dirX = dx / len;
+    const dirY = dy / len;
+    const dirZ = dz / len;
+    const ang = Math.acos(clamp(dirX, -1.0, 1.0)) / Math.PI;
+    const jagged =
+      0.036 * Math.sin(dirY * 17.0 + dirZ * 11.0 + 0.7) +
+      0.022 * Math.cos(dirZ * 29.0 - dirY * 23.0 + 1.4) +
+      0.012 * Math.sin(dirX * 15.0 + dirY * 19.0 - dirZ * 13.0);
+    return ang + jagged;
+  }
+
+  function tearFrontAt(t) {
+    if (t <= T_PUNCTURE) return -0.15;
+    const p = clamp((t - T_PUNCTURE) / (T_TEAR_END - T_PUNCTURE), 0.0, 1.25);
+    return -0.07 + 1.19 * Math.pow(p, 0.86);
+  }
+
+  // ---------------------------------------------------------------------------
+  // Renderer, Scene & Three-Point Studio Camera
+  // ---------------------------------------------------------------------------
+  const canvas = document.getElementById("stage");
+  const renderer = new THREE.WebGLRenderer({ canvas: canvas, antialias: true, alpha: true });
   renderer.outputEncoding = THREE.sRGBEncoding;
-  renderer.toneMapping = THREE.ACESFilmicToneMapping;
-  renderer.toneMappingExposure = 1.15;
   renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
   renderer.setSize(window.innerWidth, window.innerHeight, false);
 
   const scene = new THREE.Scene();
 
+  const CAMERA_Z = 10.2;
   const camera = new THREE.PerspectiveCamera(35, window.innerWidth / window.innerHeight, 0.1, 100);
-  camera.position.set(0, -0.05, 11.4);
-  camera.lookAt(0, -0.15, 0);
+  camera.position.set(0, 0, CAMERA_Z);
+  camera.lookAt(0, 0, 0);
 
-  function onResize() {
-    const w = window.innerWidth;
-    const h = window.innerHeight;
-    camera.aspect = w / h;
-    camera.updateProjectionMatrix();
-    renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
-    renderer.setSize(w, h, false);
-  }
-  window.addEventListener('resize', onResize);
-
-  // Procedural Studio Softbox CubeTexture (detached 2D canvases in memory)
-  function createStudioCubeMap() {
-    const size = 256;
+  // Detached procedural studio environment cubemap (never appended to DOM)
+  function createStudioEnvMap() {
     const faces = [];
     for (let f = 0; f < 6; f++) {
-      const c = document.createElement('canvas');
-      c.width = size;
-      c.height = size;
-      const ctx = c.getContext('2d');
-      ctx.fillStyle = '#090b12';
-      ctx.fillRect(0, 0, size, size);
+      const c = document.createElement("canvas");
+      c.width = 256;
+      c.height = 256;
+      const ctx = c.getContext("2d");
+      ctx.fillStyle = "#080b12";
+      ctx.fillRect(0, 0, 256, 256);
+
+      const bg = ctx.createLinearGradient(0, 0, 0, 256);
+      bg.addColorStop(0, "#192234");
+      bg.addColorStop(0.5, "#0b0f18");
+      bg.addColorStop(1, "#05070c");
+      ctx.fillStyle = bg;
+      ctx.fillRect(0, 0, 256, 256);
 
       if (f === 2) {
-        // +Y top overhead softbox
-        const g = ctx.createRadialGradient(size * 0.5, size * 0.5, 10, size * 0.5, size * 0.5, size * 0.5);
-        g.addColorStop(0, 'rgba(230, 245, 255, 0.95)');
-        g.addColorStop(0.55, 'rgba(130, 175, 220, 0.35)');
-        g.addColorStop(1, 'rgba(10, 12, 18, 0)');
+        const g = ctx.createRadialGradient(128, 128, 8, 128, 128, 118);
+        g.addColorStop(0, "rgba(245, 250, 255, 0.98)");
+        g.addColorStop(0.38, "rgba(215, 232, 255, 0.65)");
+        g.addColorStop(1, "rgba(20, 30, 48, 0)");
         ctx.fillStyle = g;
-        ctx.fillRect(0, 0, size, size);
-      } else if (f === 1 || f === 5) {
-        // -X / -Z cyan-white rim softbox strip
-        const g = ctx.createLinearGradient(0, 0, size, size * 0.8);
-        g.addColorStop(0, 'rgba(155, 240, 255, 0.85)');
-        g.addColorStop(0.35, 'rgba(190, 245, 255, 0.45)');
-        g.addColorStop(1, 'rgba(10, 12, 18, 0)');
+        ctx.fillRect(0, 0, 256, 256);
+      } else if (f === 0 || f === 5) {
+        const g = ctx.createLinearGradient(40, 0, 216, 0);
+        g.addColorStop(0, "rgba(40, 225, 255, 0)");
+        g.addColorStop(0.5, f === 0 ? "rgba(70, 240, 255, 0.90)" : "rgba(180, 235, 255, 0.55)");
+        g.addColorStop(1, "rgba(40, 225, 255, 0)");
         ctx.fillStyle = g;
-        ctx.fillRect(size * 0.15, size * 0.1, size * 0.7, size * 0.8);
-      } else if (f === 0) {
-        // +X magenta-tinted rim softbox strip
-        const g = ctx.createLinearGradient(size, 0, 0, size);
-        g.addColorStop(0, 'rgba(255, 200, 245, 0.85)');
-        g.addColorStop(0.45, 'rgba(235, 165, 225, 0.35)');
-        g.addColorStop(1, 'rgba(10, 12, 18, 0)');
+        ctx.fillRect(0, 24, 256, 208);
+      } else if (f === 1) {
+        const g = ctx.createLinearGradient(40, 0, 216, 0);
+        g.addColorStop(0, "rgba(255, 64, 196, 0)");
+        g.addColorStop(0.5, "rgba(255, 72, 198, 0.85)");
+        g.addColorStop(1, "rgba(255, 64, 196, 0)");
         ctx.fillStyle = g;
-        ctx.fillRect(size * 0.15, size * 0.1, size * 0.7, size * 0.8);
+        ctx.fillRect(0, 24, 256, 208);
       } else if (f === 4) {
-        // +Z subtle front studio key panel
-        const g = ctx.createRadialGradient(size * 0.65, size * 0.32, 8, size * 0.65, size * 0.32, size * 0.45);
-        g.addColorStop(0, 'rgba(255, 252, 248, 0.75)');
-        g.addColorStop(1, 'rgba(10, 12, 18, 0)');
+        const g = ctx.createRadialGradient(175, 85, 6, 175, 85, 92);
+        g.addColorStop(0, "rgba(255, 252, 248, 0.65)");
+        g.addColorStop(1, "rgba(255, 255, 255, 0)");
         ctx.fillStyle = g;
-        ctx.fillRect(0, 0, size, size);
+        ctx.fillRect(0, 0, 256, 256);
       }
       faces.push(c);
     }
     const cube = new THREE.CubeTexture(faces);
+    cube.encoding = THREE.sRGBEncoding;
     cube.needsUpdate = true;
     return cube;
   }
-  const studioEnvMap = createStudioCubeMap();
+  const studioEnvMap = createStudioEnvMap();
 
-  // Procedural Water Droplet Sprite Texture (detached 2D canvas)
-  function createDropletTexture() {
-    const s = 128;
-    const c = document.createElement('canvas');
-    c.width = s;
-    c.height = s;
-    const ctx = c.getContext('2d');
-    const cx = s * 0.5;
-    const cy = s * 0.5;
+  // Detached 2D water droplet sprite texture (kept in memory)
+  function createDropletSpriteTexture() {
+    const c = document.createElement("canvas");
+    c.width = 128;
+    c.height = 128;
+    const ctx = c.getContext("2d");
+    ctx.clearRect(0, 0, 128, 128);
 
-    // Outer refractive water ring
-    const outer = ctx.createRadialGradient(cx, cy, s * 0.08, cx, cy, s * 0.48);
-    outer.addColorStop(0.0, 'rgba(210, 242, 255, 0.18)');
-    outer.addColorStop(0.58, 'rgba(180, 232, 255, 0.42)');
-    outer.addColorStop(0.80, 'rgba(245, 252, 255, 0.92)');
-    outer.addColorStop(0.93, 'rgba(140, 220, 255, 0.45)');
-    outer.addColorStop(1.0, 'rgba(140, 220, 255, 0.0)');
-    ctx.fillStyle = outer;
+    const body = ctx.createRadialGradient(64, 64, 6, 64, 64, 58);
+    body.addColorStop(0.00, "rgba(205, 232, 255, 0.35)");
+    body.addColorStop(0.45, "rgba(170, 215, 255, 0.25)");
+    body.addColorStop(0.76, "rgba(215, 242, 255, 0.78)");
+    body.addColorStop(0.90, "rgba(255, 255, 255, 0.92)");
+    body.addColorStop(1.00, "rgba(255, 255, 255, 0.0)");
+    ctx.fillStyle = body;
     ctx.beginPath();
-    ctx.arc(cx, cy, s * 0.48, 0, Math.PI * 2);
+    ctx.arc(64, 64, 58, 0, Math.PI * 2);
     ctx.fill();
 
-    // Specular hot-spot upper-right
-    const hot = ctx.createRadialGradient(cx + s * 0.14, cy - s * 0.15, 1, cx + s * 0.14, cy - s * 0.15, s * 0.16);
-    hot.addColorStop(0.0, 'rgba(255, 255, 255, 1.0)');
-    hot.addColorStop(0.45, 'rgba(255, 255, 255, 0.65)');
-    hot.addColorStop(1.0, 'rgba(255, 255, 255, 0.0)');
+    const hot = ctx.createRadialGradient(84, 42, 1, 84, 42, 18);
+    hot.addColorStop(0.0, "rgba(255, 255, 255, 1.0)");
+    hot.addColorStop(0.45, "rgba(240, 250, 255, 0.85)");
+    hot.addColorStop(1.0, "rgba(255, 255, 255, 0.0)");
     ctx.fillStyle = hot;
     ctx.beginPath();
-    ctx.arc(cx + s * 0.14, cy - s * 0.15, s * 0.16, 0, Math.PI * 2);
+    ctx.arc(84, 42, 18, 0, Math.PI * 2);
     ctx.fill();
 
-    // Subtle secondary cyan-magenta rim glint lower-left
-    const rim = ctx.createRadialGradient(cx - s * 0.18, cy + s * 0.16, 1, cx - s * 0.18, cy + s * 0.16, s * 0.14);
-    rim.addColorStop(0.0, 'rgba(165, 245, 255, 0.85)');
-    rim.addColorStop(1.0, 'rgba(165, 245, 255, 0.0)');
-    ctx.fillStyle = rim;
+    const bounce = ctx.createRadialGradient(44, 84, 1, 44, 84, 20);
+    bounce.addColorStop(0.0, "rgba(220, 248, 255, 0.65)");
+    bounce.addColorStop(1.0, "rgba(220, 248, 255, 0.0)");
+    ctx.fillStyle = bounce;
     ctx.beginPath();
-    ctx.arc(cx - s * 0.18, cy + s * 0.16, s * 0.14, 0, Math.PI * 2);
+    ctx.arc(44, 84, 20, 0, Math.PI * 2);
     ctx.fill();
 
     const tex = new THREE.CanvasTexture(c);
     tex.needsUpdate = true;
     return tex;
   }
-  const dropletTexture = createDropletTexture();
+  const dropletSpriteTex = createDropletSpriteTexture();
 
-  // Three-Point Studio Lighting + Strong Dual Rim Lights
-  const ambientLight = new THREE.AmbientLight(0x1f2636, 0.55);
-  scene.add(ambientLight);
+  // Studio Three-Point + Dual Cool-White & Cyan/Magenta Rim Lights
+  const hemiLight = new THREE.HemisphereLight(0x465878, 0x0c1018, 0.55);
+  scene.add(hemiLight);
 
-  const keyLight = new THREE.DirectionalLight(0xffffff, 1.4);
-  keyLight.position.set(4.5, 5.5, 6.5);
+  const keyLight = new THREE.DirectionalLight(0xf6f9ff, 2.3);
+  keyLight.position.set(4.5, 6.2, 5.2);
   scene.add(keyLight);
 
-  const fillLight = new THREE.DirectionalLight(0x88aadd, 0.55);
-  fillLight.position.set(-5.5, 1.0, 5.0);
+  const fillLight = new THREE.DirectionalLight(0x88a8dc, 0.70);
+  fillLight.position.set(-5.0, -2.5, 4.5);
   scene.add(fillLight);
 
-  const rimLeftCyan = new THREE.DirectionalLight(0x7eeeff, 2.3);
-  rimLeftCyan.position.set(-5.8, 3.2, -4.8);
-  scene.add(rimLeftCyan);
+  const topRimLight = new THREE.DirectionalLight(0xeef8ff, 2.7);
+  topRimLight.position.set(-1.5, 6.0, -5.2);
+  scene.add(topRimLight);
 
-  const rimRightMagenta = new THREE.DirectionalLight(0xffb8f0, 1.9);
-  rimRightMagenta.position.set(5.8, 2.5, -4.8);
-  scene.add(rimRightMagenta);
+  const cyanRimLight = new THREE.DirectionalLight(0x36e6ff, 2.4);
+  cyanRimLight.position.set(6.0, 1.8, -4.5);
+  scene.add(cyanRimLight);
 
-  const topBackLight = new THREE.PointLight(0xeef8ff, 1.2, 16);
-  topBackLight.position.set(0, 4.4, -3.2);
-  scene.add(topBackLight);
+  const magentaRimLight = new THREE.DirectionalLight(0xff38b8, 2.1);
+  magentaRimLight.position.set(-6.0, -1.6, -4.5);
+  scene.add(magentaRimLight);
 
-  // Build Teardrop Parametric BufferGeometry (shared topology)
-  function createTeardropGeometry(radialSegs, heightSegs, scale) {
+  // ---------------------------------------------------------------------------
+  // Common GLSL Studio Lighting Snippet
+  // ---------------------------------------------------------------------------
+  const GLSL_STUDIO_COMMON = `
+    vec3 toSRGB(vec3 c) {
+      return pow(clamp(c, 0.0, 1.0), vec3(1.0 / 2.2));
+    }
+
+    vec3 evalStudioRims(vec3 N, vec3 V, float specPower, float fresnelPow) {
+      float ndv = clamp(dot(N, V), 0.0, 1.0);
+      float fres = pow(max(1.0 - ndv, 0.0001), fresnelPow);
+
+      vec3 lKey = normalize(vec3(0.50, 0.69, 0.58));
+      vec3 lTopRim = normalize(vec3(-0.18, 0.74, -0.64));
+      vec3 lCyan = normalize(vec3(0.77, 0.23, -0.58));
+      vec3 lMag = normalize(vec3(-0.79, -0.21, -0.58));
+
+      vec3 hKey = normalize(lKey + V);
+      vec3 hTop = normalize(lTopRim + V);
+      vec3 hCyan = normalize(lCyan + V);
+      vec3 hMag = normalize(lMag + V);
+
+      float sKey = pow(max(dot(N, hKey), 0.0001), specPower);
+      float sTop = pow(max(dot(N, hTop), 0.0001), specPower * 0.75);
+      float sCyan = pow(max(dot(N, hCyan), 0.0001), specPower * 0.55);
+      float sMag = pow(max(dot(N, hMag), 0.0001), specPower * 0.55);
+
+      float rimCyan = fres * smoothstep(-0.25, 0.85, N.x * 0.85 + N.y * 0.25);
+      float rimMag  = fres * smoothstep(-0.25, 0.85, -N.x * 0.85 - N.y * 0.20);
+      float rimTop  = fres * smoothstep(-0.10, 0.90, N.y);
+
+      vec3 col = vec3(0.0);
+      col += vec3(0.98, 0.99, 1.00) * (sKey * 1.45 + sTop * 0.85 + rimTop * 0.75);
+      col += vec3(0.20, 0.90, 1.00) * (sCyan * 0.65 + rimCyan * 0.95);
+      col += vec3(1.00, 0.24, 0.74) * (sMag * 0.60 + rimMag * 0.85);
+      return col;
+    }
+  `;
+
+  // ---------------------------------------------------------------------------
+  // Parametric Teardrop Grid Builder
+  // ---------------------------------------------------------------------------
+  function buildTeardropGeometry(segsTheta, segsPhi, scale, closeTop) {
     const geom = new THREE.BufferGeometry();
-    const cols = radialSegs + 1;
-    const rows = heightSegs + 1;
-    const positions = new Float32Array(cols * rows * 3);
-    const normals = new Float32Array(cols * rows * 3);
-    const uvs = new Float32Array(cols * rows * 2);
+    const cols = segsPhi + 1;
+    const rows = segsTheta + 1;
+    const vertCount = rows * cols;
+    const positions = new Float32Array(vertCount * 3);
+    const normals = new Float32Array(vertCount * 3);
+    const params = new Float32Array(vertCount * 2);
     const indices = [];
 
-    const eps = 0.002;
-    for (let j = 0; j < rows; j++) {
-      const v = j / heightSegs;
-      const y = teardropY(v) * scale;
-      const r = teardropRadius(v) * scale;
+    const eps = 1e-3;
+    for (let i = 0; i <= segsTheta; i++) {
+      const theta = (i / segsTheta) * Math.PI;
+      const p0 = balloonProfile(theta, closeTop);
+      const pM = balloonProfile(Math.max(0.0, theta - eps), closeTop);
+      const pP = balloonProfile(Math.min(Math.PI, theta + eps), closeTop);
+      const dr = (pP.r - pM.r) / (2 * eps);
+      const dy = (pP.y - pM.y) / (2 * eps);
+      const nLen = Math.hypot(dy, dr) || 1.0;
+      const nr = dy / nLen;
+      const ny = -dr / nLen;
 
-      const v0 = clamp(v - eps, 0, 1);
-      const v1 = clamp(v + eps, 0, 1);
-      const dy = (teardropY(v1) - teardropY(v0)) * scale;
-      const dr = (teardropRadius(v1) - teardropRadius(v0)) * scale;
-      const len = Math.hypot(dy, dr) || 1;
-      const ny = -dr / len;
-      const nr = dy / len;
+      for (let j = 0; j <= segsPhi; j++) {
+        const phi = (j / segsPhi) * Math.PI * 2.0;
+        const cp = Math.cos(phi);
+        const sp = Math.sin(phi);
+        const idx = i * cols + j;
 
-      for (let i = 0; i < cols; i++) {
-        const u = i / radialSegs;
-        const theta = u * Math.PI * 2.0;
-        const ct = Math.cos(theta);
-        const st = Math.sin(theta);
+        positions[idx * 3] = p0.r * scale * cp;
+        positions[idx * 3 + 1] = p0.y * scale;
+        positions[idx * 3 + 2] = p0.r * scale * sp;
 
-        const idx3 = (j * cols + i) * 3;
-        positions[idx3] = r * ct;
-        positions[idx3 + 1] = y;
-        positions[idx3 + 2] = r * st;
+        normals[idx * 3] = nr * cp;
+        normals[idx * 3 + 1] = ny;
+        normals[idx * 3 + 2] = nr * sp;
 
-        normals[idx3] = nr * ct;
-        normals[idx3 + 1] = ny;
-        normals[idx3 + 2] = nr * st;
-
-        const idx2 = (j * cols + i) * 2;
-        uvs[idx2] = u;
-        uvs[idx2 + 1] = v;
+        params[idx * 2] = theta;
+        params[idx * 2 + 1] = phi;
       }
     }
 
-    for (let j = 0; j < heightSegs; j++) {
-      for (let i = 0; i < radialSegs; i++) {
-        const a = j * cols + i;
-        const b = a + 1;
-        const c = a + cols;
-        const d = c + 1;
-        indices.push(a, b, c);
-        indices.push(b, d, c);
+    for (let i = 0; i < segsTheta; i++) {
+      for (let j = 0; j < segsPhi; j++) {
+        const a = i * cols + j;
+        const b = (i + 1) * cols + j;
+        const c = (i + 1) * cols + (j + 1);
+        const d = i * cols + (j + 1);
+        indices.push(a, b, d);
+        indices.push(b, c, d);
       }
     }
 
-    geom.setAttribute('position', new THREE.BufferAttribute(positions, 3));
-    geom.setAttribute('normal', new THREE.BufferAttribute(normals, 3));
-    geom.setAttribute('uv', new THREE.BufferAttribute(uvs, 2));
     geom.setIndex(indices);
+    geom.setAttribute("position", new THREE.BufferAttribute(positions, 3));
+    geom.setAttribute("normal", new THREE.BufferAttribute(normals, 3));
+    geom.setAttribute("aParam", new THREE.BufferAttribute(params, 2));
     return geom;
   }
 
-  // Suspension Tether & Knot
-  const tetherGeom = new THREE.CylinderGeometry(0.011, 0.011, 5.2, 12);
-  tetherGeom.translate(0, 2.6, 0);
+  // ---------------------------------------------------------------------------
+  // 1. Tether & Crimson Knot Collar
+  // ---------------------------------------------------------------------------
   const tetherMat = new THREE.MeshStandardMaterial({
-    color: 0xd8dce6,
-    roughness: 0.55,
-    metalness: 0.1
+    color: 0x262b36,
+    roughness: 0.75,
+    metalness: 0.15,
+    envMap: studioEnvMap
   });
+  const tetherGeom = new THREE.CylinderGeometry(0.014, 0.014, 4.2, 10);
+  tetherGeom.translate(0, 2.1, 0);
   const tetherMesh = new THREE.Mesh(tetherGeom, tetherMat);
-  tetherMesh.position.set(0, Y_MAX, 0);
   scene.add(tetherMesh);
 
-  const knotGeom = new THREE.TorusGeometry(0.052, 0.024, 14, 24);
-  const knotMat = new THREE.MeshPhysicalMaterial({
+  const knotMat = new THREE.MeshStandardMaterial({
     color: 0xe61c24,
-    roughness: 0.22,
-    metalness: 0.02,
-    clearcoat: 0.9,
-    clearcoatRoughness: 0.15,
-    envMap: studioEnvMap
-  });
-  const knotMesh = new THREE.Mesh(knotGeom, knotMat);
-  knotMesh.rotation.x = Math.PI * 0.5;
-  knotMesh.position.set(0, Y_MAX + 0.015, 0);
-  scene.add(knotMesh);
-
-  // Snapped Crimson Latex Remnant Bunch near Tether (appears as skin finishes retracting)
-  const remnantGeom = createTeardropGeometry(48, 24, 0.22);
-  const remnantMat = new THREE.MeshPhysicalMaterial({
-    color: 0xd4161e,
-    roughness: 0.26,
-    metalness: 0.0,
-    clearcoat: 0.85,
-    clearcoatRoughness: 0.18,
+    roughness: 0.16,
+    metalness: 0.04,
     envMap: studioEnvMap,
-    side: THREE.DoubleSide
+    envMapIntensity: 1.25
   });
-  // Wrinkle the remnant deterministically
-  {
-    const pos = remnantGeom.attributes.position;
-    for (let i = 0; i < pos.count; i++) {
-      const px = pos.getX(i);
-      const py = pos.getY(i);
-      const pz = pos.getZ(i);
-      const ang = Math.atan2(pz, px);
-      const fold = 1.0 + 0.35 * Math.sin(ang * 7.0 + py * 12.0) + 0.18 * Math.cos(ang * 13.0 - py * 8.0);
-      pos.setXYZ(i, px * fold, (py - Y_MIN * 0.22) * 0.55, pz * fold);
-    }
-    remnantGeom.computeVertexNormals();
-  }
-  const remnantMesh = new THREE.Mesh(remnantGeom, remnantMat);
-  remnantMesh.position.set(0, Y_MAX - 0.18, 0);
-  remnantMesh.visible = false;
-  scene.add(remnantMesh);
+  const knotGroup = new THREE.Group();
+  const knotCollar = new THREE.Mesh(new THREE.TorusGeometry(0.056, 0.028, 14, 28), knotMat);
+  knotCollar.rotation.x = Math.PI * 0.5;
+  knotGroup.add(knotCollar);
 
-  // Main Crimson Latex Shell Shader (Elastic Contact + Rapid Tear Wave + Curled Rim + Fresnel + SSS)
-  const latexGeom = createTeardropGeometry(128, 96, 1.0);
-  const latexUniforms = {
-    uSimTime: { value: 0.0 },
-    uTearProgress: { value: 0.0 },
-    uDentDepth: { value: 0.0 },
-    uRipplePhase: { value: 0.0 },
-    uImpactPoint: { value: new THREE.Vector3(X_WALL, Y_BULLET, 0.0) },
-    uEnvMap: { value: studioEnvMap }
-  };
+  const knotDrop = new THREE.Mesh(new THREE.ConeGeometry(0.072, 0.11, 18), knotMat);
+  knotDrop.position.y = 0.05;
+  knotDrop.rotation.x = Math.PI;
+  knotGroup.add(knotDrop);
 
-  const latexMatBase = {
-    uniforms: latexUniforms,
-    transparent: true,
-    vertexShader: `
-      uniform float uSimTime;
-      uniform float uTearProgress;
-      uniform float uDentDepth;
-      uniform float uRipplePhase;
-      uniform vec3 uImpactPoint;
+  const knotTip = new THREE.Mesh(new THREE.SphereGeometry(0.042, 14, 12), knotMat);
+  knotTip.position.y = 0.07;
+  knotGroup.add(knotTip);
+  scene.add(knotGroup);
 
-      varying vec3 vWorldPos;
-      varying vec3 vNormal;
-      varying vec2 vUv;
-      varying float vTearDist;
-      varying float vEdgeBand;
-
-      float crackWave(vec3 dir) {
-        float a = atan(dir.z, dir.y);
-        float w = 0.085 * sin(a * 6.0 + 0.4)
-                + 0.045 * cos(a * 11.0 - 1.2)
-                + 0.025 * sin(a * 17.0 + 2.1);
-        return w;
-      }
-
-      void main() {
-        vUv = uv;
-        vec3 pos = position;
-        vec3 norm = normalize(normal);
-
-        vec3 toImpact = pos - uImpactPoint;
-        float dist = length(toImpact);
-
-        // Elastic indentation (1.000s - 1.140s)
-        float dentMask = exp(-(dist * dist) / 0.075);
-        pos.x -= uDentDepth * dentMask;
-
-        // Concentric surface tension ripples
-        float rippleEnv = smoothstep(0.0, 0.08, dist) * exp(-dist * 1.4);
-        float ripple = sin(dist * 26.0 - uRipplePhase * 22.0) * 0.022 * rippleEnv * step(0.001, uRipplePhase);
-        pos += norm * ripple;
-
-        // Geodesic-like angular + spatial distance from puncture site
-        vec3 dirFromCenter = normalize(pos - vec3(0.0, -0.14, 0.0));
-        vec3 impDir = normalize(uImpactPoint - vec3(0.0, -0.14, 0.0));
-        float angDist = acos(clamp(dot(dirFromCenter, impDir), -1.0, 1.0));
-        vec3 rel = normalize(dirFromCenter - impDir * dot(dirFromCenter, impDir) + vec3(0.0, 0.0001, 0.0001));
-        float noiseOffset = crackWave(rel);
-
-        // Tear wave front (races across balloon 4x faster than fluid motion)
-        float tearFront = uTearProgress * 3.45;
-        float signedDist = (angDist + noiseOffset) - tearFront;
-        vTearDist = signedDist;
-
-        // Curled / snapping elastic rubber lip along the active tear front
-        float lipWidth = 0.24;
-        float lipMask = smoothstep(lipWidth, 0.0, signedDist) * step(0.001, uTearProgress);
-        vEdgeBand = lipMask;
-
-        if (uTearProgress > 0.001) {
-          // Curl outward and snap upward toward tether
-          vec3 snapDir = normalize(vec3(0.0, 1.22, 0.0) - pos + vec3(0.0001));
-          pos += norm * (lipMask * 0.14 * sin(lipMask * 1.5708));
-          pos += snapDir * (lipMask * 0.16 * smoothstep(0.05, 0.85, uTearProgress));
-          // Global upward contraction as the skin nears full retraction
-          float retractUp = smoothstep(0.42, 1.0, uTearProgress);
-          pos.y = mix(pos.y, 1.20 - (1.20 - pos.y) * 0.35, retractUp * 0.72);
-          pos.xz *= mix(1.0, 0.45, retractUp * 0.65);
-        }
-
-        vec4 worldPosition = modelMatrix * vec4(pos, 1.0);
-        vWorldPos = worldPosition.xyz;
-        vNormal = normalize(mat3(modelMatrix) * norm);
-        gl_Position = projectionMatrix * viewMatrix * worldPosition;
-      }
-    `,
-    fragmentShader: `
-      uniform float uTearProgress;
-      uniform samplerCube uEnvMap;
-
-      varying vec3 vWorldPos;
-      varying vec3 vNormal;
-      varying vec2 vUv;
-      varying float vTearDist;
-      varying float vEdgeBand;
-
-      void main() {
-        if (uTearProgress > 0.001 && vTearDist < 0.0) {
-          discard;
-        }
-
-        vec3 N = normalize(vNormal);
-        if (!gl_FrontFacing) N = -N;
-        vec3 V = normalize(cameraPosition - vWorldPos);
-        float NdotV = clamp(dot(N, V), 0.0, 1.0);
-
-        // Fresnel term for high-gloss studio latex
-        float fresnel = pow(1.0 - NdotV, 3.0);
-
-        // Studio three-point + dual rim lighting
-        vec3 Lkey = normalize(vec3(4.5, 5.5, 6.5));
-        vec3 Lcyan = normalize(vec3(-5.8, 3.2, -4.8));
-        vec3 Lmag = normalize(vec3(5.8, 2.5, -4.8));
-
-        float diffKey = max(dot(N, Lkey), 0.0);
-        // Subsurface wrap lighting
-        float sss = pow(clamp(dot(-Lkey, V) * 0.5 + 0.5, 0.0, 1.0), 2.0) * 0.32
-                  + max(0.0, (dot(N, Lkey) + 0.45) / 1.45) * 0.28;
-
-        // Specular lobes
-        vec3 Hkey = normalize(Lkey + V);
-        vec3 Hcyan = normalize(Lcyan + V);
-        vec3 Hmag = normalize(Lmag + V);
-        float specKey = pow(max(dot(N, Hkey), 0.0), 110.0) * 1.45;
-        float specCyan = pow(max(dot(N, Hcyan), 0.0), 75.0) * 1.25;
-        float specMag = pow(max(dot(N, Hmag), 0.0), 75.0) * 1.05;
-
-        // Studio softbox reflection
-        vec3 R = reflect(-V, N);
-        vec3 env = textureCube(uEnvMap, R).rgb;
-
-        // Deep crimson red #e61c24 base with subtle subsurface translucency & glowing SSS
-        vec3 crimson = vec3(0.902, 0.110, 0.141);
-        vec3 darkRed = vec3(0.32, 0.02, 0.04);
-        vec3 sssRed = vec3(1.0, 0.24, 0.18);
-
-        vec3 col = mix(darkRed, crimson, 0.42 + 0.58 * diffKey);
-        col += sssRed * sss * 0.72;
-        col += env * (0.14 + 0.65 * fresnel);
-        col += vec3(1.0) * specKey;
-        col += vec3(0.55, 0.94, 1.0) * (specCyan + fresnel * 0.34 * max(0.0, -N.x));
-        col += vec3(1.0, 0.75, 0.95) * (specMag + fresnel * 0.30 * max(0.0, N.x));
-        if (!gl_FrontFacing) col *= 0.72;
-
-        // Thickened curled rubber edge highlight along tear seam
-        float edgeGlow = smoothstep(0.16, 0.0, vTearDist) * step(0.001, uTearProgress);
-        col = mix(col, vec3(0.98, 0.26, 0.24), edgeGlow * 0.55);
-
-        float alpha = mix(0.92, 0.99, fresnel);
-        alpha = max(alpha, edgeGlow * 0.98);
-        // Smooth fade out as final remnant snaps onto tether
-        float endFade = 1.0 - smoothstep(0.90, 1.0, uTearProgress);
-        alpha *= endFade;
-        if (alpha < 0.02) discard;
-
-        gl_FragColor = vec4(col, alpha);
-      }
-    `
-  };
-  const latexBackMat = new THREE.ShaderMaterial(Object.assign({}, latexMatBase, {
-    side: THREE.BackSide,
-    depthWrite: true
-  }));
-  const latexFrontMat = new THREE.ShaderMaterial(Object.assign({}, latexMatBase, {
-    side: THREE.FrontSide,
-    depthWrite: false
-  }));
-  const latexBackMesh = new THREE.Mesh(latexGeom, latexBackMat);
-  latexBackMesh.renderOrder = 1;
-  scene.add(latexBackMesh);
-
-  const latexMesh = new THREE.Mesh(latexGeom, latexFrontMat);
-  latexMesh.renderOrder = 4;
-  scene.add(latexMesh);
-
-  // Free-Standing Water Core Shell (Inertial Stasis -> Cavitation Bulge -> Rayleigh-Taylor Breakup)
-  const waterGeom = createTeardropGeometry(128, 96, 0.985);
-  const waterUniforms = {
-    uSimTime: { value: 0.0 },
-    uCavitation: { value: 0.0 },
-    uEntryCrown: { value: 0.0 },
-    uExitBulge: { value: 0.0 },
-    uBreakup: { value: 0.0 },
-    uGravityFall: { value: 0.0 },
-    uBulletX: { value: X_WALL },
-    uEnvMap: { value: studioEnvMap }
-  };
-
-  const waterMat = new THREE.ShaderMaterial({
-    uniforms: waterUniforms,
-    transparent: true,
-    side: THREE.DoubleSide,
-    depthWrite: false,
-    vertexShader: `
-      uniform float uSimTime;
-      uniform float uCavitation;
-      uniform float uEntryCrown;
-      uniform float uExitBulge;
-      uniform float uBreakup;
-      uniform float uGravityFall;
-      uniform float uBulletX;
-
-      varying vec3 vWorldPos;
-      varying vec3 vNormal;
-      varying float vBreakNoise;
-      varying float vCrown;
-
-      float hash3(vec3 p) {
-        p = fract(p * vec3(443.897, 441.423, 437.195));
-        p += dot(p, p.yzx + 19.19);
-        return fract((p.x + p.y) * p.z);
-      }
-
-      float fieldNoise(vec3 p) {
-        return sin(p.x * 4.3 + p.y * 2.1) * cos(p.y * 5.1 - p.z * 3.7) * 0.5
-             + sin(p.z * 7.2 + p.x * 3.4) * cos(p.x * 6.1 + p.y * 4.5) * 0.3
-             + sin(p.y * 11.3 - p.z * 9.4) * 0.2;
-      }
-
-      void main() {
-        vec3 pos = position;
-        vec3 norm = normalize(normal);
-
-        // Entry wound crown flare (+X around y = -0.18)
-        float dEntry = length(pos - vec3(0.98, -0.18, 0.0));
-        float crownArg = (dEntry - 0.24 * (0.4 + uEntryCrown)) / 0.14;
-        float crownRing = exp(-(crownArg * crownArg)) * uEntryCrown;
-        float entryHole = exp(-(dEntry * dEntry) / 0.045) * uEntryCrown;
-        pos += vec3(0.32, 0.0, 0.0) * crownRing + norm * (0.18 * crownRing);
-        pos -= vec3(0.14, 0.0, 0.0) * entryHole;
-        vCrown = crownRing;
-
-        // Internal cavitation radial expansion (2.4s - 5.0s)
-        float yArg = (pos.y + 0.18) / 0.72;
-        float yBand = exp(-(yArg * yArg));
-        pos += norm * (uCavitation * 0.18 * yBand);
-
-        // Exit puncture bulge (-X around y = -0.18)
-        float dExit = length(pos - vec3(-0.98, -0.18, 0.0));
-        float exitMask = exp(-(dExit * dExit) / 0.16) * uExitBulge;
-        pos.x -= exitMask * 0.42;
-        pos += norm * (exitMask * 0.12);
-
-        // Fine capillary surface ripples radiating from puncture
-        float capWave = sin(dEntry * 22.0 - uSimTime * 9.5) * 0.012 * exp(-dEntry * 0.85) * smoothstep(1.14, 1.8, uSimTime);
-        pos += norm * capWave;
-
-        // Rayleigh-Taylor & Plateau-Rayleigh breakup deformation (5.0s - 8.0s)
-        float fn = fieldNoise(pos * 1.45);
-        vBreakNoise = fn;
-        if (uBreakup > 0.001) {
-          float rtSpike = max(fn, -0.35) * uBreakup * 0.72;
-          pos += norm * (uBreakup * 0.42 + rtSpike);
-          pos.y -= uGravityFall * (0.85 + 0.35 * (0.5 - pos.y * 0.3));
-        }
-
-        vec4 worldPosition = modelMatrix * vec4(pos, 1.0);
-        vWorldPos = worldPosition.xyz;
-        vNormal = normalize(mat3(modelMatrix) * norm);
-        gl_Position = projectionMatrix * viewMatrix * worldPosition;
-      }
-    `,
-    fragmentShader: `
-      uniform float uSimTime;
-      uniform float uBreakup;
-      uniform samplerCube uEnvMap;
-
-      varying vec3 vWorldPos;
-      varying vec3 vNormal;
-      varying float vBreakNoise;
-      varying float vCrown;
-
-      void main() {
-        // Perforate water sheets into cascading fluid ribbons during Rayleigh-Taylor breakup
-        float holeThreshold = mix(-1.2, 0.62, uBreakup);
-        float sheet = vBreakNoise - holeThreshold;
-        if (uBreakup > 0.02 && sheet < 0.0) {
-          discard;
-        }
-
-        vec3 N = normalize(vNormal);
-        if (!gl_FrontFacing) N = -N;
-        vec3 V = normalize(cameraPosition - vWorldPos);
-        float NdotV = clamp(dot(N, V), 0.0, 1.0);
-
-        // Water refractive Fresnel (Schlick F0 ~ 0.02 -> edge spike)
-        float fresnel = 0.02 + 0.98 * pow(1.0 - NdotV, 4.2);
-
-        vec3 Lkey = normalize(vec3(4.5, 5.5, 6.5));
-        vec3 Lcyan = normalize(vec3(-5.8, 3.2, -4.8));
-        vec3 Lmag = normalize(vec3(5.8, 2.5, -4.8));
-
-        vec3 R = reflect(-V, N);
-        vec3 env = textureCube(uEnvMap, R).rgb;
-
-        vec3 Hkey = normalize(Lkey + V);
-        vec3 Hcyan = normalize(Lcyan + V);
-        vec3 Hmag = normalize(Lmag + V);
-
-        float specKey = pow(max(dot(N, Hkey), 0.0), 180.0) * 1.9;
-        float specCyan = pow(max(dot(N, Hcyan), 0.0), 110.0) * 1.65;
-        float specMag = pow(max(dot(N, Hmag), 0.0), 110.0) * 1.35;
-
-        // Crisp water optical tint + studio rim highlights
-        vec3 waterTint = vec3(0.55, 0.84, 0.96);
-        vec3 col = waterTint * (0.18 + 0.35 * NdotV) + env * (0.38 + 0.85 * fresnel);
-        col += vec3(1.0) * specKey;
-        col += vec3(0.45, 0.95, 1.0) * (specCyan + fresnel * 0.72 * max(0.0, -N.x + 0.25));
-        col += vec3(1.0, 0.72, 0.96) * (specMag + fresnel * 0.55 * max(0.0, N.x + 0.25));
-        col += vec3(0.85, 0.97, 1.0) * vCrown * 0.45;
-
-        // Meniscus highlight along breaking sheet edges
-        float meniscus = smoothstep(0.14, 0.0, sheet) * smoothstep(0.02, 0.25, uBreakup);
-        col += vec3(0.85, 0.96, 1.0) * meniscus * 0.65;
-
-        float alpha = mix(0.24, 0.92, fresnel);
-        alpha = max(alpha, clamp(specKey + specCyan + specMag, 0.0, 0.95));
-        // Smoothly dissolve main sheet into droplets by t = 6.4s
-        float sheetFade = 1.0 - smoothstep(0.65, 1.0, uBreakup);
-        alpha *= sheetFade;
-        if (alpha < 0.015) discard;
-
-        gl_FragColor = vec4(col, alpha);
-      }
-    `
-  });
-  const waterMesh = new THREE.Mesh(waterGeom, waterMat);
-  waterMesh.renderOrder = 3;
-  scene.add(waterMesh);
-
-  // Internal Cavitation Vapor Tunnel Mesh (2.0s - 5.2s)
-  const cavSegsX = 48;
-  const cavSegsR = 32;
-  const cavGeom = new THREE.CylinderGeometry(1, 1, 2.0, cavSegsR, cavSegsX, true);
-  cavGeom.rotateZ(Math.PI * 0.5); // Align cylinder along X axis [-1, +1]
-  const cavUniforms = {
-    uSimTime: { value: 0.0 },
-    uCavStartX: { value: X_WALL },
-    uCavEndX: { value: X_WALL },
-    uCavIntensity: { value: 0.0 },
-    uCavCollapse: { value: 0.0 }
-  };
-  const cavMat = new THREE.ShaderMaterial({
-    uniforms: cavUniforms,
-    transparent: true,
-    side: THREE.DoubleSide,
-    depthWrite: false,
-    blending: THREE.AdditiveBlending,
-    vertexShader: `
-      uniform float uSimTime;
-      uniform float uCavStartX;
-      uniform float uCavEndX;
-      uniform float uCavIntensity;
-      uniform float uCavCollapse;
-
-      varying vec2 vUv;
-      varying vec3 vNormal;
-      varying vec3 vWorldPos;
-      varying float vAlong;
-
-      void main() {
-        vUv = uv;
-        // Original x in [-1, 1] -> map to [uCavEndX, uCavStartX]
-        float tAlong = (position.x + 1.0) * 0.5; // 0 = bullet tail, 1 = entry hole
-        vAlong = tAlong;
-        float worldX = mix(uCavEndX, uCavStartX, tAlong);
-
-        // Cavitation bubble spindle profile: narrows at bullet tip, swells in wake, flares at entry
-        float spindle = max(sin(tAlong * 3.14159265), 0.0);
-        float pulse = 1.0 + 0.14 * sin(tAlong * 18.0 - uSimTime * 11.0);
-        float radius = (0.08 + 0.34 * pow(spindle, 0.65) * pulse) * uCavIntensity;
-        radius *= (1.0 + uCavCollapse * 0.55);
-
-        vec3 pos = vec3(worldX, position.y * radius - 0.18, position.z * radius);
-        vec4 worldPosition = modelMatrix * vec4(pos, 1.0);
-        vWorldPos = worldPosition.xyz;
-        vNormal = normalize(mat3(modelMatrix) * normal);
-        gl_Position = projectionMatrix * viewMatrix * worldPosition;
-      }
-    `,
-    fragmentShader: `
-      uniform float uSimTime;
-      uniform float uCavIntensity;
-      uniform float uCavCollapse;
-
-      varying vec2 vUv;
-      varying vec3 vNormal;
-      varying vec3 vWorldPos;
-      varying float vAlong;
-
-      void main() {
-        if (uCavIntensity < 0.01) discard;
-        vec3 N = normalize(vNormal);
-        vec3 V = normalize(cameraPosition - vWorldPos);
-        float fresnel = pow(clamp(1.0 - abs(dot(N, V)), 0.0, 1.0), 2.2);
-
-        // Swirling frothy vapor striations
-        float streak = 0.55 + 0.45 * sin(vUv.x * 42.0 + vAlong * 16.0 - uSimTime * 14.0)
-                            * cos(vUv.x * 23.0 - vAlong * 28.0);
-        vec3 vaporCol = mix(vec3(0.45, 0.85, 1.0), vec3(0.95, 0.99, 1.0), fresnel);
-        float alpha = (0.14 + 0.48 * fresnel) * streak * uCavIntensity * (1.0 - uCavCollapse * 0.85);
-        alpha *= smoothstep(0.0, 0.08, vAlong) * smoothstep(1.0, 0.90, vAlong);
-        if (alpha < 0.01) discard;
-
-        gl_FragColor = vec4(vaporCol, alpha);
-      }
-    `
-  });
-  const cavMesh = new THREE.Mesh(cavGeom, cavMat);
-  cavMesh.renderOrder = 2;
-  scene.add(cavMesh);
-
-  // Conical Copper/Brass Projectile + Supersonic Nose Shock Halo
+  // ---------------------------------------------------------------------------
+  // 2. Copper / Brass Conical Projectile
+  // ---------------------------------------------------------------------------
   const bulletGroup = new THREE.Group();
-  const bulletProfile = [
-    new THREE.Vector2(0.000, 0.24),   // Spitzer tip (+Y in Lathe before rotateZ)
-    new THREE.Vector2(0.024, 0.17),
-    new THREE.Vector2(0.056, 0.09),
-    new THREE.Vector2(0.082, 0.01),
-    new THREE.Vector2(0.090, -0.04),
-    new THREE.Vector2(0.090, -0.10),  // Cannelure start
-    new THREE.Vector2(0.082, -0.115),
-    new THREE.Vector2(0.090, -0.13),  // Cannelure end
-    new THREE.Vector2(0.090, -0.19),
-    new THREE.Vector2(0.072, -0.24),  // Boat-tail base
-    new THREE.Vector2(0.000, -0.24)
+  const bulletSpinGroup = new THREE.Group();
+  bulletGroup.add(bulletSpinGroup);
+
+  const bulletProfilePts = [
+    new THREE.Vector2(0.0001, 0.00),
+    new THREE.Vector2(0.024, 0.045),
+    new THREE.Vector2(0.056, 0.125),
+    new THREE.Vector2(0.086, 0.225),
+    new THREE.Vector2(0.103, 0.335),
+    new THREE.Vector2(0.106, 0.420),
+    new THREE.Vector2(0.095, 0.435),
+    new THREE.Vector2(0.106, 0.450),
+    new THREE.Vector2(0.106, 0.555),
+    new THREE.Vector2(0.096, 0.570),
+    new THREE.Vector2(0.106, 0.585),
+    new THREE.Vector2(0.106, 0.635),
+    new THREE.Vector2(0.084, 0.690),
+    new THREE.Vector2(0.0001, 0.692)
   ];
-  const bulletGeom = new THREE.LatheGeometry(bulletProfile, 32);
-  bulletGeom.rotateZ(Math.PI * 0.5); // Tip points toward -X at x = +0.24? Wait: rotateZ(+PI/2) maps +Y -> -X!
-  // Shift so nose tip is at x = 0 in bulletGroup local space
-  bulletGeom.translate(0.24, 0, 0);
+  const bulletGeom = new THREE.LatheGeometry(bulletProfilePts, 40);
+  bulletGeom.rotateZ(-Math.PI * 0.5);
 
-  const bulletMat = new THREE.MeshStandardMaterial({
-    color: 0xd9873e,
-    metalness: 0.92,
-    roughness: 0.17,
-    envMap: studioEnvMap
+  const copperMat = new THREE.MeshStandardMaterial({
+    color: 0xd98042,
+    metalness: 0.94,
+    roughness: 0.20,
+    envMap: studioEnvMap,
+    envMapIntensity: 1.55
   });
-  const bulletMesh = new THREE.Mesh(bulletGeom, bulletMat);
-  bulletGroup.add(bulletMesh);
+  const bulletMesh = new THREE.Mesh(bulletGeom, copperMat);
+  bulletSpinGroup.add(bulletMesh);
 
-  // Subtle translucent Mach cone around nose during high-speed flight
-  const shockGeom = new THREE.ConeGeometry(0.42, 1.35, 32, 1, true);
-  shockGeom.rotateZ(Math.PI * 0.5); // Apex at -X? Cone apex is +Y -> rotateZ(+PI/2) puts apex at -X!
-  shockGeom.translate(0.66, 0, 0);
-  const shockMat = new THREE.ShaderMaterial({
-    uniforms: { uIntensity: { value: 1.0 } },
+  const brassBaseMat = new THREE.MeshStandardMaterial({
+    color: 0xdfb15b,
+    metalness: 0.92,
+    roughness: 0.24,
+    envMap: studioEnvMap,
+    envMapIntensity: 1.4
+  });
+  const bulletBaseRing = new THREE.Mesh(new THREE.CylinderGeometry(0.106, 0.085, 0.055, 32), brassBaseMat);
+  bulletBaseRing.rotation.z = -Math.PI * 0.5;
+  bulletBaseRing.position.x = 0.66;
+  bulletSpinGroup.add(bulletBaseRing);
+
+  const machConeGeom = new THREE.ConeGeometry(0.42, 1.35, 36, 1, true);
+  machConeGeom.rotateZ(-Math.PI * 0.5);
+  machConeGeom.translate(0.72, 0, 0);
+  const machConeMat = new THREE.ShaderMaterial({
     transparent: true,
     depthWrite: false,
     side: THREE.DoubleSide,
-    blending: THREE.AdditiveBlending,
+    uniforms: {
+      uAlpha: { value: 0.14 }
+    },
     vertexShader: `
       varying vec2 vUv;
-      varying vec3 vNormal;
-      varying vec3 vWorldPos;
+      varying vec3 vNormalW;
+      varying vec3 vPosW;
       void main() {
         vUv = uv;
+        vNormalW = normalize(mat3(modelMatrix) * normal);
         vec4 wp = modelMatrix * vec4(position, 1.0);
-        vWorldPos = wp.xyz;
-        vNormal = normalize(mat3(modelMatrix) * normal);
+        vPosW = wp.xyz;
         gl_Position = projectionMatrix * viewMatrix * wp;
       }
     `,
     fragmentShader: `
-      uniform float uIntensity;
+      uniform float uAlpha;
       varying vec2 vUv;
-      varying vec3 vNormal;
-      varying vec3 vWorldPos;
+      varying vec3 vNormalW;
+      varying vec3 vPosW;
       void main() {
-        vec3 V = normalize(cameraPosition - vWorldPos);
-        float edge = pow(clamp(1.0 - abs(dot(normalize(vNormal), V)), 0.0, 1.0), 2.4);
-        float fade = smoothstep(0.0, 0.25, vUv.y) * smoothstep(1.0, 0.15, vUv.y);
-        float alpha = edge * fade * 0.22 * uIntensity;
-        if (alpha < 0.005) discard;
-        gl_FragColor = vec4(0.75, 0.92, 1.0, alpha);
+        vec3 V = normalize(cameraPosition - vPosW);
+        float rim = pow(max(1.0 - abs(dot(normalize(vNormalW), V)), 0.0001), 2.2);
+        float fade = smoothstep(0.0, 0.28, 1.0 - vUv.y) * smoothstep(0.0, 0.18, vUv.y);
+        float a = uAlpha * (0.25 + 0.75 * rim) * fade;
+        gl_FragColor = vec4(0.80, 0.94, 1.00, a);
       }
     `
   });
-  const shockMesh = new THREE.Mesh(shockGeom, shockMat);
-  bulletGroup.add(shockMesh);
-  bulletGroup.position.set(bulletTipX(0), Y_BULLET, 0);
+  const machConeMesh = new THREE.Mesh(machConeGeom, machConeMat);
+  bulletGroup.add(machConeMesh);
+  bulletGroup.frustumCulled = false;
   scene.add(bulletGroup);
 
-  // =========================================================================
-  // Deterministic GPU-Evaluated Fluid & Mist Particle Engine (4,200 particles)
-  // =========================================================================
-  const PARTICLE_COUNT = 4200;
-  const pOrigin = new Float32Array(PARTICLE_COUNT * 3);
-  const pVelocity = new Float32Array(PARTICLE_COUNT * 3);
-  const pParams = new Float32Array(PARTICLE_COUNT * 4); // [spawnTime, size, drag, gravity]
-  const pColorMix = new Float32Array(PARTICLE_COUNT);  // 0 = water-cyan, 1 = crimson-tint/mist
-
-  for (let i = 0; i < PARTICLE_COUNT; i++) {
-    let ox = 0, oy = 0, oz = 0;
-    let vx = 0, vy = 0, vz = 0;
-    let spawn = 0, size = 10, drag = 0.35, grav = 0.65, cmix = 0.0;
-
-    if (i < 750) {
-      // 1. Entry Crown & Backward Cavitation Splash (+X jet out of right wound)
-      const u = rng();
-      const phi = rng() * Math.PI * 2;
-      const rRing = 0.12 + 0.18 * rng();
-      ox = X_WALL - 0.04 + 0.06 * rng();
-      oy = Y_BULLET + Math.sin(phi) * rRing;
-      oz = Math.cos(phi) * rRing;
-
-      const speed = 0.65 + 1.95 * Math.pow(rng(), 0.7);
-      const cone = 0.35 + 0.75 * rng();
-      vx = speed * (0.65 + 0.35 * rng());
-      vy = speed * Math.sin(phi) * cone + 0.15 * rng();
-      vz = speed * Math.cos(phi) * cone;
-
-      spawn = 1.12 + u * 2.25;
-      size = 7.0 + 18.0 * Math.pow(rng(), 1.6);
-      drag = 0.32 + 0.45 * rng();
-      grav = 0.55 + 0.25 * rng();
-      cmix = 0.05 * rng();
-    } else if (i < 1150) {
-      // 2. Latex Tear Atomized Mist along rapid tear wave (1.14s - 1.58s)
-      const tearT = rng(); // 0..1 across tear propagation
-      const ang = tearT * Math.PI;
-      const phi = rng() * Math.PI * 2;
-      // Approximate point on teardrop surface at angular distance from +X
-      const vSurf = clamp(0.42 + Math.sin(ang) * Math.sin(phi) * 0.48, 0.05, 0.96);
-      const rSurf = teardropRadius(vSurf);
-      const thetaSurf = (rng() - 0.5) * 0.6 + (ang < 1.57 ? 0 : Math.PI);
-      ox = Math.cos(ang) * rSurf;
-      oy = teardropY(vSurf);
-      oz = Math.sin(ang) * Math.cos(phi) * rSurf * 0.85;
-
-      const radial = 0.55 + 1.25 * rng();
-      vx = ox * radial * 0.55 + (rng() - 0.5) * 0.35;
-      vy = (oy + 0.15) * radial * 0.45 + 0.25 * rng();
-      vz = oz * radial * 0.55;
-
-      spawn = 1.14 + tearT * 0.44;
-      size = 4.5 + 9.0 * rng();
-      drag = 0.85 + 0.6 * rng();
-      grav = 0.42;
-      cmix = 0.35 + 0.45 * rng(); // subtle crimson mist tint from latex powder
-    } else if (i < 1600) {
-      // 3. Internal Cavitation Micro-Bubbles (1.25s - 3.80s)
-      const tLocal = rng();
-      const tBirth = 1.25 + tLocal * 2.55;
-      const bx = bulletTipX(tBirth) + 0.12 + 0.35 * rng();
-      const phi = rng() * Math.PI * 2;
-      const rad = 0.05 + 0.22 * rng();
-      ox = clamp(bx, -X_WALL + 0.05, X_WALL - 0.05);
-      oy = Y_BULLET + Math.sin(phi) * rad;
-      oz = Math.cos(phi) * rad;
-
-      vx = (rng() - 0.5) * 0.32;
-      vy = Math.sin(phi) * (0.12 + 0.25 * rng());
-      vz = Math.cos(phi) * (0.12 + 0.25 * rng());
-
-      spawn = tBirth;
-      size = 5.0 + 11.0 * rng();
-      drag = 1.15;
-      grav = 0.12 + 0.45 * smoothstep(3.8, 5.5, tBirth + 1.0);
-      cmix = 0.0;
-    } else if (i < 2700) {
-      // 4. Exit Puncture & High-Velocity Forward Mist Cone (-X, 3.80s - 4.95s)
-      const u = rng();
-      const phi = rng() * Math.PI * 2;
-      const rRing = 0.04 + 0.22 * Math.pow(rng(), 0.7);
-      ox = -X_WALL + 0.05 - 0.12 * rng();
-      oy = Y_BULLET + Math.sin(phi) * rRing;
-      oz = Math.cos(phi) * rRing;
-
-      const isCoreJet = rng() < 0.38;
-      const speed = isCoreJet ? (1.4 + 2.4 * rng()) : (0.65 + 1.55 * rng());
-      const spread = isCoreJet ? (0.16 + 0.24 * rng()) : (0.38 + 0.62 * rng());
-
-      vx = -speed * (0.78 + 0.22 * rng());
-      vy = speed * Math.sin(phi) * spread + (rng() - 0.45) * 0.15;
-      vz = speed * Math.cos(phi) * spread;
-
-      spawn = 3.80 + u * 1.15;
-      size = isCoreJet ? (4.5 + 8.5 * rng()) : (7.0 + 16.0 * Math.pow(rng(), 1.5));
-      drag = isCoreJet ? (0.45 + 0.35 * rng()) : (0.38 + 0.4 * rng());
-      grav = 0.52 + 0.22 * rng();
-      cmix = 0.0;
-    } else {
-      // 5. Rayleigh-Taylor & Plateau-Rayleigh Breakup & Gravity Splashdown (4.45s - 6.20s)
-      const vSurf = 0.05 + 0.90 * rng();
-      const thetaSurf = rng() * Math.PI * 2;
-      const rSurf = teardropRadius(vSurf) * (0.85 + 0.22 * rng());
-      ox = Math.cos(thetaSurf) * rSurf;
-      oy = teardropY(vSurf);
-      oz = Math.sin(thetaSurf) * rSurf;
-
-      const outward = 0.32 + 0.92 * Math.pow(rng(), 0.8);
-      const nx = Math.cos(thetaSurf);
-      const nz = Math.sin(thetaSurf);
-      vx = nx * outward + (ox < 0 ? -0.25 : 0.18) * rng();
-      vy = (oy + 0.2) * outward * 0.35 + (rng() - 0.5) * 0.25;
-      vz = nz * outward;
-
-      spawn = 4.45 + rng() * 1.75;
-      size = 7.5 + 24.0 * Math.pow(rng(), 2.0);
-      drag = 0.22 + 0.32 * rng();
-      grav = 0.62 + 0.28 * rng();
-      cmix = 0.0;
+  // ---------------------------------------------------------------------------
+  // 3. Internal Cavitation Vapor Tunnel (renderOrder = 1)
+  // ---------------------------------------------------------------------------
+  const cavSegX = 72;
+  const cavSegPhi = 44;
+  const cavGeom = new THREE.BufferGeometry();
+  {
+    const cols = cavSegPhi + 1;
+    const rows = cavSegX + 1;
+    const pos = new Float32Array(rows * cols * 3);
+    const nrm = new Float32Array(rows * cols * 3);
+    const prm = new Float32Array(rows * cols * 2);
+    const idx = [];
+    for (let i = 0; i <= cavSegX; i++) {
+      const s = i / cavSegX;
+      for (let j = 0; j <= cavSegPhi; j++) {
+        const phi = (j / cavSegPhi) * Math.PI * 2.0;
+        const k = i * cols + j;
+        pos[k * 3] = s;
+        pos[k * 3 + 1] = Math.cos(phi);
+        pos[k * 3 + 2] = Math.sin(phi);
+        nrm[k * 3] = 0;
+        nrm[k * 3 + 1] = Math.cos(phi);
+        nrm[k * 3 + 2] = Math.sin(phi);
+        prm[k * 2] = s;
+        prm[k * 2 + 1] = phi;
+      }
     }
-
-    pOrigin[i * 3] = ox;
-    pOrigin[i * 3 + 1] = oy;
-    pOrigin[i * 3 + 2] = oz;
-
-    pVelocity[i * 3] = vx;
-    pVelocity[i * 3 + 1] = vy;
-    pVelocity[i * 3 + 2] = vz;
-
-    pParams[i * 4] = spawn;
-    pParams[i * 4 + 1] = size;
-    pParams[i * 4 + 2] = drag;
-    pParams[i * 4 + 3] = grav;
-
-    pColorMix[i] = cmix;
+    for (let i = 0; i < cavSegX; i++) {
+      for (let j = 0; j < cavSegPhi; j++) {
+        const a = i * cols + j;
+        const b = (i + 1) * cols + j;
+        const c = (i + 1) * cols + (j + 1);
+        const d = i * cols + (j + 1);
+        idx.push(a, b, d);
+        idx.push(b, c, d);
+      }
+    }
+    cavGeom.setIndex(idx);
+    cavGeom.setAttribute("position", new THREE.BufferAttribute(pos, 3));
+    cavGeom.setAttribute("normal", new THREE.BufferAttribute(nrm, 3));
+    cavGeom.setAttribute("aParam", new THREE.BufferAttribute(prm, 2));
   }
 
-  const particleGeom = new THREE.BufferGeometry();
-  particleGeom.setAttribute('position', new THREE.BufferAttribute(pOrigin, 3));
-  particleGeom.setAttribute('aVelocity', new THREE.BufferAttribute(pVelocity, 3));
-  particleGeom.setAttribute('aParams', new THREE.BufferAttribute(pParams, 4));
-  particleGeom.setAttribute('aColorMix', new THREE.BufferAttribute(pColorMix, 1));
-
-  const particleUniforms = {
-    uSimTime: { value: 0.0 },
-    uPixelRatio: { value: Math.min(window.devicePixelRatio || 1, 2) },
-    uSprite: { value: dropletTexture }
-  };
-
-  const particleMat = new THREE.ShaderMaterial({
-    uniforms: particleUniforms,
+  const cavMat = new THREE.ShaderMaterial({
     transparent: true,
     depthWrite: false,
+    side: THREE.DoubleSide,
+    uniforms: {
+      uTime: { value: 0.0 },
+      uFrontX: { value: 1.31 },
+      uBackX: { value: 1.31 },
+      uIntensity: { value: 0.0 },
+      uCollapse: { value: 0.0 }
+    },
     vertexShader: `
-      attribute vec3 aVelocity;
-      attribute vec4 aParams; // x: spawn, y: size, z: drag, w: gravity
-      attribute float aColorMix;
+      uniform float uTime;
+      uniform float uFrontX;
+      uniform float uBackX;
+      uniform float uIntensity;
+      uniform float uCollapse;
+      attribute vec2 aParam;
+      varying vec2 vParam;
+      varying vec3 vNormalW;
+      varying vec3 vPosW;
 
-      uniform float uSimTime;
-      uniform float uPixelRatio;
-
-      varying float vAlpha;
-      varying float vColorMix;
+      float cavRadius(float s, float phi) {
+        float spindle = sin(clamp(s, 0.0, 1.0) * 3.14159265);
+        float tipR = mix(0.105, 0.24, smoothstep(0.0, 0.14, s));
+        float entryR = 0.24 * smoothstep(0.80, 1.0, s);
+        float swell = mix(0.18, 0.47, uIntensity) * pow(max(spindle, 0.001), 0.72);
+        float pinch = 1.0 - 0.72 * uCollapse * pow(max(spindle, 0.001), 1.4);
+        float rib = 0.042 * sin(s * 24.0 - uTime * 11.0 + phi * 2.0)
+                  + 0.025 * cos(s * 42.0 + phi * 4.0 - uTime * 16.0);
+        return max(0.04, (tipR + entryR + swell) * pinch * (1.0 + rib));
+      }
 
       void main() {
-        float spawn = aParams.x;
-        float baseSize = aParams.y;
-        float k = max(aParams.z, 0.001);
-        float g = aParams.w;
+        vParam = aParam;
+        float s = aParam.x;
+        float phi = aParam.y;
+        float x = mix(uFrontX, uBackX, s);
+        float r = cavRadius(s, phi);
+        float rNext = cavRadius(min(1.0, s + 0.015), phi);
+        float drds = (rNext - r) / (0.015 * max(0.05, uBackX - uFrontX));
 
-        float tau = uSimTime - spawn;
-        if (tau < 0.0) {
+        vec3 pLocal = vec3(x, ${IMPACT_Y.toFixed(3)} + r * cos(phi), r * sin(phi));
+        vec3 nLocal = normalize(vec3(-drds, cos(phi), sin(phi)));
+
+        vec4 wp = modelMatrix * vec4(pLocal, 1.0);
+        vPosW = wp.xyz;
+        vNormalW = normalize(mat3(modelMatrix) * nLocal);
+        gl_Position = projectionMatrix * viewMatrix * wp;
+      }
+    `,
+    fragmentShader: `
+      uniform float uTime;
+      uniform float uIntensity;
+      uniform float uCollapse;
+      varying vec2 vParam;
+      varying vec3 vNormalW;
+      varying vec3 vPosW;
+      ${GLSL_STUDIO_COMMON}
+
+      void main() {
+        if (uIntensity <= 0.002) discard;
+        vec3 N = normalize(vNormalW);
+        if (!gl_FrontFacing) N = -N;
+        vec3 V = normalize(cameraPosition - vPosW);
+        float ndv = clamp(abs(dot(N, V)), 0.0, 1.0);
+        float fres = pow(max(1.0 - ndv, 0.0001), 1.8);
+
+        float froth = 0.5 + 0.5 * sin(vParam.x * 38.0 - uTime * 14.0 + sin(vParam.y * 5.0 + vParam.x * 16.0) * 2.2);
+        float fine = 0.5 + 0.5 * cos(vParam.y * 14.0 + vParam.x * 65.0 - uTime * 22.0);
+        float bubbleTex = mix(0.55, 1.0, froth * 0.65 + fine * 0.35);
+
+        vec3 vaporCol = mix(vec3(0.45, 0.72, 0.90), vec3(0.90, 0.97, 1.00), bubbleTex);
+        vaporCol += evalStudioRims(N, V, 85.0, 2.1) * 0.85;
+
+        float endsFade = smoothstep(0.0, 0.06, vParam.x) * smoothstep(1.0, 0.92, vParam.x);
+        float alpha = uIntensity * (1.0 - uCollapse * 0.82) * endsFade * (0.28 + 0.62 * fres + 0.22 * froth);
+        gl_FragColor = vec4(toSRGB(vaporCol), clamp(alpha, 0.0, 0.90));
+      }
+    `
+  });
+  const cavMesh = new THREE.Mesh(cavGeom, cavMat);
+  cavMesh.renderOrder = 1;
+  cavMesh.frustumCulled = false;
+  scene.add(cavMesh);
+
+  // ---------------------------------------------------------------------------
+  // 4. Translucent Free-Standing Water Mass & Perforating Sheet (renderOrder = 2)
+  // ---------------------------------------------------------------------------
+  const waterGeom = buildTeardropGeometry(112, 84, 0.986, true);
+  const waterMat = new THREE.ShaderMaterial({
+    transparent: true,
+    depthWrite: false,
+    side: THREE.DoubleSide,
+    uniforms: {
+      uTime: { value: 0.0 },
+      uSwell: { value: 0.0 },
+      uExitBulge: { value: 0.0 },
+      uEntryHoleR: { value: 0.0 },
+      uExitHoleR: { value: 0.0 },
+      uBreakup: { value: 0.0 },
+      uPerforate: { value: 0.0 },
+      uGlobalAlpha: { value: 1.0 }
+    },
+    vertexShader: `
+      uniform float uTime;
+      uniform float uSwell;
+      uniform float uExitBulge;
+      uniform float uBreakup;
+      attribute vec2 aParam;
+      varying vec3 vPosW;
+      varying vec3 vNormalW;
+      varying vec3 vBasePos;
+
+      vec3 deformWater(vec3 p, vec3 n) {
+        vec3 outP = p;
+
+        // 1) Acoustic entry shock ripple across water mass after t=1.00
+        if (uTime > 1.0) {
+          float ut = uTime - 1.0;
+          float waveX = 1.31 - 5.0 * ut;
+          float band = exp(-pow((p.x - waveX) * 3.8, 2.0)) * exp(-ut * 1.4);
+          outP += n * band * 0.072;
+
+          float dEntry = length(p - vec3(1.30, ${IMPACT_Y.toFixed(3)}, 0.0));
+          float ring = sin(dEntry * 24.0 - ut * 32.0) * exp(-dEntry * 2.2) * exp(-ut * 0.85);
+          outP += n * ring * 0.032;
+        }
+
+        // 2) Hydrostatic belly bulge from internal cavitation volume displacement
+        float rXZ = length(p.xz);
+        float bellyMask = smoothstep(0.05, 1.05, rXZ);
+        float midMask = exp(-pow((p.y - ${IMPACT_Y.toFixed(3)}) * 0.95, 2.0));
+        outP += vec3(n.x * 0.65, n.y * 1.15, n.z * 1.15) * uSwell * (0.24 * bellyMask + 0.20 * midMask);
+
+        // 3) Left exit dome bulge right before & during puncture
+        vec2 dExitVec = p.yz - vec2(${IMPACT_Y.toFixed(3)}, 0.0);
+        float dExit = length(dExitVec);
+        vec2 dExitDir = dExit > 1e-4 ? (dExitVec / dExit) : vec2(0.0, 1.0);
+        float leftSide = smoothstep(-0.35, -1.25, p.x);
+        float exitDome = leftSide * exp(-dExit * dExit * 4.5) * uExitBulge;
+        outP.x -= exitDome * 0.42;
+        outP.yz += dExitDir * exitDome * 0.06;
+
+        // 4) Rayleigh-Taylor breakup billowing & gravity sag (pole-safe spatial waves)
+        if (uBreakup > 0.001) {
+          float lobes = sin(p.x * 3.6 + 0.5) * cos(p.z * 3.4 - 0.3) * 0.55
+                      + sin(p.y * 3.1 + p.x * 2.4 + uTime * 1.1) * 0.45;
+          float expand = uBreakup * (0.62 * bellyMask + 0.32 * lobes);
+          outP += vec3(n.x * 1.25, n.y * 0.85, n.z * 1.15) * expand;
+          outP.y -= 0.40 * uBreakup * uBreakup;
+        }
+        return outP;
+      }
+
+      void main() {
+        vBasePos = position;
+        vec3 nBase = normalize(normal);
+        vec3 pDef = deformWater(position, nBase);
+
+        vec3 upRef = abs(nBase.y) < 0.9 ? vec3(0.0, 1.0, 0.0) : vec3(1.0, 0.0, 0.0);
+        vec3 T = normalize(cross(upRef, nBase));
+        vec3 B = normalize(cross(nBase, T));
+        float e = 0.02;
+        vec3 pT = deformWater(position + T * e, nBase);
+        vec3 pB = deformWater(position + B * e, nBase);
+        vec3 nDef = cross(pT - pDef, pB - pDef);
+        float nLen = length(nDef);
+        nDef = nLen > 1e-5 ? (nDef / nLen) : nBase;
+        if (dot(nDef, nBase) < 0.0) nDef = -nDef;
+
+        vec4 wp = modelMatrix * vec4(pDef, 1.0);
+        vPosW = wp.xyz;
+        vNormalW = normalize(mat3(modelMatrix) * nDef);
+        gl_Position = projectionMatrix * viewMatrix * wp;
+      }
+    `,
+    fragmentShader: `
+      uniform float uTime;
+      uniform float uEntryHoleR;
+      uniform float uExitHoleR;
+      uniform float uPerforate;
+      uniform float uGlobalAlpha;
+      varying vec3 vPosW;
+      varying vec3 vNormalW;
+      varying vec3 vBasePos;
+      ${GLSL_STUDIO_COMMON}
+
+      float sheetWebPattern(vec3 p) {
+        float f1 = sin(p.x * 7.2 + sin(p.y * 6.5 + 0.4) * 1.3 + p.z * 5.8);
+        float f2 = cos(p.y * 8.4 - sin(p.z * 7.7 + 1.1) * 1.2 + p.x * 4.9);
+        float f3 = sin((p.x + p.y - p.z) * 9.5 + 2.1);
+        float f4 = cos((p.x - p.y + p.z) * 11.8 - 0.8);
+        return clamp(0.5 + 0.22 * f1 + 0.18 * f2 + 0.14 * f3 + 0.10 * f4, 0.0, 1.0);
+      }
+
+      void main() {
+        if (uGlobalAlpha <= 0.002) discard;
+
+        float dEntryYZ = length(vBasePos.yz - vec2(${IMPACT_Y.toFixed(3)}, 0.0));
+        if (uEntryHoleR > 0.01 && vBasePos.x > 0.5 && dEntryYZ < uEntryHoleR) discard;
+        if (uExitHoleR > 0.01 && vBasePos.x < -0.5 && dEntryYZ < uExitHoleR) discard;
+
+        float meniscusRim = 0.0;
+        if (uPerforate > 0.005) {
+          float w = sheetWebPattern(vBasePos);
+          float thr = uPerforate * 1.04;
+          if (w < thr) discard;
+          meniscusRim = 1.0 - smoothstep(0.0, 0.085, w - thr);
+        }
+
+        vec3 N = normalize(vNormalW);
+        if (!gl_FrontFacing) N = -N;
+        vec3 V = normalize(cameraPosition - vPosW);
+        float ndv = clamp(abs(dot(N, V)), 0.0, 1.0);
+        float fres = pow(max(1.0 - ndv, 0.0001), 2.4);
+
+        vec3 coreTint = mix(vec3(0.08, 0.14, 0.24), vec3(0.24, 0.42, 0.62), fres);
+        float caustic = pow(max(0.0001, sin(vBasePos.y * 8.0 + vBasePos.x * 5.0 + uTime * 2.2) * 0.5 + 0.5), 3.0);
+        coreTint += vec3(0.18, 0.34, 0.48) * caustic * 0.25;
+
+        vec3 rims = evalStudioRims(N, V, 190.0, 2.3);
+        vec3 col = coreTint + rims * 1.15 + vec3(0.75, 0.94, 1.0) * meniscusRim * 0.95;
+
+        float entryLip = uEntryHoleR > 0.01 && vBasePos.x > 0.5 ? (1.0 - smoothstep(0.0, 0.09, dEntryYZ - uEntryHoleR)) : 0.0;
+        float exitLip  = uExitHoleR  > 0.01 && vBasePos.x < -0.5 ? (1.0 - smoothstep(0.0, 0.09, dEntryYZ - uExitHoleR)) : 0.0;
+        col += vec3(0.85, 0.96, 1.0) * (entryLip + exitLip) * 0.65;
+
+        float alpha = (0.20 + 0.66 * fres + 0.28 * meniscusRim + 0.22 * (entryLip + exitLip)) * uGlobalAlpha;
+        gl_FragColor = vec4(toSRGB(col), clamp(alpha, 0.0, 0.94));
+      }
+    `
+  });
+  const waterMesh = new THREE.Mesh(waterGeom, waterMat);
+  waterMesh.renderOrder = 2;
+  waterMesh.frustumCulled = false;
+  scene.add(waterMesh);
+
+  // ---------------------------------------------------------------------------
+  // 5. Semi-Translucent Crimson Latex Skin & Rapid Tear Shader (Back:0, Front:3)
+  // ---------------------------------------------------------------------------
+  const latexGeom = buildTeardropGeometry(120, 92, 1.0, false);
+  const latexUniforms = {
+    uTime: { value: 0.0 },
+    uIndent: { value: 0.0 },
+    uTearFront: { value: -0.20 },
+    uKnotY: { value: 1.62 }
+  };
+  const latexVertShader = `
+      uniform float uTime;
+      uniform float uIndent;
+      uniform float uTearFront;
+      uniform float uKnotY;
+      attribute vec2 aParam;
+      varying vec3 vPosW;
+      varying vec3 vNormalW;
+      varying float vTearDist;
+      varying float vCurl;
+
+      float evalTear(vec3 p) {
+        vec3 d = p - vec3(0.0, ${IMPACT_Y.toFixed(3)}, 0.0);
+        float len = max(length(d), 1e-4);
+        vec3 dir = d / len;
+        float ang = acos(clamp(dir.x, -1.0, 1.0)) / 3.14159265;
+        float jagged =
+          0.036 * sin(dir.y * 17.0 + dir.z * 11.0 + 0.7) +
+          0.022 * cos(dir.z * 29.0 - dir.y * 23.0 + 1.4) +
+          0.012 * sin(dir.x * 15.0 + dir.y * 19.0 - dir.z * 13.0);
+        return ang + jagged;
+      }
+
+      vec3 deformLatex(vec3 p, vec3 n, float tearVal, float theta) {
+        vec3 outP = p;
+
+        // 1) Elastic indentation & concentric rubber ripples on impact
+        vec3 pImp = vec3(${R_IMPACT.toFixed(3)}, ${IMPACT_Y.toFixed(3)}, 0.0);
+        float dImp = length(p - pImp);
+        if (uIndent > 0.001) {
+          float cone = exp(-dImp * dImp * 3.8);
+          float ring = exp(-pow((dImp - 0.62) * 3.5, 2.0));
+          outP.x -= uIndent * cone * 0.62;
+          outP += n * (uIndent * ring * 0.055);
+          float ut = max(0.0, uTime - ${T_IMPACT.toFixed(3)});
+          float wave = sin(dImp * 32.0 - ut * 58.0) * exp(-dImp * 1.4) * smoothstep(0.0, 0.05, ut);
+          outP += n * wave * 0.022 * min(1.0, uIndent * 1.6);
+        }
+
+        // 2) Rapid snapping curl right along tearing petal edge
+        float edgeDist = tearVal - uTearFront;
+        if (uTearFront > -0.10 && edgeDist >= -0.02 && edgeDist < 0.16) {
+          float c = clamp(1.0 - edgeDist / 0.16, 0.0, 1.0);
+          vec3 d = p - vec3(0.0, ${IMPACT_Y.toFixed(3)}, 0.0);
+          float yzLen = length(d.yz);
+          float safeY = (abs(d.y) < 1e-4 && abs(d.z) < 1e-4) ? 1.0 : d.y;
+          float angleYZ = atan(d.z, safeY);
+          float petal = 0.075 * sin(angleYZ * 9.0 + uTearFront * 7.0) * smoothstep(0.0, 0.2, yzLen);
+          outP += n * (0.28 * c * c + petal * c);
+          outP.x -= 0.12 * c * c;
+        }
+
+        // 3) Subtle vertical pull of upper rubber neck with tether knot
+        float topPull = smoothstep(2.4, 3.14159, theta) * (uKnotY - 1.62);
+        outP.y += topPull;
+        return outP;
+      }
+
+      void main() {
+        float tearCenter = evalTear(position);
+        float edgeDist = tearCenter - uTearFront;
+        vTearDist = edgeDist;
+        vCurl = (uTearFront > -0.10 && edgeDist >= -0.02 && edgeDist < 0.16)
+          ? clamp(1.0 - edgeDist / 0.16, 0.0, 1.0)
+          : 0.0;
+
+        vec3 nBase = normalize(normal);
+        vec3 pDef = deformLatex(position, nBase, tearCenter, aParam.x);
+
+        vec3 upRef = abs(nBase.y) < 0.9 ? vec3(0.0, 1.0, 0.0) : vec3(1.0, 0.0, 0.0);
+        vec3 T = normalize(cross(upRef, nBase));
+        vec3 B = normalize(cross(nBase, T));
+        float e = 0.02;
+        vec3 pT = deformLatex(position + T * e, nBase, evalTear(position + T * e), aParam.x);
+        vec3 pB = deformLatex(position + B * e, nBase, evalTear(position + B * e), aParam.x);
+        vec3 nDef = cross(pT - pDef, pB - pDef);
+        float nLen = length(nDef);
+        nDef = nLen > 1e-5 ? (nDef / nLen) : nBase;
+        if (dot(nDef, nBase) < 0.0) nDef = -nDef;
+
+        vec4 wp = modelMatrix * vec4(pDef, 1.0);
+        vPosW = wp.xyz;
+        vNormalW = normalize(mat3(modelMatrix) * nDef);
+        gl_Position = projectionMatrix * viewMatrix * wp;
+      }
+  `;
+  const latexFragShader = `
+      uniform float uTearFront;
+      varying vec3 vPosW;
+      varying vec3 vNormalW;
+      varying float vTearDist;
+      varying float vCurl;
+      ${GLSL_STUDIO_COMMON}
+
+      void main() {
+        if (uTearFront > 1.12) discard;
+        if (uTearFront > -0.10 && vTearDist < 0.0) discard;
+
+        vec3 N = normalize(vNormalW);
+        if (!gl_FrontFacing) N = -N;
+        vec3 V = normalize(cameraPosition - vPosW);
+        float ndv = clamp(abs(dot(N, V)), 0.0, 1.0);
+        float fres = pow(max(1.0 - ndv, 0.0001), 2.2);
+
+        // Deep crimson latex (#e61c24 -> linear ~(0.791, 0.0116, 0.0176))
+        vec3 crimson = vec3(0.791, 0.012, 0.018);
+        vec3 darkEdge = vec3(0.24, 0.004, 0.008);
+        vec3 sssGlow = vec3(0.95, 0.06, 0.08);
+
+        vec3 lKey = normalize(vec3(0.50, 0.69, 0.58));
+        vec3 lBack = normalize(vec3(-0.20, 0.40, -0.88));
+        float diff = 0.38 + 0.62 * max(dot(N, lKey), 0.0);
+        float wrapBack = pow(max(0.0001, dot(-N, lBack) * 0.5 + 0.5), 2.0);
+
+        vec3 baseCol = mix(crimson * diff, darkEdge, fres * 0.72);
+        baseCol += sssGlow * (0.28 * ndv + 0.20 * wrapBack);
+        baseCol = mix(baseCol, darkEdge * 1.15, vCurl * 0.45);
+        if (!gl_FrontFacing) baseCol *= 0.78;
+
+        vec3 rims = evalStudioRims(N, V, 145.0, 2.5);
+        vec3 col = baseCol + rims * (0.85 + 0.55 * vCurl);
+
+        float alpha = clamp(0.84 + 0.14 * fres + 0.12 * vCurl, 0.0, 0.99);
+        gl_FragColor = vec4(toSRGB(col), alpha);
+      }
+  `;
+
+  const latexMatBack = new THREE.ShaderMaterial({
+    transparent: true,
+    depthWrite: false,
+    side: THREE.BackSide,
+    uniforms: latexUniforms,
+    vertexShader: latexVertShader,
+    fragmentShader: latexFragShader
+  });
+  const latexBackMesh = new THREE.Mesh(latexGeom, latexMatBack);
+  latexBackMesh.renderOrder = 0;
+  latexBackMesh.frustumCulled = false;
+  scene.add(latexBackMesh);
+
+  const latexMat = new THREE.ShaderMaterial({
+    transparent: true,
+    depthWrite: false,
+    side: THREE.FrontSide,
+    uniforms: latexUniforms,
+    vertexShader: latexVertShader,
+    fragmentShader: latexFragShader
+  });
+  const latexMesh = new THREE.Mesh(latexGeom, latexMat);
+  latexMesh.renderOrder = 3;
+  latexMesh.frustumCulled = false;
+  scene.add(latexMesh);
+
+  // ---------------------------------------------------------------------------
+  // 6. Instanced 3D Torn Crimson Latex Shreds (96 shreds)
+  // ---------------------------------------------------------------------------
+  const SHRED_COUNT = 96;
+  const shredGeom = new THREE.BoxGeometry(0.11, 0.045, 0.008);
+  const shredMat = new THREE.MeshStandardMaterial({
+    color: 0xe61c24,
+    roughness: 0.22,
+    metalness: 0.05,
+    envMap: studioEnvMap
+  });
+  const shredMesh = new THREE.InstancedMesh(shredGeom, shredMat, SHRED_COUNT);
+  shredMesh.frustumCulled = false;
+  scene.add(shredMesh);
+
+  const shreds = [];
+  for (let i = 0; i < SHRED_COUNT; i++) {
+    const theta = randRange(0.12 * Math.PI, 0.88 * Math.PI);
+    const phi = randRange(0, Math.PI * 2);
+    const prof = balloonProfile(theta, false);
+    const p0 = {
+      x: prof.r * Math.cos(phi),
+      y: prof.y,
+      z: prof.r * Math.sin(phi)
+    };
+    const tc = evalTearCoord(p0.x, p0.y, p0.z);
+    const birth = T_PUNCTURE + Math.pow(clamp((tc + 0.07) / 1.19, 0.0, 1.0), 1.0 / 0.86) * (T_TEAR_END - T_PUNCTURE);
+
+    const poleDir = theta > Math.PI * 0.5 ? 1.0 : -1.0;
+    const speed = randRange(1.4, 3.3);
+    const v0 = {
+      x: -speed * randRange(0.45, 0.95) + p0.x * 0.25,
+      y: poleDir * speed * randRange(0.30, 0.85) + randRange(-0.4, 0.4),
+      z: Math.sin(phi) * speed * randRange(0.35, 0.85)
+    };
+    shreds.push({
+      p0,
+      v0,
+      birth,
+      drag: randRange(0.65, 1.35),
+      grav: 0.62,
+      sx: randRange(0.6, 1.65),
+      sy: randRange(0.5, 1.4),
+      rot0: new THREE.Euler(randRange(0, 6.28), randRange(0, 6.28), randRange(0, 6.28)),
+      spin: new THREE.Vector3(randRange(-9, 9), randRange(-9, 9), randRange(-9, 9))
+    });
+  }
+
+  // ---------------------------------------------------------------------------
+  // 7. Instanced 3D Macro Water Blobs & Ligaments (380 sculpted blobs)
+  // ---------------------------------------------------------------------------
+  const BLOB_COUNT = 380;
+  const blobGeom = new THREE.IcosahedronGeometry(0.065, 2);
+  const blobMat = new THREE.MeshStandardMaterial({
+    color: 0xd6eeff,
+    roughness: 0.05,
+    metalness: 0.10,
+    transparent: true,
+    opacity: 0.78,
+    envMap: studioEnvMap,
+    envMapIntensity: 1.85
+  });
+  const blobMesh = new THREE.InstancedMesh(blobGeom, blobMat, BLOB_COUNT);
+  blobMesh.renderOrder = 4;
+  blobMesh.frustumCulled = false;
+  scene.add(blobMesh);
+
+  const blobs = [];
+  for (let i = 0; i < BLOB_COUNT; i++) {
+    let p0, v0, birth, drag, grav, baseScale, stretchFactor;
+    if (i < 75) {
+      const ang = randRange(0, Math.PI * 2);
+      const cone = randRange(0.30, 0.88);
+      const spd = randRange(1.2, 3.4);
+      p0 = {
+        x: R_IMPACT - 0.04,
+        y: IMPACT_Y + Math.cos(ang) * 0.14,
+        z: Math.sin(ang) * 0.14
+      };
+      v0 = {
+        x: spd * Math.cos(cone),
+        y: spd * Math.sin(cone) * Math.cos(ang),
+        z: spd * Math.sin(cone) * Math.sin(ang)
+      };
+      birth = randRange(1.25, 3.60);
+      drag = randRange(0.28, 0.55);
+      grav = 0.72;
+      baseScale = randRange(0.55, 1.35);
+      stretchFactor = 0.25;
+    } else if (i < 165) {
+      const ang = randRange(0, Math.PI * 2);
+      const cone = randRange(0.16, 0.56);
+      const spd = randRange(0.9, 2.35);
+      p0 = {
+        x: -R_IMPACT + 0.04,
+        y: IMPACT_Y + Math.cos(ang) * 0.13,
+        z: Math.sin(ang) * 0.13
+      };
+      v0 = {
+        x: -spd * Math.cos(cone),
+        y: spd * Math.sin(cone) * Math.cos(ang),
+        z: spd * Math.sin(cone) * Math.sin(ang)
+      };
+      birth = randRange(3.80, 5.20);
+      drag = randRange(0.28, 0.55);
+      grav = 0.72;
+      baseScale = randRange(0.50, 1.25);
+      stretchFactor = 0.30;
+    } else {
+      const theta = randRange(0.06 * Math.PI, 0.90 * Math.PI);
+      const phi = randRange(0, Math.PI * 2);
+      const prof = balloonProfile(theta, true);
+      const brk = randRange(0.22, 0.95);
+      const expand = 1.0 + 0.62 * brk;
+      p0 = {
+        x: prof.r * expand * Math.cos(phi),
+        y: prof.y * (1.0 + 0.25 * brk) - 0.28 * brk * brk,
+        z: prof.r * expand * Math.sin(phi)
+      };
+      const spd = randRange(0.45, 1.85);
+      v0 = {
+        x: Math.cos(phi) * Math.sin(theta) * spd + randRange(-0.25, 0.15),
+        y: -Math.cos(theta) * spd * 0.55 + randRange(-0.35, 0.25),
+        z: Math.sin(phi) * Math.sin(theta) * spd
+      };
+      birth = randRange(4.55, 6.65);
+      drag = randRange(0.15, 0.38);
+      grav = 0.78;
+      baseScale = randRange(0.65, 1.95);
+      stretchFactor = 0.22;
+    }
+    blobs.push({ p0, v0, birth, drag, grav, baseScale, stretchFactor });
+  }
+
+  // ---------------------------------------------------------------------------
+  // 8. High-Speed Velocity-Stretched Micro-Droplet & Mist Engine (4,200 droplets)
+  // ---------------------------------------------------------------------------
+  const DROP_COUNT = 4200;
+  const drops = [];
+  for (let i = 0; i < DROP_COUNT; i++) {
+    let p0, v0, birth, drag, grav, size, life, kind;
+    if (i < 950) {
+      // Entry splash backward cone (+X)
+      const ang = randRange(0, Math.PI * 2);
+      const cone = randRange(0.22, 0.96);
+      const spd = randRange(1.1, 4.4);
+      p0 = {
+        x: R_IMPACT - 0.03 + randRange(-0.04, 0.04),
+        y: IMPACT_Y + Math.cos(ang) * randRange(0.06, 0.18),
+        z: Math.sin(ang) * randRange(0.06, 0.18)
+      };
+      v0 = {
+        x: spd * Math.cos(cone),
+        y: spd * Math.sin(cone) * Math.cos(ang),
+        z: spd * Math.sin(cone) * Math.sin(ang)
+      };
+      birth = randRange(1.16, 4.10);
+      drag = randRange(0.32, 0.95);
+      grav = 0.72;
+      size = randRange(0.022, 0.068);
+      life = 10.0;
+      kind = rng() < 0.35 ? 1 : 0;
+    } else if (i < 1450) {
+      // Atomized mist stripped by peeling latex skin
+      const theta = randRange(0.08 * Math.PI, 0.92 * Math.PI);
+      const phi = randRange(0, Math.PI * 2);
+      const prof = balloonProfile(theta, true);
+      p0 = {
+        x: prof.r * 1.01 * Math.cos(phi),
+        y: prof.y,
+        z: prof.r * 1.01 * Math.sin(phi)
+      };
+      const tc = evalTearCoord(p0.x, p0.y, p0.z);
+      birth = T_PUNCTURE + Math.pow(clamp((tc + 0.07) / 1.19, 0.0, 1.0), 1.0 / 0.86) * (T_TEAR_END - T_PUNCTURE);
+      const spd = randRange(0.35, 1.35);
+      v0 = {
+        x: Math.cos(phi) * Math.sin(theta) * spd - 0.25,
+        y: -Math.cos(theta) * spd * 0.45 + randRange(-0.15, 0.25),
+        z: Math.sin(phi) * Math.sin(theta) * spd
+      };
+      drag = randRange(0.85, 1.85);
+      grav = 0.42;
+      size = randRange(0.024, 0.062);
+      life = 6.5;
+      kind = 1;
+    } else if (i < 1900) {
+      // Internal cavitation vapor bubbles & collapse burst
+      const s = randRange(0.08, 0.92);
+      const ang = randRange(0, Math.PI * 2);
+      const rOff = randRange(0.05, 0.28);
+      p0 = {
+        x: 1.24 - s * 2.48,
+        y: IMPACT_Y + Math.cos(ang) * rOff,
+        z: Math.sin(ang) * rOff
+      };
+      birth = T_PUNCTURE + s * (T_EXIT - T_PUNCTURE) + randRange(0.02, 0.45);
+      const burst = randRange(0.25, 1.10);
+      v0 = {
+        x: randRange(-0.45, 0.25),
+        y: Math.cos(ang) * burst,
+        z: Math.sin(ang) * burst
+      };
+      drag = randRange(1.2, 2.2);
+      grav = 0.18;
+      size = randRange(0.032, 0.095);
+      life = randRange(1.6, 3.2);
+      kind = 2;
+    } else if (i < 3100) {
+      // Exit puncture & forward high-velocity conical plume (-X)
+      const ang = randRange(0, Math.PI * 2);
+      const isLeadJet = i < 2650;
+      const cone = isLeadJet ? randRange(0.14, 0.56) : randRange(0.32, 0.92);
+      const spd = isLeadJet ? randRange(0.95, 2.55) : randRange(0.65, 1.85);
+      p0 = {
+        x: -R_IMPACT + 0.02 + randRange(-0.04, 0.04),
+        y: IMPACT_Y + Math.cos(ang) * randRange(0.05, 0.17),
+        z: Math.sin(ang) * randRange(0.05, 0.17)
+      };
+      v0 = {
+        x: -spd * Math.cos(cone),
+        y: spd * Math.sin(cone) * Math.cos(ang),
+        z: spd * Math.sin(cone) * Math.sin(ang)
+      };
+      birth = isLeadJet ? randRange(3.78, 4.75) : randRange(4.40, 5.95);
+      drag = randRange(0.34, 0.85);
+      grav = 0.72;
+      size = randRange(0.020, 0.072);
+      life = 10.0;
+      kind = rng() < 0.42 ? 1 : 0;
+    } else {
+      // Rayleigh-Taylor & Plateau-Rayleigh sheet breakup cascade
+      const theta = randRange(0.04 * Math.PI, 0.94 * Math.PI);
+      const phi = randRange(0, Math.PI * 2);
+      const prof = balloonProfile(theta, true);
+      const tNorm = rng();
+      birth = 4.45 + tNorm * 2.25;
+      const brk = smoothstep(4.2, 6.5, birth);
+      const expand = 1.0 + 0.62 * brk;
+      p0 = {
+        x: prof.r * expand * Math.cos(phi) + randRange(-0.08, 0.08),
+        y: prof.y * (1.0 + 0.25 * brk) - 0.36 * brk * brk + randRange(-0.08, 0.08),
+        z: prof.r * expand * Math.sin(phi) + randRange(-0.08, 0.08)
+      };
+      const spd = randRange(0.30, 1.95);
+      v0 = {
+        x: Math.cos(phi) * Math.sin(theta) * spd + randRange(-0.25, 0.20),
+        y: -Math.cos(theta) * spd * 0.50 + randRange(-0.40, 0.25),
+        z: Math.sin(phi) * Math.sin(theta) * spd
+      };
+      drag = randRange(0.18, 0.78);
+      grav = randRange(0.68, 0.84);
+      size = randRange(0.022, 0.082);
+      life = 10.0;
+      kind = rng() < 0.28 ? 1 : 0;
+    }
+    drops.push({ p0, v0, birth, drag, grav, size, life, kind });
+  }
+
+  const quadBase = new THREE.PlaneBufferGeometry(1, 1);
+  const dropInstGeom = new THREE.InstancedBufferGeometry();
+  dropInstGeom.index = quadBase.index;
+  dropInstGeom.setAttribute("position", quadBase.attributes.position);
+  dropInstGeom.setAttribute("uv", quadBase.attributes.uv);
+  dropInstGeom.instanceCount = DROP_COUNT;
+
+  const dropPosArr = new Float32Array(DROP_COUNT * 3);
+  const dropVelArr = new Float32Array(DROP_COUNT * 3);
+  const dropMetaArr = new Float32Array(DROP_COUNT * 3);
+
+  const dropPosAttr = new THREE.InstancedBufferAttribute(dropPosArr, 3);
+  const dropVelAttr = new THREE.InstancedBufferAttribute(dropVelArr, 3);
+  const dropMetaAttr = new THREE.InstancedBufferAttribute(dropMetaArr, 3);
+  dropPosAttr.setUsage(THREE.DynamicDrawUsage);
+  dropVelAttr.setUsage(THREE.DynamicDrawUsage);
+  dropMetaAttr.setUsage(THREE.DynamicDrawUsage);
+
+  dropInstGeom.setAttribute("aInstPos", dropPosAttr);
+  dropInstGeom.setAttribute("aInstVel", dropVelAttr);
+  dropInstGeom.setAttribute("aInstMeta", dropMetaAttr);
+
+  const dropMat = new THREE.ShaderMaterial({
+    transparent: true,
+    depthWrite: false,
+    uniforms: {
+      uSprite: { value: dropletSpriteTex }
+    },
+    vertexShader: `
+      attribute vec3 aInstPos;
+      attribute vec3 aInstVel;
+      attribute vec3 aInstMeta;
+      varying vec2 vUv;
+      varying float vAlpha;
+      varying float vKind;
+      varying vec3 vWorldPos;
+
+      void main() {
+        vUv = uv;
+        vAlpha = aInstMeta.y;
+        vKind = aInstMeta.z;
+        if (vAlpha <= 0.001) {
           gl_Position = vec4(2.0, 2.0, 2.0, 1.0);
-          gl_PointSize = 0.0;
-          vAlpha = 0.0;
           return;
         }
 
-        // Exact analytical exponential air drag + gravity solution
-        float expTerm = 1.0 - exp(-k * tau);
-        vec3 pos = position;
-        pos.x += aVelocity.x * (expTerm / k);
-        pos.z += aVelocity.z * (expTerm / k);
-        pos.y += ((aVelocity.y + g / k) / k) * expTerm - (g / k) * tau;
+        vec3 velView = (viewMatrix * vec4(aInstVel, 0.0)).xyz;
+        float speed2D = length(velView.xy);
+        vec2 dir = speed2D > 0.02 ? (velView.xy / speed2D) : vec2(1.0, 0.0);
+        vec2 perp = vec2(-dir.y, dir.x);
 
-        vec4 mvPosition = modelViewMatrix * vec4(pos, 1.0);
-        gl_Position = projectionMatrix * mvPosition;
-        gl_PointSize = baseSize * uPixelRatio * (11.0 / max(-mvPosition.z, 1.0));
+        float stretch = 1.0 + clamp(speed2D * 0.24, 0.0, 2.1);
+        float invS = 1.0 / sqrt(stretch);
+        float sz = aInstMeta.x;
+        vec2 localOffset = (dir * (position.x * stretch) + perp * (position.y * invS)) * sz;
 
-        float fadeIn = smoothstep(0.0, 0.08, tau);
-        vAlpha = fadeIn * 0.92;
-        vColorMix = aColorMix;
+        vec4 mvPos = viewMatrix * vec4(aInstPos, 1.0);
+        mvPos.xy += localOffset;
+        vWorldPos = aInstPos;
+        gl_Position = projectionMatrix * mvPos;
       }
     `,
     fragmentShader: `
       uniform sampler2D uSprite;
+      varying vec2 vUv;
       varying float vAlpha;
-      varying float vColorMix;
+      varying float vKind;
+      varying vec3 vWorldPos;
+      ${GLSL_STUDIO_COMMON}
 
       void main() {
-        if (vAlpha <= 0.01) discard;
-        vec4 tex = texture2D(uSprite, gl_PointCoord);
-        vec3 waterCol = vec3(0.84, 0.96, 1.0);
-        vec3 latexTint = vec3(1.0, 0.45, 0.48);
-        vec3 col = mix(waterCol, latexTint, vColorMix) * tex.rgb;
-        float a = tex.a * vAlpha;
-        if (a < 0.02) discard;
-        gl_FragColor = vec4(col, a);
+        if (vAlpha <= 0.001) discard;
+        vec4 tex = texture2D(uSprite, vUv);
+        if (tex.a < 0.02) discard;
+
+        float sideMix = smoothstep(-2.4, 2.4, vWorldPos.x);
+        vec3 rimTint = mix(vec3(1.00, 0.56, 0.88), vec3(0.48, 0.94, 1.00), sideMix);
+
+        vec3 baseCol = mix(vec3(0.76, 0.90, 1.00), rimTint, 0.36);
+        if (vKind > 1.5) {
+          baseCol = vec3(0.84, 0.96, 1.00);
+        } else if (vKind > 0.5) {
+          baseCol = mix(baseCol, vec3(0.92, 0.98, 1.00), 0.45);
+        }
+
+        vec3 col = mix(baseCol, vec3(1.0), pow(max(tex.r * tex.a, 0.0001), 2.2) * 0.75);
+        float mistSoft = vKind > 0.5 ? 0.62 : 0.92;
+        float a = tex.a * vAlpha * mistSoft;
+        gl_FragColor = vec4(toSRGB(col), a);
       }
     `
   });
-  const particlePoints = new THREE.Points(particleGeom, particleMat);
-  particlePoints.frustumCulled = false;
-  particlePoints.renderOrder = 5;
-  scene.add(particlePoints);
 
-  // =========================================================================
-  // Hero 3D Glossy Instanced Droplets (Plateau-Rayleigh Beads & Sheet Chunks)
-  // =========================================================================
-  const HERO_COUNT = 260;
-  const heroGeom = new THREE.SphereGeometry(0.032, 10, 8);
-  const heroMat = new THREE.MeshPhysicalMaterial({
-    color: 0xdcf4ff,
-    roughness: 0.06,
-    metalness: 0.05,
-    clearcoat: 1.0,
-    clearcoatRoughness: 0.04,
-    transparent: true,
-    opacity: 0.86,
-    envMap: studioEnvMap
-  });
-  const heroMesh = new THREE.InstancedMesh(heroGeom, heroMat, HERO_COUNT);
-  heroMesh.frustumCulled = false;
-  heroMesh.renderOrder = 6;
-  scene.add(heroMesh);
+  const dropPoints = new THREE.Mesh(dropInstGeom, dropMat);
+  dropPoints.renderOrder = 5;
+  dropPoints.frustumCulled = false;
+  scene.add(dropPoints);
 
-  const heroData = [];
-  for (let i = 0; i < HERO_COUNT; i++) {
-    const isForward = i < 90;
-    const isBackward = i >= 90 && i < 150;
-    let ox, oy, oz, vx, vy, vz, spawn, drag, grav, radScale;
+  const tmpDummy = new THREE.Object3D();
+  const tmpUp = new THREE.Vector3(0, 1, 0);
+  const tmpDir = new THREE.Vector3();
+  const tmpQuat = new THREE.Quaternion();
 
-    if (isForward) {
-      const phi = rng() * Math.PI * 2;
-      const rRing = 0.08 + 0.18 * rng();
-      ox = -X_WALL;
-      oy = Y_BULLET + Math.sin(phi) * rRing;
-      oz = Math.cos(phi) * rRing;
-      const sp = 0.85 + 1.45 * rng();
-      vx = -sp;
-      vy = Math.sin(phi) * sp * (0.28 + 0.45 * rng());
-      vz = Math.cos(phi) * sp * (0.28 + 0.45 * rng());
-      spawn = 3.82 + rng() * 1.1;
-      drag = 0.34;
-      grav = 0.58;
-      radScale = 0.65 + 1.15 * rng();
-    } else if (isBackward) {
-      const phi = rng() * Math.PI * 2;
-      const rRing = 0.12 + 0.16 * rng();
-      ox = X_WALL;
-      oy = Y_BULLET + Math.sin(phi) * rRing;
-      oz = Math.cos(phi) * rRing;
-      const sp = 0.7 + 1.25 * rng();
-      vx = sp * 0.85;
-      vy = Math.sin(phi) * sp * 0.65;
-      vz = Math.cos(phi) * sp * 0.65;
-      spawn = 1.25 + rng() * 2.0;
-      drag = 0.38;
-      grav = 0.62;
-      radScale = 0.7 + 1.1 * rng();
-    } else {
-      const vSurf = 0.08 + 0.85 * rng();
-      const th = rng() * Math.PI * 2;
-      const rSurf = teardropRadius(vSurf);
-      ox = Math.cos(th) * rSurf;
-      oy = teardropY(vSurf);
-      oz = Math.sin(th) * rSurf;
-      const out = 0.35 + 0.78 * rng();
-      vx = Math.cos(th) * out;
-      vy = (oy + 0.2) * out * 0.35;
-      vz = Math.sin(th) * out;
-      spawn = 4.65 + rng() * 1.45;
-      drag = 0.24;
-      grav = 0.68;
-      radScale = 0.9 + 1.75 * rng();
-    }
-    heroData.push({ ox, oy, oz, vx, vy, vz, spawn, drag, grav, radScale });
-  }
-
-  const dummyObj = new THREE.Object3D();
-  const velDir = new THREE.Vector3();
-  const upAxis = new THREE.Vector3(0, 1, 0);
-
-  function updateHeroDroplets(t) {
-    for (let i = 0; i < HERO_COUNT; i++) {
-      const d = heroData[i];
-      const tau = t - d.spawn;
-      if (tau < 0) {
-        dummyObj.position.set(0, -100, 0);
-        dummyObj.scale.set(0, 0, 0);
-        dummyObj.updateMatrix();
-        heroMesh.setMatrixAt(i, dummyObj.matrix);
-        continue;
-      }
-
-      const k = d.drag;
-      const g = d.grav;
-      const e = Math.exp(-k * tau);
-      const expTerm = 1.0 - e;
-
-      const x = d.ox + d.vx * (expTerm / k);
-      const z = d.oz + d.vz * (expTerm / k);
-      const y = d.oy + ((d.vy + g / k) / k) * expTerm - (g / k) * tau;
-
-      const curVx = d.vx * e;
-      const curVz = d.vz * e;
-      const curVy = (d.vy + g / k) * e - g / k;
-
-      velDir.set(curVx, curVy, curVz);
-      const speed = velDir.length();
-      if (speed > 0.001) {
-        velDir.divideScalar(speed);
-        dummyObj.quaternion.setFromUnitVectors(upAxis, velDir);
-      } else {
-        dummyObj.quaternion.identity();
-      }
-
-      const stretch = 1.0 + Math.min(speed * 1.1, 2.2);
-      const s = d.radScale * smoothstep(0.0, 0.06, tau);
-      dummyObj.position.set(x, y, z);
-      dummyObj.scale.set(s / Math.sqrt(stretch), s * stretch, s / Math.sqrt(stretch));
-      dummyObj.updateMatrix();
-      heroMesh.setMatrixAt(i, dummyObj.matrix);
-    }
-    heroMesh.instanceMatrix.needsUpdate = true;
-  }
-
-  // =========================================================================
-  // Pure Deterministic Scene Evaluation at simTime in [0, 8.000]
-  // =========================================================================
+  // ---------------------------------------------------------------------------
+  // Pure Deterministic State Evaluation: renderAt(simTime)
+  // ---------------------------------------------------------------------------
   function renderAt(t) {
-    const simT = clamp(t, 0, DURATION);
+    const time = clamp(t, 0.0, DURATION);
 
-    // 1. Bullet transform & Mach cone
-    const bx = bulletTipX(simT);
-    const bv = bulletVelocity(simT);
-    bulletGroup.position.set(bx, Y_BULLET, 0);
-    bulletMesh.rotation.x = simT * 48.0;
-    const airShock = (simT < 1.05 ? 1.0 : smoothstep(3.8, 4.1, simT) * (1.0 - smoothstep(4.8, 5.8, simT)));
-    shockMat.uniforms.uIntensity.value = airShock * clamp(bv / 4.0, 0.2, 1.0);
-    shockMesh.visible = shockMat.uniforms.uIntensity.value > 0.01;
+    // 1. Bullet pose & aerodynamic cone
+    const b = evalBullet(time);
+    bulletGroup.position.set(b.xTip, b.yTip, 0);
+    bulletGroup.rotation.z = b.nutation;
+    bulletSpinGroup.rotation.x = b.roll;
+    const inWater = time > T_IMPACT && time < T_EXIT;
+    const machAlpha = inWater
+      ? 0.0
+      : (time <= T_IMPACT ? 0.14 : 0.11 * smoothstep(DURATION, T_EXIT + 0.3, time));
+    machConeMat.uniforms.uAlpha.value = machAlpha;
+    machConeMesh.visible = machAlpha > 0.001;
 
-    // 2. Tether & Knot recoil after rupture
-    const recoil = smoothstep(1.14, 1.85, simT);
-    const postBurst = Math.max(0, simT - 1.14);
-    const tetherSnap = recoil * 0.14 * (1.0 - Math.exp(-postBurst * 3.5) * Math.cos(postBurst * 14.0));
-    tetherMesh.position.y = Y_MAX + Math.max(0, tetherSnap);
-    knotMesh.position.y = Y_MAX + 0.015 + Math.max(0, tetherSnap);
+    // 2. Tether & knot collar recoil
+    const knot = evalKnotPose(time);
+    knotGroup.position.set(knot.x, knot.y, 0);
+    knotGroup.scale.setScalar(knot.scale);
+    const anchorY = 5.2;
+    const dxT = 0 - knot.x;
+    const dyT = anchorY - knot.y;
+    const lenT = Math.hypot(dxT, dyT) || 1.0;
+    tetherMesh.position.set(knot.x, knot.y, 0);
+    tetherMesh.scale.set(1, lenT / 4.2, 1);
+    tetherMesh.rotation.z = -Math.atan2(dxT, dyT);
 
-    // 3. Latex shell (elastic dent 1.00-1.14, rapid tear retraction 1.14-1.60)
-    const dent = smoothstep(1.00, 1.14, simT) * (1.0 - smoothstep(1.14, 1.20, simT));
-    const tear = smoothstep(1.14, 1.60, simT);
-    latexUniforms.uSimTime.value = simT;
-    latexUniforms.uDentDepth.value = dent * 0.24;
-    latexUniforms.uRipplePhase.value = Math.max(0, simT - 1.00);
-    latexUniforms.uTearProgress.value = tear;
-    const latexVisible = tear < 0.995;
+    // 3. Crimson latex balloon membrane & rapid tear
+    let indent = 0.0;
+    if (time > T_IMPACT && time < T_TEAR_END) {
+      if (time <= T_PUNCTURE) {
+        indent = smoothstep(T_IMPACT, T_PUNCTURE, time);
+      } else {
+        indent = 1.0 - smoothstep(T_PUNCTURE, T_PUNCTURE + 0.12, time);
+      }
+    }
+    const tearFront = tearFrontAt(time);
+    latexUniforms.uTime.value = time;
+    latexUniforms.uIndent.value = indent;
+    latexUniforms.uTearFront.value = tearFront;
+    latexUniforms.uKnotY.value = knot.y;
+    const latexVisible = tearFront <= 1.12;
     latexMesh.visible = latexVisible;
     latexBackMesh.visible = latexVisible;
 
-    // Snapped crimson remnant bunching up at tether knot
-    const remShow = smoothstep(1.48, 1.62, simT);
-    remnantMesh.visible = remShow > 0.01;
-    if (remnantMesh.visible) {
-      remnantMesh.position.y = Y_MAX - 0.16 + Math.max(0, tetherSnap) + 0.08 * remShow;
-      const bounce = 1.0 + 0.12 * Math.sin((simT - 1.5) * 9.0) * Math.exp(-(simT - 1.5) * 0.7);
-      remnantMesh.scale.set(0.85 * remShow, 0.65 * remShow * bounce, 0.85 * remShow);
+    // 4. Internal cavitation vapor tunnel (active t = 1.12 .. 5.40)
+    const cavFrontX = Math.max(-R_IMPACT + 0.02, Math.min(R_IMPACT - 0.02, b.xTip + 0.16));
+    const cavBackX = R_IMPACT + 0.01;
+    let cavIntensity = 0.0;
+    if (time > 1.12 && time < 5.40 && cavBackX > cavFrontX + 0.04) {
+      cavIntensity = smoothstep(1.12, 1.55, time) * (1.0 - smoothstep(4.85, 5.40, time));
+    }
+    const cavCollapse = smoothstep(4.15, 5.15, time);
+    cavMat.uniforms.uTime.value = time;
+    cavMat.uniforms.uFrontX.value = cavFrontX;
+    cavMat.uniforms.uBackX.value = cavBackX;
+    cavMat.uniforms.uIntensity.value = cavIntensity;
+    cavMat.uniforms.uCollapse.value = cavCollapse;
+    cavMesh.visible = cavIntensity > 0.002;
+
+    // 5. Free-standing water volume & Rayleigh-Taylor breakup sheets
+    const swell = smoothstep(2.25, 3.95, time) * (1.0 - 0.35 * smoothstep(4.40, 5.80, time));
+    const exitBulge = smoothstep(3.35, 3.80, time) * (1.0 - smoothstep(3.82, 4.35, time));
+    const entryHoleR = time > 1.18 ? 0.11 + 0.19 * smoothstep(1.18, 3.30, time) : 0.0;
+    const exitHoleR = time > 3.80 ? 0.11 + 0.25 * smoothstep(3.80, 4.85, time) : 0.0;
+    const breakup = smoothstep(4.20, 6.75, time);
+    const perforate = smoothstep(4.75, 6.75, time);
+    const waterAlpha = 1.0 - smoothstep(6.05, 6.78, time);
+
+    waterMat.uniforms.uTime.value = time;
+    waterMat.uniforms.uSwell.value = swell;
+    waterMat.uniforms.uExitBulge.value = exitBulge;
+    waterMat.uniforms.uEntryHoleR.value = entryHoleR;
+    waterMat.uniforms.uExitHoleR.value = exitHoleR;
+    waterMat.uniforms.uBreakup.value = breakup;
+    waterMat.uniforms.uPerforate.value = perforate;
+    waterMat.uniforms.uGlobalAlpha.value = waterAlpha;
+    waterMesh.visible = waterAlpha > 0.002;
+
+    // 6. Torn crimson latex shreds
+    shredMesh.visible = time > T_PUNCTURE;
+    if (shredMesh.visible) {
+      for (let i = 0; i < SHRED_COUNT; i++) {
+        const s = shreds[i];
+        const age = time - s.birth;
+        if (age <= 0.0) {
+          tmpDummy.position.set(0, 0, 50);
+          tmpDummy.scale.setScalar(0.0001);
+        } else {
+          const st = integrateBallistic(s.p0, s.v0, age, s.drag, s.grav);
+          const fadeOut = 1.0 - smoothstep(4.5, 6.4, age);
+          tmpDummy.position.set(st.x, st.y, st.z);
+          tmpDummy.rotation.set(
+            s.rot0.x + s.spin.x * age,
+            s.rot0.y + s.spin.y * age,
+            s.rot0.z + s.spin.z * age
+          );
+          const sc = Math.max(0.0001, fadeOut);
+          tmpDummy.scale.set(s.sx * sc, s.sy * sc, sc);
+        }
+        tmpDummy.updateMatrix();
+        shredMesh.setMatrixAt(i, tmpDummy.matrix);
+      }
+      shredMesh.instanceMatrix.needsUpdate = true;
     }
 
-    // 4. Water core shell (Inertial Stasis 1.6-2.4 -> Cavitation 2.4-3.8 -> Exit 3.8-5.0 -> Breakup 5.0-8.0)
-    waterUniforms.uSimTime.value = simT;
-    waterUniforms.uEntryCrown.value = smoothstep(1.22, 2.85, simT) * (1.0 - smoothstep(4.8, 6.0, simT));
-    waterUniforms.uCavitation.value = smoothstep(2.15, 3.85, simT) * (1.0 - smoothstep(5.4, 6.6, simT));
-    waterUniforms.uExitBulge.value = smoothstep(3.35, 3.85, simT) * (1.0 - smoothstep(4.2, 5.2, simT));
-    const breakup = smoothstep(4.85, 6.45, simT);
-    waterUniforms.uBreakup.value = breakup;
-    const fallT = Math.max(0, simT - 4.85);
-    waterUniforms.uGravityFall.value = 0.5 * 0.68 * fallT * fallT;
-    waterMesh.visible = breakup < 0.995;
+    // 7. Macro 3D water blobs & elongated ligaments
+    blobMesh.visible = time > 1.24;
+    if (blobMesh.visible) {
+      for (let i = 0; i < BLOB_COUNT; i++) {
+        const m = blobs[i];
+        const age = time - m.birth;
+        if (age <= 0.0) {
+          tmpDummy.position.set(0, 0, 50);
+          tmpDummy.scale.setScalar(0.0001);
+        } else {
+          const st = integrateBallistic(m.p0, m.v0, age, m.drag, m.grav);
+          const grow = smoothstep(0.0, 0.14, age);
+          const speed = Math.hypot(st.vx, st.vy, st.vz);
+          const elong = 1.0 + Math.min(1.6, speed * m.stretchFactor);
+          const pinch = 1.0 / Math.sqrt(elong);
+          tmpDummy.position.set(st.x, st.y, st.z);
+          if (speed > 1e-4) {
+            tmpDir.set(st.vx / speed, st.vy / speed, st.vz / speed);
+            tmpQuat.setFromUnitVectors(tmpUp, tmpDir);
+            tmpDummy.quaternion.copy(tmpQuat);
+          } else {
+            tmpDummy.quaternion.identity();
+          }
+          const s = m.baseScale * grow;
+          tmpDummy.scale.set(s * pinch, s * elong, s * pinch);
+        }
+        tmpDummy.updateMatrix();
+        blobMesh.setMatrixAt(i, tmpDummy.matrix);
+      }
+      blobMesh.instanceMatrix.needsUpdate = true;
+    }
 
-    // 5. Internal cavitation vapor tunnel (1.30s - 5.10s)
-    const cavIntensity = smoothstep(1.30, 2.65, simT) * (1.0 - smoothstep(4.2, 5.3, simT));
-    cavUniforms.uSimTime.value = simT;
-    cavUniforms.uCavStartX.value = X_WALL - 0.02;
-    cavUniforms.uCavEndX.value = Math.max(-X_WALL, bx + 0.12);
-    cavUniforms.uCavIntensity.value = cavIntensity;
-    cavUniforms.uCavCollapse.value = smoothstep(3.8, 5.0, simT);
-    cavMesh.visible = cavIntensity > 0.01 && bx < X_WALL - 0.15;
-
-    // 6. Particle & Hero Droplet engines
-    particleUniforms.uSimTime.value = simT;
-    particleUniforms.uPixelRatio.value = Math.min(window.devicePixelRatio || 1, 2);
-    updateHeroDroplets(simT);
+    // 8. 4,200 micro-droplets, mist, and cavitation bubbles
+    dropPoints.visible = time > 1.15;
+    if (dropPoints.visible) {
+      for (let i = 0; i < DROP_COUNT; i++) {
+        const d = drops[i];
+        const age = time - d.birth;
+        const i3 = i * 3;
+        if (age <= 0.0 || age >= d.life) {
+          dropPosArr[i3] = 0;
+          dropPosArr[i3 + 1] = 0;
+          dropPosArr[i3 + 2] = 50;
+          dropVelArr[i3] = 0;
+          dropVelArr[i3 + 1] = 0;
+          dropVelArr[i3 + 2] = 0;
+          dropMetaArr[i3] = 0;
+          dropMetaArr[i3 + 1] = 0;
+          dropMetaArr[i3 + 2] = d.kind;
+        } else {
+          const st = integrateBallistic(d.p0, d.v0, age, d.drag, d.grav);
+          const fadeIn = smoothstep(0.0, 0.08, age);
+          const fadeOut = d.kind === 2
+            ? (1.0 - smoothstep(d.life * 0.55, d.life, age))
+            : (1.0 - smoothstep(d.life - 1.5, d.life, age));
+          dropPosArr[i3] = st.x;
+          dropPosArr[i3 + 1] = st.y;
+          dropPosArr[i3 + 2] = st.z;
+          dropVelArr[i3] = st.vx;
+          dropVelArr[i3 + 1] = st.vy;
+          dropVelArr[i3 + 2] = st.vz;
+          dropMetaArr[i3] = d.size;
+          dropMetaArr[i3 + 1] = fadeIn * fadeOut;
+          dropMetaArr[i3 + 2] = d.kind;
+        }
+      }
+      dropPosAttr.needsUpdate = true;
+      dropVelAttr.needsUpdate = true;
+      dropMetaAttr.needsUpdate = true;
+    }
 
     renderer.render(scene, camera);
   }
 
-  // =========================================================================
-  // Exact 5-State Playback State Machine (COUNTDOWN, PLAYING, PAUSED, REFIRE_HOLD, ENDED)
-  // =========================================================================
-  const countdownEl = document.getElementById('countdown');
-  const btnRefire = document.getElementById('btn-refire');
-  const btnToggle = document.getElementById('btn-toggle');
-  const iconPause = document.getElementById('icon-pause');
-  const iconPlay = document.getElementById('icon-play');
-  const speedPills = Array.from(document.querySelectorAll('.speed-pill'));
-  const scrubber = document.getElementById('scrubber');
+  // ---------------------------------------------------------------------------
+  // Resize Handling
+  // ---------------------------------------------------------------------------
+  function handleResize() {
+    const w = window.innerWidth;
+    const h = window.innerHeight;
+    if (w <= 0 || h <= 0) return;
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+    renderer.setSize(w, h, false);
+    camera.aspect = w / h;
+    camera.updateProjectionMatrix();
+    renderAt(simTime);
+  }
+  window.addEventListener("resize", handleResize);
 
-  let state = 'COUNTDOWN';
+  // ---------------------------------------------------------------------------
+  // 5-State Playback State Machine (COUNTDOWN, PLAYING, PAUSED, REFIRE_HOLD, ENDED)
+  // ---------------------------------------------------------------------------
+  const countdownEl = document.getElementById("countdown");
+  const btnRefire = document.getElementById("btn-refire");
+  const btnToggle = document.getElementById("btn-toggle");
+  const iconPause = document.getElementById("icon-pause");
+  const iconPlay = document.getElementById("icon-play");
+  const speedPills = Array.prototype.slice.call(document.querySelectorAll(".speed-pill"));
+  const scrubber = document.getElementById("scrubber");
+
+  let state = "COUNTDOWN";
   let simTime = 0.000;
   let playbackSpeed = 1.0;
-  let countdownElapsed = 0.0;
-  let holdElapsed = 0.0;
-  let lastFrameTime = null;
-
-  function showPlayIcon() {
-    iconPause.style.display = 'none';
-    iconPlay.style.display = 'block';
-    btnToggle.setAttribute('aria-label', 'Play');
-  }
+  let countdownElapsed = 0.000;
+  let holdElapsed = 0.000;
+  let lastRafTime = null;
+  let skipNextDt = true;
 
   function showPauseIcon() {
-    iconPlay.style.display = 'none';
-    iconPause.style.display = 'block';
-    btnToggle.setAttribute('aria-label', 'Pause');
+    iconPause.style.display = "";
+    iconPlay.style.display = "none";
+    btnToggle.setAttribute("aria-label", "Pause");
+  }
+
+  function showPlayIcon() {
+    iconPause.style.display = "none";
+    iconPlay.style.display = "";
+    btnToggle.setAttribute("aria-label", "Play");
   }
 
   function hideCountdown() {
-    countdownEl.style.display = 'none';
-    countdownEl.textContent = '';
+    countdownEl.style.display = "none";
+    countdownEl.textContent = "";
   }
 
-  function updateCountdownDOM(elapsed) {
-    countdownEl.style.display = 'block';
-    if (elapsed < 1.000) {
-      countdownEl.textContent = '3';
-    } else if (elapsed < 2.000) {
-      countdownEl.textContent = '2';
+  function updateCountdownDisplay() {
+    countdownEl.style.display = "block";
+    if (countdownElapsed < 1.000) {
+      countdownEl.textContent = "3";
+    } else if (countdownElapsed < 2.000) {
+      countdownEl.textContent = "2";
     } else {
-      countdownEl.textContent = '1';
+      countdownEl.textContent = "1";
     }
   }
 
-  // Control handlers
-  btnToggle.addEventListener('click', function () {
-    if (state === 'PLAYING') {
-      state = 'PAUSED';
+  btnToggle.addEventListener("click", function () {
+    if (state === "PLAYING") {
+      state = "PAUSED";
       showPlayIcon();
-    } else if (state === 'COUNTDOWN' || state === 'REFIRE_HOLD') {
+    } else if (state === "COUNTDOWN" || state === "REFIRE_HOLD") {
       hideCountdown();
       simTime = 0.000;
-      scrubber.value = '0';
+      scrubber.value = "0";
       renderAt(0.000);
-      state = 'PAUSED';
+      state = "PAUSED";
       showPlayIcon();
-    } else if (state === 'PAUSED') {
-      state = 'PLAYING';
+    } else if (state === "PAUSED") {
+      state = "PLAYING";
+      skipNextDt = true;
       showPauseIcon();
-    } else if (state === 'ENDED') {
+    } else if (state === "ENDED") {
       hideCountdown();
       simTime = 0.000;
-      scrubber.value = '0';
+      scrubber.value = "0";
       renderAt(0.000);
-      state = 'PLAYING';
+      state = "PLAYING";
+      skipNextDt = true;
       showPauseIcon();
     }
   });
 
   speedPills.forEach(function (pill) {
-    pill.addEventListener('click', function () {
-      playbackSpeed = parseFloat(pill.getAttribute('data-speed'));
+    pill.addEventListener("click", function () {
+      const nextSpeed = parseFloat(pill.getAttribute("data-speed"));
+      if (!isNaN(nextSpeed)) {
+        playbackSpeed = nextSpeed;
+      }
       speedPills.forEach(function (p) {
-        const active = (p === pill);
-        p.classList.toggle('is-active', active);
-        p.setAttribute('aria-checked', active ? 'true' : 'false');
+        const active = p === pill;
+        p.classList.toggle("is-active", active);
+        p.setAttribute("aria-checked", active ? "true" : "false");
       });
     });
   });
 
-  scrubber.addEventListener('input', function () {
-    if (state === 'COUNTDOWN' || state === 'REFIRE_HOLD') {
-      hideCountdown();
-    }
-    simTime = clamp(parseFloat(scrubber.value) || 0, 0, DURATION);
-    state = 'PAUSED';
+  scrubber.addEventListener("input", function () {
+    hideCountdown();
+    simTime = clamp(parseFloat(scrubber.value) || 0.0, 0.0, DURATION);
+    state = "PAUSED";
     showPlayIcon();
     renderAt(simTime);
   });
 
-  btnRefire.addEventListener('click', function () {
+  btnRefire.addEventListener("click", function () {
     hideCountdown();
     simTime = 0.000;
-    scrubber.value = '0';
-    renderAt(0.000);
+    scrubber.value = "0";
+    holdElapsed = 0.000;
+    state = "REFIRE_HOLD";
+    skipNextDt = true;
     showPauseIcon();
-    holdElapsed = 0.0;
-    state = 'REFIRE_HOLD';
+    renderAt(0.000);
   });
 
-  // Render initial resting scene (simTime = 0.000) before starting countdown rAF
+  // Initial resting scene render before first rAF countdown tick
+  countdownEl.style.display = "block";
+  countdownEl.textContent = "3";
+  scrubber.value = "0";
+  showPauseIcon();
   renderAt(0.000);
-  scrubber.value = '0';
-  updateCountdownDOM(0.0);
 
   function tick(now) {
-    if (lastFrameTime === null) {
-      lastFrameTime = now;
-      countdownElapsed = 0.0;
-      requestAnimationFrame(tick);
-      return;
+    requestAnimationFrame(tick);
+
+    let dt = 0.0;
+    if (lastRafTime === null || skipNextDt) {
+      lastRafTime = now;
+      skipNextDt = false;
+      dt = 0.0;
+    } else {
+      dt = Math.min(0.1, Math.max(0.0, (now - lastRafTime) / 1000.0));
+      lastRafTime = now;
     }
 
-    const dt = Math.min(0.1, Math.max(0.0, (now - lastFrameTime) / 1000.0));
-    lastFrameTime = now;
-
-    if (state === 'COUNTDOWN') {
+    if (state === "COUNTDOWN") {
       countdownElapsed += dt;
       if (countdownElapsed < 3.000) {
-        updateCountdownDOM(countdownElapsed);
-        simTime = 0.000;
-        scrubber.value = '0';
+        updateCountdownDisplay();
       } else {
         hideCountdown();
-        state = 'PLAYING';
-        const overflow = countdownElapsed - 3.000;
-        simTime = Math.min(DURATION, overflow * playbackSpeed);
+        state = "PLAYING";
+        simTime = Math.min(DURATION, (countdownElapsed - 3.000) * playbackSpeed);
         scrubber.value = simTime.toFixed(3);
         renderAt(simTime);
       }
-    } else if (state === 'REFIRE_HOLD') {
+    } else if (state === "REFIRE_HOLD") {
+      hideCountdown();
       holdElapsed += dt;
       if (holdElapsed >= 1.000) {
-        state = 'PLAYING';
-        const overflow = holdElapsed - 1.000;
-        simTime = Math.min(DURATION, overflow * playbackSpeed);
+        state = "PLAYING";
+        simTime = Math.min(DURATION, (holdElapsed - 1.000) * playbackSpeed);
         scrubber.value = simTime.toFixed(3);
         renderAt(simTime);
       }
-    } else if (state === 'PLAYING') {
+    } else if (state === "PLAYING") {
       simTime = Math.min(DURATION, simTime + dt * playbackSpeed);
       scrubber.value = simTime.toFixed(3);
       renderAt(simTime);
@@ -1610,12 +1900,10 @@ html, body {
         simTime = DURATION;
         scrubber.value = DURATION.toFixed(3);
         renderAt(DURATION);
-        state = 'ENDED';
+        state = "ENDED";
         showPlayIcon();
       }
     }
-
-    requestAnimationFrame(tick);
   }
 
   requestAnimationFrame(tick);

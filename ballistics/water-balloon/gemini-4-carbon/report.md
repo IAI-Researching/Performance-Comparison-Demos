@@ -1,19 +1,19 @@
 # Benchmark Execution Report: Gemini 4 Carbon (High)
 
 - **Benchmark**: `ballistics/water-balloon`
-- **Developer Harness**: `Antigravity CLI 1.5.6`
+- **Developer Harness**: `Antigravity CLI 1.5.7`
 - **Model ID**: `gemini-4-carbon-high`
 - **Reasoning Effort**: `High`
 - **Deliverable**: `index.html`
-- **Code Size**: 99,631 bytes | 2,557 LOC
-- **SHA-256**: `076115f2e6ece74454c00af9669e248f81988e013f142e7a4b5e52601094a42b`
-- **Wall-Clock Duration**: 1559.03s
-- **Agent Turns / Steps**: 26
-- **Tool Calls**: 25
-- **Input Tokens (Uncached)**: 210,534
-- **Cached Read Tokens**: 2,795,612
+- **Code Size**: 95,714 bytes | 2,338 LOC
+- **SHA-256**: `48f8fb525f1da5c77dd3ea7e4cf21d140822781563d338d7c72a6e0a29256bc9`
+- **Wall-Clock Duration**: 2226.92s
+- **Agent Turns / Steps**: 21
+- **Tool Calls**: 17
+- **Input Tokens (Uncached)**: 447,277
+- **Cached Read Tokens**: 1,650,969
 - **Cache Creation Tokens**: 0
-- **Thinking / Reasoning Tokens**: 52,814
-- **Output Tokens**: 107,376
-- **Verification**: PASS (100.0% — 18/18 checks)
-- **Unobstructed Viewport**: PASSED (Zero extraneous headers, mastheads, or phase panels)
+- **Thinking / Reasoning Tokens**: 75,690
+- **Output Tokens**: 126,437
+- **Verification**: FAIL (94.4% — 17/18 checks)
+- **Unobstructed Viewport**: FAILED / INCOMPLETE

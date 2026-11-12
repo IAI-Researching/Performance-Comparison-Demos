@@ -30,7 +30,7 @@ Models:
 
 ---
 
-### Track 2: Antigravity CLI (Antigravity CLI 1.5.6 — First-Party Native)
+### Track 2: Antigravity CLI (Antigravity CLI 1.5.7 — First-Party Native)
 Command:
 agy \
   --model <model_id> \
