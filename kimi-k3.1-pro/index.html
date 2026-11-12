@@ -1,0 +1,1161 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Water Balloon Ballistics</title>
+  <style>
+*, *::before, *::after {
+  box-sizing: border-box;
+}
+html, body {
+  margin: 0;
+  padding: 0;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  background: radial-gradient(circle at center, #161922 0%, #090a0f 100%);
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -webkit-user-select: none;
+  user-select: none;
+}
+#stage {
+  display: block;
+  width: 100vw;
+  height: 100vh;
+}
+
+#countdown {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 50;
+  pointer-events: none;
+  font-size: 96px;
+  font-weight: 700;
+  line-height: 1;
+  color: rgba(255, 255, 255, 0.35);
+  font-variant-numeric: tabular-nums;
+}
+
+#dock {
+  position: fixed;
+  bottom: 24px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 100;
+  width: 536px;
+  height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 0 14px;
+  background: rgba(15, 17, 23, 0.78);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 9999px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.35);
+}
+
+#dock button {
+  font-family: inherit;
+  line-height: 1;
+  margin: 0;
+  flex-shrink: 0;
+  white-space: nowrap;
+  appearance: none;
+  -webkit-appearance: none;
+}
+
+.dock-sep {
+  width: 1px;
+  height: 18px;
+  flex-shrink: 0;
+  background: rgba(255, 255, 255, 0.12);
+}
+
+#btn-refire {
+  width: 78px;
+  height: 28px;
+  padding: 0 10px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 9999px;
+  color: #ffffff;
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+}
+#btn-refire:hover {
+  background: rgba(255, 255, 255, 0.16);
+}
+
+#btn-toggle {
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 9999px;
+  color: #ffffff;
+  cursor: pointer;
+}
+#btn-toggle:hover {
+  background: rgba(255, 255, 255, 0.16);
+}
+
+#speed-group {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  flex-shrink: 0;
+}
+.speed-pill {
+  width: 42px;
+  height: 24px;
+  padding: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 9999px;
+  color: rgba(255, 255, 255, 0.6);
+  font-size: 11px;
+  font-weight: 500;
+  font-variant-numeric: tabular-nums;
+  cursor: pointer;
+}
+.speed-pill:hover {
+  color: #ffffff;
+  background: rgba(255, 255, 255, 0.06);
+}
+.speed-pill.is-active {
+  color: #ffffff;
+  background: rgba(255, 255, 255, 0.18);
+  border-color: rgba(255, 255, 255, 0.2);
+}
+
+#scrubber {
+  width: 157px;
+  height: 4px;
+  margin: 0;
+  padding: 0;
+  flex-shrink: 0;
+  appearance: none;
+  -webkit-appearance: none;
+  background: rgba(255, 255, 255, 0.22);
+  border-radius: 9999px;
+  outline: none;
+  cursor: pointer;
+}
+#scrubber::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: #ffffff;
+  border: none;
+  cursor: pointer;
+}
+#scrubber::-moz-range-thumb {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: #ffffff;
+  border: none;
+  cursor: pointer;
+}
+  </style>
+</head>
+<body>
+<canvas id="stage"></canvas>
+<div id="countdown" aria-hidden="true">3</div>
+
+<div id="dock" role="toolbar" aria-label="Simulation Controls">
+  <button id="btn-refire" type="button" aria-label="Re-fire" title="Re-fire">
+    <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+      <path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.19"/>
+    </svg>
+    <span>Re-fire</span>
+  </button>
+  <span class="dock-sep" aria-hidden="true"></span>
+  <button id="btn-toggle" type="button" aria-label="Pause" title="Play / Pause">
+    <svg id="icon-pause" viewBox="0 0 24 24" width="14" height="14" fill="currentColor" aria-hidden="true">
+      <rect x="6" y="4" width="4" height="16" rx="1"/>
+      <rect x="14" y="4" width="4" height="16" rx="1"/>
+    </svg>
+    <svg id="icon-play" viewBox="0 0 24 24" width="14" height="14" fill="currentColor" aria-hidden="true" style="display:none;">
+      <path d="M8 5v14l11-7z"/>
+    </svg>
+  </button>
+  <span class="dock-sep" aria-hidden="true"></span>
+  <div id="speed-group" role="radiogroup" aria-label="Playback Speed">
+    <button class="speed-pill" type="button" role="radio" aria-checked="false" data-speed="0.25">0.25×</button>
+    <button class="speed-pill" type="button" role="radio" aria-checked="false" data-speed="0.5">0.5×</button>
+    <button class="speed-pill is-active" type="button" role="radio" aria-checked="true" data-speed="1.0">1.0×</button>
+    <button class="speed-pill" type="button" role="radio" aria-checked="false" data-speed="2.0">2.0×</button>
+  </div>
+  <span class="dock-sep" aria-hidden="true"></span>
+  <input id="scrubber" type="range" min="0" max="8.000" step="0.001" value="0" aria-label="Timeline Scrubber">
+</div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+(() => {
+  'use strict';
+
+  const DURATION = 8.000;
+  const State = Object.freeze({
+    COUNTDOWN: 'COUNTDOWN',
+    PLAYING: 'PLAYING',
+    PAUSED: 'PAUSED',
+    REFIRE_HOLD: 'REFIRE_HOLD',
+    ENDED: 'ENDED'
+  });
+
+  const canvas = document.getElementById('stage');
+  const countdown = document.getElementById('countdown');
+  const scrubber = document.getElementById('scrubber');
+  const toggleButton = document.getElementById('btn-toggle');
+  const refireButton = document.getElementById('btn-refire');
+  const pauseIcon = document.getElementById('icon-pause');
+  const playIcon = document.getElementById('icon-play');
+  const speedPills = Array.from(document.querySelectorAll('.speed-pill'));
+
+  const renderer = new THREE.WebGLRenderer({ canvas: document.getElementById('stage'), antialias: true, alpha: true });
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+  renderer.setSize(window.innerWidth, window.innerHeight, false);
+  renderer.setClearColor(0x000000, 0);
+  renderer.outputEncoding = THREE.sRGBEncoding;
+  renderer.toneMapping = THREE.ACESFilmicToneMapping;
+  renderer.toneMappingExposure = 1.18;
+
+  const scene = new THREE.Scene();
+  const camera = new THREE.PerspectiveCamera(35, window.innerWidth / window.innerHeight, 0.1, 60);
+  camera.position.set(0, 0, 9.5);
+  camera.lookAt(0, 0, 0);
+
+  scene.add(new THREE.AmbientLight(0x526078, 0.72));
+  const keyLight = new THREE.DirectionalLight(0xfff1ea, 2.15);
+  keyLight.position.set(1.5, 4.5, 6);
+  scene.add(keyLight);
+  const cyanRim = new THREE.PointLight(0x83eaff, 3.8, 18, 2);
+  cyanRim.position.set(-3.8, 1.7, 2.1);
+  scene.add(cyanRim);
+  const magentaRim = new THREE.PointLight(0xff6f9d, 2.7, 16, 2);
+  magentaRim.position.set(3.5, -0.7, 0.2);
+  scene.add(magentaRim);
+  const topLight = new THREE.PointLight(0xdcecff, 2.1, 14, 2);
+  topLight.position.set(0, 4.2, 1.5);
+  scene.add(topLight);
+
+  function mulberry32(seed) {
+    return function () {
+      let value = seed += 0x6D2B79F5;
+      value = Math.imul(value ^ value >>> 15, value | 1);
+      value ^= value + Math.imul(value ^ value >>> 7, value | 61);
+      return ((value ^ value >>> 14) >>> 0) / 4294967296;
+    };
+  }
+
+  const random = mulberry32(42);
+  const clamp01 = value => Math.max(0, Math.min(1, value));
+  const smooth = (start, end, value) => {
+    const x = clamp01((value - start) / (end - start));
+    return x * x * (3 - 2 * x);
+  };
+  const lerp = (a, b, amount) => a + (b - a) * amount;
+
+  const haloMaterial = new THREE.ShaderMaterial({
+    transparent: true,
+    depthWrite: false,
+    blending: THREE.AdditiveBlending,
+    uniforms: { uTime: { value: 0 } },
+    vertexShader: `
+      varying vec2 vUv;
+      void main() {
+        vUv = uv;
+        gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+      }
+    `,
+    fragmentShader: `
+      uniform float uTime;
+      varying vec2 vUv;
+      void main() {
+        vec2 p = (vUv - 0.5) * vec2(1.0, 1.15);
+        float glow = exp(-dot(p, p) * 10.0);
+        float pulse = 0.96 + 0.04 * sin(uTime * 0.7);
+        gl_FragColor = vec4(vec3(0.12, 0.22, 0.31), glow * 0.19 * pulse);
+        #include <encodings_fragment>
+      }
+    `
+  });
+  const halo = new THREE.Mesh(new THREE.PlaneGeometry(6.5, 6.5), haloMaterial);
+  halo.position.z = -2.2;
+  scene.add(halo);
+
+  function createBalloonGeometry() {
+    const radialSegments = 64;
+    const heightSegments = 48;
+    const positions = [];
+    const uvs = [];
+    const indices = [];
+    for (let yIndex = 0; yIndex <= heightSegments; yIndex++) {
+      const v = yIndex / heightSegments;
+      const phi = v * Math.PI;
+      const cosine = Math.cos(phi);
+      const sine = Math.sin(phi);
+      const radius = sine * (1.05 - 0.32 * cosine);
+      for (let xIndex = 0; xIndex <= radialSegments; xIndex++) {
+        const u = xIndex / radialSegments;
+        const theta = u * Math.PI * 2;
+        const lowerWeight = (1 - cosine) * 0.5;
+        positions.push(
+          radius * Math.cos(theta) + 0.025 * lowerWeight,
+          1.42 * cosine - 0.035 * lowerWeight,
+          radius * Math.sin(theta)
+        );
+        uvs.push(u, 1 - v);
+      }
+    }
+    for (let yIndex = 0; yIndex < heightSegments; yIndex++) {
+      for (let xIndex = 0; xIndex < radialSegments; xIndex++) {
+        const a = yIndex * (radialSegments + 1) + xIndex;
+        const b = a + radialSegments + 1;
+        indices.push(a, a + 1, b, b, a + 1, b + 1);
+      }
+    }
+    const geometry = new THREE.BufferGeometry();
+    geometry.setIndex(indices);
+    geometry.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3).setUsage(THREE.DynamicDrawUsage));
+    geometry.setAttribute('uv', new THREE.Float32BufferAttribute(uvs, 2));
+    geometry.computeVertexNormals();
+    return geometry;
+  }
+
+  const latexGeometry = createBalloonGeometry();
+  const latexBase = latexGeometry.attributes.position.array.slice();
+  const waterGeometry = createBalloonGeometry();
+  const waterBase = waterGeometry.attributes.position.array.slice();
+
+  let latexShader = null;
+  const latexMaterial = new THREE.MeshPhysicalMaterial({
+    color: 0xe61c24,
+    emissive: 0x280206,
+    roughness: 0.17,
+    metalness: 0.03,
+    clearcoat: 1,
+    clearcoatRoughness: 0.08,
+    transmission: 0.07,
+    transparent: true,
+    opacity: 0.82,
+    side: THREE.DoubleSide,
+    depthWrite: false
+  });
+  latexMaterial.onBeforeCompile = shader => {
+    shader.uniforms.uTear = { value: 0 };
+    shader.vertexShader = 'varying vec3 vLatexPosition;\n' + shader.vertexShader;
+    shader.vertexShader = shader.vertexShader.replace(
+      '#include <begin_vertex>',
+      '#include <begin_vertex>\nvLatexPosition = position;'
+    );
+    shader.fragmentShader = 'uniform float uTear;\nvarying vec3 vLatexPosition;\n' + shader.fragmentShader;
+    shader.fragmentShader = shader.fragmentShader.replace(
+      '#include <clipping_planes_fragment>',
+      `#include <clipping_planes_fragment>
+      if (uTear > 0.0001) {
+        float holeDistance = distance(normalize(vLatexPosition), normalize(vec3(1.0, 0.08, 0.25)));
+        float raggedEdge = 0.055 * sin(vLatexPosition.y * 23.0 + vLatexPosition.z * 19.0);
+        if (holeDistance < uTear * 2.25 + raggedEdge * uTear) discard;
+      }`
+    );
+    latexShader = shader;
+  };
+
+  const latex = new THREE.Mesh(latexGeometry, latexMaterial);
+  latex.renderOrder = 3;
+  scene.add(latex);
+
+  const rimMaterial = new THREE.ShaderMaterial({
+    transparent: true,
+    depthWrite: false,
+    side: THREE.FrontSide,
+    blending: THREE.AdditiveBlending,
+    uniforms: {
+      uTear: { value: 0 },
+      uAlpha: { value: 0.42 }
+    },
+    vertexShader: `
+      varying vec3 vWorldNormal;
+      varying vec3 vWorldPosition;
+      varying vec3 vLocalPosition;
+      void main() {
+        vWorldNormal = normalize(mat3(modelMatrix) * normal);
+        vec4 worldPosition = modelMatrix * vec4(position, 1.0);
+        vWorldPosition = worldPosition.xyz;
+        vLocalPosition = position;
+        gl_Position = projectionMatrix * viewMatrix * worldPosition;
+      }
+    `,
+    fragmentShader: `
+      uniform float uTear;
+      uniform float uAlpha;
+      varying vec3 vWorldNormal;
+      varying vec3 vWorldPosition;
+      varying vec3 vLocalPosition;
+      void main() {
+        if (uTear > 0.0001) {
+          float holeDistance = distance(normalize(vLocalPosition), normalize(vec3(1.0, 0.08, 0.25)));
+          float raggedEdge = 0.055 * sin(vLocalPosition.y * 23.0 + vLocalPosition.z * 19.0);
+          if (holeDistance < uTear * 2.25 + raggedEdge * uTear) discard;
+        }
+        vec3 viewDirection = normalize(cameraPosition - vWorldPosition);
+        float fresnel = pow(1.0 - abs(dot(normalize(vWorldNormal), viewDirection)), 2.35);
+        vec3 rimColor = mix(vec3(1.0, 0.24, 0.29), vec3(0.55, 0.92, 1.0), fresnel);
+        gl_FragColor = vec4(rimColor, fresnel * uAlpha);
+        #include <encodings_fragment>
+      }
+    `
+  });
+  const latexRim = new THREE.Mesh(latexGeometry, rimMaterial);
+  latexRim.renderOrder = 4;
+  scene.add(latexRim);
+
+  const waterMaterial = new THREE.MeshPhysicalMaterial({
+    color: 0x78c9d9,
+    emissive: 0x061820,
+    roughness: 0.08,
+    metalness: 0.02,
+    clearcoat: 1,
+    clearcoatRoughness: 0.06,
+    transmission: 0.18,
+    transparent: true,
+    opacity: 0.2,
+    side: THREE.DoubleSide,
+    depthWrite: false
+  });
+  const water = new THREE.Mesh(waterGeometry, waterMaterial);
+  water.renderOrder = 2;
+  scene.add(water);
+
+  const tetherMaterial = new THREE.LineBasicMaterial({ color: 0x7d8794, transparent: true, opacity: 0.52 });
+  const tetherGeometry = new THREE.BufferGeometry().setFromPoints([
+    new THREE.Vector3(0, 1.54, 0),
+    new THREE.Vector3(0, 5.5, 0)
+  ]);
+  scene.add(new THREE.Line(tetherGeometry, tetherMaterial));
+
+  const neckMaterial = new THREE.MeshPhysicalMaterial({
+    color: 0xc81420,
+    roughness: 0.24,
+    clearcoat: 0.85,
+    side: THREE.DoubleSide
+  });
+  const neck = new THREE.Mesh(new THREE.CylinderGeometry(0.047, 0.095, 0.23, 24), neckMaterial);
+  neck.position.y = 1.49;
+  scene.add(neck);
+  const tie = new THREE.Mesh(new THREE.TorusGeometry(0.07, 0.022, 10, 32), neckMaterial);
+  tie.rotation.x = Math.PI / 2;
+  tie.position.y = 1.405;
+  scene.add(tie);
+
+  const bullet = new THREE.Group();
+  const copperMaterial = new THREE.MeshStandardMaterial({
+    color: 0xc47b3c,
+    metalness: 0.91,
+    roughness: 0.2
+  });
+  const brassMaterial = new THREE.MeshStandardMaterial({
+    color: 0xb99a4b,
+    metalness: 0.93,
+    roughness: 0.24
+  });
+  const darkBrassMaterial = new THREE.MeshStandardMaterial({
+    color: 0x725325,
+    metalness: 0.9,
+    roughness: 0.28
+  });
+  const noseGeometry = new THREE.ConeGeometry(0.115, 0.32, 40);
+  noseGeometry.rotateZ(Math.PI / 2);
+  const nose = new THREE.Mesh(noseGeometry, copperMaterial);
+  nose.position.x = -0.4;
+  bullet.add(nose);
+  const bodyGeometry = new THREE.CylinderGeometry(0.115, 0.12, 0.6, 40);
+  bodyGeometry.rotateZ(Math.PI / 2);
+  const body = new THREE.Mesh(bodyGeometry, copperMaterial);
+  body.position.x = 0.06;
+  bullet.add(body);
+  const baseGeometry = new THREE.CylinderGeometry(0.121, 0.121, 0.17, 40);
+  baseGeometry.rotateZ(Math.PI / 2);
+  const bulletBase = new THREE.Mesh(baseGeometry, brassMaterial);
+  bulletBase.position.x = 0.32;
+  bullet.add(bulletBase);
+  for (const x of [0.235, 0.285]) {
+    const bandGeometry = new THREE.TorusGeometry(0.123, 0.009, 8, 40);
+    bandGeometry.rotateY(Math.PI / 2);
+    const band = new THREE.Mesh(bandGeometry, darkBrassMaterial);
+    band.position.x = x;
+    bullet.add(band);
+  }
+  const trailGeometry = new THREE.CylinderGeometry(0.008, 0.025, 1.15, 16, 1, true);
+  trailGeometry.rotateZ(Math.PI / 2);
+  const trailMaterial = new THREE.MeshBasicMaterial({
+    color: 0xe6b37a,
+    transparent: true,
+    opacity: 0.13,
+    blending: THREE.AdditiveBlending,
+    depthWrite: false
+  });
+  const trail = new THREE.Mesh(trailGeometry, trailMaterial);
+  trail.position.x = 0.96;
+  bullet.add(trail);
+  bullet.position.z = 0.4;
+  bullet.renderOrder = 5;
+  scene.add(bullet);
+
+  const tunnelGeometry = new THREE.CylinderGeometry(1, 0.35, 1, 36, 1, true);
+  tunnelGeometry.rotateZ(Math.PI / 2);
+  const tunnelMaterial = new THREE.MeshBasicMaterial({
+    color: 0xa9efff,
+    transparent: true,
+    opacity: 0,
+    side: THREE.DoubleSide,
+    blending: THREE.AdditiveBlending,
+    depthWrite: false
+  });
+  const tunnel = new THREE.Mesh(tunnelGeometry, tunnelMaterial);
+  tunnel.renderOrder = 4;
+  scene.add(tunnel);
+
+  const coneGeometry = new THREE.ConeGeometry(0.72, 3, 48, 1, true);
+  coneGeometry.rotateZ(-Math.PI / 2);
+  const coneMaterial = new THREE.MeshBasicMaterial({
+    color: 0x9de8f5,
+    transparent: true,
+    opacity: 0,
+    side: THREE.DoubleSide,
+    blending: THREE.AdditiveBlending,
+    depthWrite: false
+  });
+  const forwardCone = new THREE.Mesh(coneGeometry, coneMaterial);
+  forwardCone.position.y = 0.18;
+  forwardCone.position.z = 0.25;
+  forwardCone.renderOrder = 4;
+  scene.add(forwardCone);
+
+  function makeRing(color) {
+    const material = new THREE.MeshBasicMaterial({
+      color,
+      transparent: true,
+      opacity: 0,
+      blending: THREE.AdditiveBlending,
+      depthWrite: false
+    });
+    const ring = new THREE.Mesh(new THREE.TorusGeometry(0.18, 0.012, 8, 64), material);
+    ring.position.set(0, 0.18, 0.62);
+    scene.add(ring);
+    return ring;
+  }
+  const contactRing = makeRing(0xffb4ac);
+  contactRing.position.x = 1.03;
+  const exitRing = makeRing(0xa9efff);
+  exitRing.position.x = -1.03;
+
+  const particleCanvas = document.createElement('canvas');
+  particleCanvas.width = 64;
+  particleCanvas.height = 64;
+  const particleContext = particleCanvas.getContext('2d');
+  const dropGradient = particleContext.createRadialGradient(32, 32, 1, 32, 32, 31);
+  dropGradient.addColorStop(0, 'rgba(255,255,255,0.96)');
+  dropGradient.addColorStop(0.28, 'rgba(235,250,255,0.82)');
+  dropGradient.addColorStop(0.68, 'rgba(160,220,237,0.34)');
+  dropGradient.addColorStop(1, 'rgba(110,190,220,0)');
+  particleContext.fillStyle = dropGradient;
+  particleContext.fillRect(0, 0, 64, 64);
+  const glintGradient = particleContext.createRadialGradient(23, 21, 0, 23, 21, 10);
+  glintGradient.addColorStop(0, 'rgba(255,255,255,1)');
+  glintGradient.addColorStop(0.25, 'rgba(255,255,255,0.72)');
+  glintGradient.addColorStop(1, 'rgba(255,255,255,0)');
+  particleContext.fillStyle = glintGradient;
+  particleContext.fillRect(0, 0, 64, 64);
+  const particleTexture = new THREE.CanvasTexture(particleCanvas);
+  particleTexture.encoding = THREE.sRGBEncoding;
+  particleTexture.needsUpdate = true;
+
+  const PARTICLE_COUNT = 4200;
+  const BULK_COUNT = 1800;
+  const CAVITATION_COUNT = 900;
+  const FORWARD_COUNT = 1100;
+  const particlePositions = new Float32Array(PARTICLE_COUNT * 3);
+  const particleColors = new Float32Array(PARTICLE_COUNT * 3);
+  const particleSizes = new Float32Array(PARTICLE_COUNT);
+  const particleAlphas = new Float32Array(PARTICLE_COUNT);
+  const particleData = new Array(PARTICLE_COUNT);
+
+  for (let i = 0; i < PARTICLE_COUNT; i++) {
+    const theta = random() * Math.PI * 2;
+    const r1 = random();
+    const r2 = random();
+    const r3 = random();
+    const r4 = random();
+    const r5 = random();
+    let data;
+    if (i < BULK_COUNT) {
+      const y = -1.34 + r1 * 2.66;
+      const cosine = y / 1.42;
+      const maxRadius = Math.sqrt(Math.max(0, 1 - cosine * cosine)) * (1.05 - 0.32 * cosine);
+      const radius = maxRadius * Math.sqrt(r2) * 0.93;
+      data = {
+        kind: 0,
+        x: radius * Math.cos(theta),
+        y,
+        z: radius * Math.sin(theta),
+        birth: 5 + r3 * 1.3,
+        vx: (r4 - 0.5) * 0.58 + radius * Math.cos(theta) * 0.18,
+        vy: 0.08 + r5 * 0.48,
+        vz: (random() - 0.5) * 0.52,
+        life: 2.5 + random() * 1.1,
+        phase: random() * Math.PI * 2
+      };
+      particleSizes[i] = 0.024 + random() * 0.041;
+      particleColors.set([0.58 + r4 * 0.18, 0.82 + r2 * 0.13, 0.9 + r3 * 0.1], i * 3);
+    } else if (i < BULK_COUNT + CAVITATION_COUNT) {
+      data = {
+        kind: 1,
+        birth: 2.4 + r1 * 1.95,
+        x: 1.01 + r2 * 0.06,
+        y: 0.18 + (r3 - 0.5) * 0.16,
+        z: 0.3 + (r4 - 0.5) * 0.22,
+        vx: 0.48 + r5 * 1.9,
+        vy: (random() - 0.43) * 1.15,
+        vz: (random() - 0.5) * 0.86,
+        life: 1.3 + random() * 1.25,
+        phase: theta
+      };
+      particleSizes[i] = 0.018 + random() * 0.042;
+      particleColors.set([0.67 + r3 * 0.25, 0.87 + r2 * 0.12, 0.94 + r4 * 0.06], i * 3);
+    } else if (i < BULK_COUNT + CAVITATION_COUNT + FORWARD_COUNT) {
+      data = {
+        kind: 2,
+        birth: 3.8 + r1 * 1.35,
+        x: -1.02 - r2 * 0.08,
+        y: 0.18 + (r3 - 0.5) * 0.14,
+        z: 0.28 + (r4 - 0.5) * 0.18,
+        vx: -(1.25 + r5 * 2.5),
+        vy: (random() - 0.48) * 1.35,
+        vz: (random() - 0.5) * 1.0,
+        life: 1.4 + random() * 1.4,
+        phase: theta
+      };
+      particleSizes[i] = 0.014 + random() * 0.039;
+      particleColors.set([0.72 + r2 * 0.25, 0.9 + r4 * 0.1, 0.96 + r1 * 0.04], i * 3);
+    } else {
+      data = {
+        kind: 3,
+        birth: 2.4 + r1 * 2.2,
+        x: -0.98 + r2 * 1.96,
+        y: 0.18 + (r3 - 0.5) * 0.25,
+        z: 0.1 + (r4 - 0.5) * 0.45,
+        vx: (r5 - 0.5) * 0.3,
+        vy: (random() - 0.35) * 0.36,
+        vz: (random() - 0.5) * 0.28,
+        life: 1.3 + random() * 1.2,
+        phase: theta
+      };
+      particleSizes[i] = 0.035 + random() * 0.055;
+      particleColors.set([0.48 + r2 * 0.18, 0.72 + r3 * 0.16, 0.84 + r4 * 0.14], i * 3);
+    }
+    particleData[i] = data;
+  }
+
+  const particleGeometry = new THREE.BufferGeometry();
+  particleGeometry.setAttribute('position', new THREE.BufferAttribute(particlePositions, 3).setUsage(THREE.DynamicDrawUsage));
+  particleGeometry.setAttribute('aColor', new THREE.BufferAttribute(particleColors, 3));
+  particleGeometry.setAttribute('aSize', new THREE.BufferAttribute(particleSizes, 1));
+  particleGeometry.setAttribute('aAlpha', new THREE.BufferAttribute(particleAlphas, 1).setUsage(THREE.DynamicDrawUsage));
+  const particleMaterial = new THREE.ShaderMaterial({
+    transparent: true,
+    depthWrite: false,
+    uniforms: {
+      uTexture: { value: particleTexture },
+      uViewScale: { value: 1 }
+    },
+    vertexShader: `
+      attribute vec3 aColor;
+      attribute float aSize;
+      attribute float aAlpha;
+      uniform float uViewScale;
+      varying vec3 vColor;
+      varying float vAlpha;
+      void main() {
+        vColor = aColor;
+        vAlpha = aAlpha;
+        vec4 viewPosition = modelViewMatrix * vec4(position, 1.0);
+        gl_Position = projectionMatrix * viewPosition;
+        gl_PointSize = clamp(aSize * uViewScale / max(0.1, -viewPosition.z), 1.0, 72.0);
+      }
+    `,
+    fragmentShader: `
+      uniform sampler2D uTexture;
+      varying vec3 vColor;
+      varying float vAlpha;
+      void main() {
+        vec4 sprite = texture2D(uTexture, gl_PointCoord);
+        gl_FragColor = vec4(vColor, sprite.a * vAlpha);
+        if (gl_FragColor.a < 0.008) discard;
+        #include <encodings_fragment>
+      }
+    `
+  });
+  const particles = new THREE.Points(particleGeometry, particleMaterial);
+  particles.frustumCulled = false;
+  particles.renderOrder = 6;
+  scene.add(particles);
+
+  const FRAGMENT_COUNT = 52;
+  const fragmentGeometry = new THREE.CircleGeometry(1, 3);
+  const fragmentMaterial = new THREE.MeshPhysicalMaterial({
+    color: 0xe61c24,
+    roughness: 0.28,
+    clearcoat: 0.7,
+    side: THREE.DoubleSide,
+    transparent: true,
+    opacity: 0.86,
+    depthWrite: false
+  });
+  const fragments = new THREE.InstancedMesh(fragmentGeometry, fragmentMaterial, FRAGMENT_COUNT);
+  fragments.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
+  fragments.frustumCulled = false;
+  fragments.renderOrder = 5;
+  scene.add(fragments);
+  const fragmentData = [];
+  for (let i = 0; i < FRAGMENT_COUNT; i++) {
+    const phi = 0.18 + random() * (Math.PI - 0.36);
+    const theta = random() * Math.PI * 2;
+    const cosine = Math.cos(phi);
+    const radius = Math.sin(phi) * (1.05 - 0.32 * cosine);
+    fragmentData.push({
+      x: radius * Math.cos(theta),
+      y: 1.42 * cosine,
+      z: radius * Math.sin(theta),
+      targetY: cosine >= 0 ? 1.46 : -1.42,
+      delay: random() * 0.09,
+      size: 0.025 + random() * 0.07,
+      rx: random() * 5,
+      ry: random() * 5,
+      rz: random() * 5,
+      drift: 0.12 + random() * 0.35
+    });
+  }
+  const fragmentDummy = new THREE.Object3D();
+
+  const sheetMaterial = new THREE.MeshPhysicalMaterial({
+    color: 0x8bd9e8,
+    emissive: 0x071a21,
+    roughness: 0.1,
+    clearcoat: 1,
+    transparent: true,
+    opacity: 0,
+    side: THREE.DoubleSide,
+    depthWrite: false
+  });
+  const sheets = [];
+  for (let sheetIndex = 0; sheetIndex < 7; sheetIndex++) {
+    const rows = 13;
+    const columns = 4;
+    const positions = new Float32Array(rows * columns * 3);
+    const indices = [];
+    for (let row = 0; row < rows - 1; row++) {
+      for (let column = 0; column < columns - 1; column++) {
+        const a = row * columns + column;
+        const b = a + columns;
+        indices.push(a, b, a + 1, b, b + 1, a + 1);
+      }
+    }
+    const geometry = new THREE.BufferGeometry();
+    geometry.setIndex(indices);
+    geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3).setUsage(THREE.DynamicDrawUsage));
+    const mesh = new THREE.Mesh(geometry, sheetMaterial);
+    mesh.frustumCulled = false;
+    mesh.renderOrder = 3;
+    scene.add(mesh);
+    sheets.push({
+      mesh,
+      rows,
+      columns,
+      x: (random() - 0.5) * 1.45,
+      y: 0.45 - random() * 1.45,
+      z: (random() - 0.5) * 0.65,
+      delay: random() * 0.65,
+      length: 0.48 + random() * 0.78,
+      width: 0.13 + random() * 0.22,
+      drift: (random() - 0.5) * 0.52,
+      phase: random() * Math.PI * 2
+    });
+  }
+
+  function updateMembrane(time) {
+    const contact = smooth(1, 1.13, time) * (1 - smooth(1.13, 1.32, time));
+    const tear = smooth(1.17, 1.61, time);
+    const positions = latexGeometry.attributes.position.array;
+    for (let i = 0; i < positions.length; i += 3) {
+      const x0 = latexBase[i];
+      const y0 = latexBase[i + 1];
+      const z0 = latexBase[i + 2];
+      const rightWeight = Math.pow(clamp01(x0 / 1.08), 4);
+      const pole = y0 >= 0 ? 1 : -1;
+      const ripple = Math.sin(y0 * 7 + z0 * 5 + time * 13) * 0.022 * tear * (1 - tear);
+      positions[i] = x0 * (1 - 0.73 * tear) - 0.5 * contact * rightWeight + ripple;
+      positions[i + 1] = y0 * (1 + 0.035 * contact) + pole * tear * (0.22 + 0.25 * (1 - Math.abs(y0) / 1.46));
+      positions[i + 2] = z0 * (1 - 0.69 * tear + 0.04 * contact) + ripple * 0.5;
+    }
+    latexGeometry.attributes.position.needsUpdate = true;
+    latexGeometry.computeVertexNormals();
+    latexGeometry.attributes.normal.needsUpdate = true;
+    if (latexShader) latexShader.uniforms.uTear.value = tear;
+    rimMaterial.uniforms.uTear.value = tear;
+    const fade = 1 - smooth(1.53, 1.67, time);
+    latexMaterial.opacity = 0.82 * fade;
+    rimMaterial.uniforms.uAlpha.value = 0.44 * fade;
+    latex.visible = fade > 0.001;
+    latexRim.visible = fade > 0.001;
+  }
+
+  function updateWater(time) {
+    const wake = smooth(2.4, 3.8, time);
+    const collapse = smooth(5, 7.4, time);
+    const positions = waterGeometry.attributes.position.array;
+    for (let i = 0; i < positions.length; i += 3) {
+      const x0 = waterBase[i] * 0.965;
+      const y0 = waterBase[i + 1] * 0.965;
+      const z0 = waterBase[i + 2] * 0.965;
+      const ripple = Math.sin(y0 * 8 + x0 * 4 - time * 8) * 0.012 * wake * (1 - collapse);
+      const lower = 1 - (y0 / 1.42 + 1) * 0.5;
+      const fall = collapse * collapse * (0.55 + lower * 0.95);
+      positions[i] = x0 * (1 + collapse * 0.24) + Math.sin(y0 * 5 + time * 2.4) * collapse * 0.09;
+      positions[i + 1] = y0 - fall + ripple + Math.sin(x0 * 6 + time * 3) * collapse * 0.045;
+      positions[i + 2] = z0 * (1 + collapse * 0.17) + ripple * 0.65;
+    }
+    waterGeometry.attributes.position.needsUpdate = true;
+    waterGeometry.computeVertexNormals();
+    waterGeometry.attributes.normal.needsUpdate = true;
+    const revealed = lerp(0.17, 0.39, smooth(1.25, 1.65, time));
+    waterMaterial.opacity = revealed * (1 - smooth(5.7, 7.55, time));
+    water.visible = time < 7.55;
+  }
+
+  function bulletXAt(time) {
+    if (time <= 1) return lerp(6.8, 1.58, time);
+    if (time <= 3.8) return lerp(1.58, -1.55, (time - 1) / 2.8);
+    return lerp(-1.55, -7.2, Math.min(1, (time - 3.8) / 1.2));
+  }
+
+  function updateProjectileAndWake(time) {
+    const bulletX = bulletXAt(time);
+    bullet.position.x = bulletX;
+    bullet.position.y = 0.18 + Math.sin(time * 5) * 0.006;
+    bullet.rotation.x = time * 24;
+    trailMaterial.opacity = 0.08 + 0.07 * (1 - smooth(1, 1.4, time));
+
+    const tunnelIn = smooth(2.4, 2.58, time);
+    const tunnelOut = 1 - smooth(4.15, 4.85, time);
+    const tunnelAlpha = tunnelIn * tunnelOut;
+    const tunnelEnd = time < 3.8 ? bulletX - 0.56 : -1.04;
+    const tunnelLength = Math.max(0.05, 1.03 - tunnelEnd);
+    tunnel.position.set((1.03 + tunnelEnd) * 0.5, 0.18, 0.29);
+    tunnel.scale.set(tunnelLength, 0.085 + 0.065 * tunnelIn, 0.085 + 0.065 * tunnelIn);
+    tunnelMaterial.opacity = 0.13 * tunnelAlpha;
+    tunnel.visible = tunnelAlpha > 0.001;
+
+    const coneAge = Math.max(0, time - 3.8);
+    const coneGrow = smooth(3.8, 4.32, time);
+    const coneAlpha = smooth(3.8, 3.93, time) * (1 - smooth(4.65, 5.65, time));
+    forwardCone.scale.set(Math.max(0.001, coneGrow), 0.5 + coneGrow * 0.5, 0.5 + coneGrow * 0.5);
+    forwardCone.position.x = -1.03 - 1.5 * forwardCone.scale.x;
+    forwardCone.position.y = 0.18 - coneAge * 0.025;
+    coneMaterial.opacity = 0.105 * coneAlpha;
+    forwardCone.visible = coneAlpha > 0.001;
+
+    const contactAge = time - 1;
+    contactRing.visible = contactAge >= 0 && contactAge < 0.72;
+    if (contactRing.visible) {
+      const ringFade = 1 - contactAge / 0.72;
+      contactRing.scale.setScalar(1 + contactAge * 3.4);
+      contactRing.material.opacity = 0.5 * ringFade;
+    }
+    const exitAge = time - 3.8;
+    exitRing.visible = exitAge >= 0 && exitAge < 0.85;
+    if (exitRing.visible) {
+      const ringFade = 1 - exitAge / 0.85;
+      exitRing.scale.setScalar(1 + exitAge * 4.2);
+      exitRing.material.opacity = 0.58 * ringFade;
+    }
+  }
+
+  function hideParticle(index) {
+    const offset = index * 3;
+    particlePositions[offset] = 0;
+    particlePositions[offset + 1] = 0;
+    particlePositions[offset + 2] = -100;
+    particleAlphas[index] = 0;
+  }
+
+  function updateParticles(time) {
+    for (let i = 0; i < PARTICLE_COUNT; i++) {
+      const data = particleData[i];
+      const offset = i * 3;
+      if (data.kind === 0) {
+        const age = time - data.birth;
+        if (time < 1.2 || age > data.life) {
+          hideParticle(i);
+          continue;
+        }
+        if (age <= 0) {
+          const sag = smooth(5, 6.3, time);
+          particlePositions[offset] = data.x * (1 + sag * 0.12);
+          particlePositions[offset + 1] = data.y - sag * sag * 0.42 + Math.sin(time * 2 + data.phase) * 0.006;
+          particlePositions[offset + 2] = data.z;
+          particleAlphas[i] = 0.065 * smooth(1.2, 1.65, time);
+        } else {
+          particlePositions[offset] = data.x + data.vx * age;
+          particlePositions[offset + 1] = data.y + data.vy * age - 0.525 * age * age;
+          particlePositions[offset + 2] = data.z + data.vz * age;
+          particleAlphas[i] = 0.76 * (1 - smooth(data.life * 0.65, data.life, age));
+        }
+      } else {
+        const age = time - data.birth;
+        if (age < 0 || age > data.life) {
+          hideParticle(i);
+          continue;
+        }
+        const gravity = data.kind === 3 ? 0.16 : 0.48;
+        particlePositions[offset] = data.x + data.vx * age;
+        particlePositions[offset + 1] = data.y + data.vy * age - 0.5 * gravity * age * age;
+        particlePositions[offset + 2] = data.z + data.vz * age;
+        const lifeFade = 1 - smooth(data.life * 0.55, data.life, age);
+        const birthFade = smooth(0, 0.065, age);
+        const baseAlpha = data.kind === 3 ? 0.18 : 0.72;
+        particleAlphas[i] = baseAlpha * lifeFade * birthFade;
+      }
+    }
+    particleGeometry.attributes.position.needsUpdate = true;
+    particleGeometry.attributes.aAlpha.needsUpdate = true;
+  }
+
+  function updateFragments(time) {
+    for (let i = 0; i < FRAGMENT_COUNT; i++) {
+      const data = fragmentData[i];
+      const q = smooth(1.17 + data.delay, 1.54 + data.delay, time);
+      const active = time >= 1.17 + data.delay && time < 1.68;
+      const arc = Math.sin(q * Math.PI);
+      fragmentDummy.position.set(
+        lerp(data.x, 0, q) + Math.sign(data.x) * arc * data.drift,
+        lerp(data.y, data.targetY, q),
+        lerp(data.z, 0, q) + arc * data.drift * 0.35
+      );
+      fragmentDummy.rotation.set(data.rx * q, data.ry * q, data.rz * q);
+      const scale = active ? data.size * (1 - q * 0.72) : 0;
+      fragmentDummy.scale.set(scale, scale * 1.35, scale);
+      fragmentDummy.updateMatrix();
+      fragments.setMatrixAt(i, fragmentDummy.matrix);
+    }
+    fragments.instanceMatrix.needsUpdate = true;
+  }
+
+  function updateSheets(time) {
+    sheetMaterial.opacity = 0.34 * smooth(5, 5.35, time) * (1 - smooth(7.25, 8, time));
+    for (const sheet of sheets) {
+      const age = time - 5 - sheet.delay;
+      sheet.mesh.visible = age > 0 && time < 8;
+      if (!sheet.mesh.visible) continue;
+      const positions = sheet.mesh.geometry.attributes.position.array;
+      for (let row = 0; row < sheet.rows; row++) {
+        const v = row / (sheet.rows - 1);
+        for (let column = 0; column < sheet.columns; column++) {
+          const u = column / (sheet.columns - 1);
+          const offset = (row * sheet.columns + column) * 3;
+          const width = sheet.width * (1 - v * 0.62) * (1 + 0.16 * Math.sin(age * 4 + v * 7 + sheet.phase));
+          positions[offset] = sheet.x + sheet.drift * age + (u - 0.5) * width + Math.sin(v * 5 + age * 2 + sheet.phase) * v * 0.075;
+          positions[offset + 1] = sheet.y + 0.24 * age - 0.47 * age * age - v * sheet.length * (1 + age * 0.3);
+          positions[offset + 2] = sheet.z + Math.sin(u * Math.PI + v * 4 + age * 2) * 0.055;
+        }
+      }
+      sheet.mesh.geometry.attributes.position.needsUpdate = true;
+      sheet.mesh.geometry.computeVertexNormals();
+      sheet.mesh.geometry.attributes.normal.needsUpdate = true;
+    }
+  }
+
+  function renderAt(simTime) {
+    const time = Math.max(0, Math.min(DURATION, simTime));
+    haloMaterial.uniforms.uTime.value = time;
+    updateMembrane(time);
+    updateWater(time);
+    updateProjectileAndWake(time);
+    updateParticles(time);
+    updateFragments(time);
+    updateSheets(time);
+    renderer.render(scene, camera);
+  }
+
+  function updateViewScale() {
+    particleMaterial.uniforms.uViewScale.value = window.innerHeight * renderer.getPixelRatio() / (2 * Math.tan(THREE.MathUtils.degToRad(camera.fov * 0.5)));
+  }
+  updateViewScale();
+
+  window.addEventListener('resize', () => {
+    camera.aspect = window.innerWidth / window.innerHeight;
+    camera.updateProjectionMatrix();
+    renderer.setSize(window.innerWidth, window.innerHeight, false);
+    updateViewScale();
+  });
+
+  let playbackSpeed = 1.0;
+  let simTime = 0.000;
+  let state = State.PAUSED;
+  let countdownElapsed = 0;
+  let countdownStart = 0;
+  let holdElapsed = 0;
+  let holdStart = 0;
+  let previousNow = null;
+  let awaitingFirstFrame = true;
+
+  function setTogglePlaying(playing) {
+    pauseIcon.style.display = playing ? '' : 'none';
+    playIcon.style.display = playing ? 'none' : '';
+    toggleButton.setAttribute('aria-label', playing ? 'Pause' : 'Play');
+  }
+
+  function hideCountdown() {
+    countdown.style.display = 'none';
+    countdown.textContent = '';
+  }
+
+  toggleButton.addEventListener('click', () => {
+    if (state === State.PLAYING) {
+      state = State.PAUSED;
+      setTogglePlaying(false);
+    } else if (state === State.COUNTDOWN || state === State.REFIRE_HOLD) {
+      hideCountdown();
+      simTime = 0.000;
+      scrubber.value = '0';
+      state = State.PAUSED;
+      setTogglePlaying(false);
+      renderAt(simTime);
+    } else if (state === State.PAUSED) {
+      state = State.PLAYING;
+      setTogglePlaying(true);
+    } else if (state === State.ENDED) {
+      simTime = 0.000;
+      scrubber.value = '0';
+      hideCountdown();
+      state = State.PLAYING;
+      setTogglePlaying(true);
+      renderAt(simTime);
+    }
+  });
+
+  refireButton.addEventListener('click', () => {
+    hideCountdown();
+    simTime = 0.000;
+    scrubber.value = '0';
+    countdownElapsed = 0;
+    holdElapsed = 0;
+    holdStart = performance.now();
+    state = State.REFIRE_HOLD;
+    setTogglePlaying(true);
+    renderAt(simTime);
+  });
+
+  for (const pill of speedPills) {
+    pill.addEventListener('click', () => {
+      playbackSpeed = parseFloat(pill.dataset.speed);
+      for (const otherPill of speedPills) {
+        const active = otherPill === pill;
+        otherPill.classList.toggle('is-active', active);
+        otherPill.setAttribute('aria-checked', active ? 'true' : 'false');
+      }
+    });
+  }
+
+  scrubber.addEventListener('input', () => {
+    if (state === State.COUNTDOWN || state === State.REFIRE_HOLD) hideCountdown();
+    simTime = parseFloat(scrubber.value);
+    state = State.PAUSED;
+    setTogglePlaying(false);
+    renderAt(simTime);
+  });
+
+  function frame(now) {
+    requestAnimationFrame(frame);
+    if (previousNow === null) previousNow = now;
+    const dt = Math.min(Math.max(0, (now - previousNow) / 1000), 0.1);
+    previousNow = now;
+
+    if (awaitingFirstFrame) {
+      awaitingFirstFrame = false;
+      state = State.COUNTDOWN;
+      countdownElapsed = 0;
+      countdownStart = now;
+      countdown.style.display = 'block';
+      countdown.textContent = '3';
+      setTogglePlaying(true);
+    }
+
+    if (state === State.COUNTDOWN) {
+      countdownElapsed = Math.max(0, (now - countdownStart) / 1000);
+      if (countdownElapsed < 3.000) {
+        countdown.style.display = 'block';
+        countdown.textContent = countdownElapsed < 1 ? '3' : countdownElapsed < 2 ? '2' : '1';
+        simTime = 0.000;
+        scrubber.value = '0';
+      } else {
+        hideCountdown();
+        state = State.PLAYING;
+        setTogglePlaying(true);
+      }
+    }
+
+    if (state === State.REFIRE_HOLD) {
+      holdElapsed = Math.max(0, (now - holdStart) / 1000);
+      simTime = 0.000;
+      scrubber.value = '0';
+      countdown.style.display = 'none';
+      if (holdElapsed >= 1.000) {
+        state = State.PLAYING;
+        setTogglePlaying(true);
+      }
+    }
+
+    if (state === State.PLAYING) {
+      simTime = Math.min(DURATION, simTime + dt * playbackSpeed);
+      scrubber.value = simTime.toFixed(3);
+      if (simTime >= DURATION) {
+        simTime = DURATION;
+        scrubber.value = DURATION.toFixed(3);
+        state = State.ENDED;
+        setTogglePlaying(false);
+      }
+    }
+
+    renderAt(simTime);
+  }
+
+  renderAt(0.000);
+  requestAnimationFrame(frame);
+})();
+</script>
+</body>
+</html>
