@@ -1,0 +1,2249 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Ballistics Water Balloon Slow-Motion Simulation</title>
+<style>
+*, *::before, *::after {
+  box-sizing: border-box;
+}
+html, body {
+  margin: 0;
+  padding: 0;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  background: radial-gradient(circle at center, #161922 0%, #090a0f 100%);
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -webkit-user-select: none;
+  user-select: none;
+}
+#stage {
+  display: block;
+  width: 100vw;
+  height: 100vh;
+}
+
+#countdown {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 50;
+  pointer-events: none;
+  font-size: 96px;
+  font-weight: 700;
+  line-height: 1;
+  color: rgba(255, 255, 255, 0.35);
+  font-variant-numeric: tabular-nums;
+}
+
+#dock {
+  position: fixed;
+  bottom: 24px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 100;
+  width: 536px;
+  height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 0 14px;
+  background: rgba(15, 17, 23, 0.78);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 9999px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.35);
+}
+
+#dock button {
+  font-family: inherit;
+  line-height: 1;
+  margin: 0;
+  flex-shrink: 0;
+  white-space: nowrap;
+  appearance: none;
+  -webkit-appearance: none;
+}
+
+.dock-sep {
+  width: 1px;
+  height: 18px;
+  flex-shrink: 0;
+  background: rgba(255, 255, 255, 0.12);
+}
+
+#btn-refire {
+  width: 78px;
+  height: 28px;
+  padding: 0 10px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 9999px;
+  color: #ffffff;
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+}
+#btn-refire:hover {
+  background: rgba(255, 255, 255, 0.16);
+}
+
+#btn-toggle {
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 9999px;
+  color: #ffffff;
+  cursor: pointer;
+}
+#btn-toggle:hover {
+  background: rgba(255, 255, 255, 0.16);
+}
+
+#speed-group {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  flex-shrink: 0;
+}
+.speed-pill {
+  width: 42px;
+  height: 24px;
+  padding: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 9999px;
+  color: rgba(255, 255, 255, 0.6);
+  font-size: 11px;
+  font-weight: 500;
+  font-variant-numeric: tabular-nums;
+  cursor: pointer;
+}
+.speed-pill:hover {
+  color: #ffffff;
+  background: rgba(255, 255, 255, 0.06);
+}
+.speed-pill.is-active {
+  color: #ffffff;
+  background: rgba(255, 255, 255, 0.18);
+  border-color: rgba(255, 255, 255, 0.2);
+}
+
+#scrubber {
+  width: 157px;
+  height: 4px;
+  margin: 0;
+  padding: 0;
+  flex-shrink: 0;
+  appearance: none;
+  -webkit-appearance: none;
+  background: rgba(255, 255, 255, 0.22);
+  border-radius: 9999px;
+  outline: none;
+  cursor: pointer;
+}
+#scrubber::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: #ffffff;
+  border: none;
+  cursor: pointer;
+}
+#scrubber::-moz-range-thumb {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: #ffffff;
+  border: none;
+  cursor: pointer;
+}
+</style>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+</head>
+<body>
+<canvas id="stage"></canvas>
+<div id="countdown" aria-hidden="true">3</div>
+
+<div id="dock" role="toolbar" aria-label="Simulation Controls">
+  <button id="btn-refire" type="button" aria-label="Re-fire" title="Re-fire">
+    <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+      <path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.19"/>
+    </svg>
+    <span>Re-fire</span>
+  </button>
+  <span class="dock-sep" aria-hidden="true"></span>
+  <button id="btn-toggle" type="button" aria-label="Pause" title="Play / Pause">
+    <svg id="icon-pause" viewBox="0 0 24 24" width="14" height="14" fill="currentColor" aria-hidden="true">
+      <rect x="6" y="4" width="4" height="16" rx="1"/>
+      <rect x="14" y="4" width="4" height="16" rx="1"/>
+    </svg>
+    <svg id="icon-play" viewBox="0 0 24 24" width="14" height="14" fill="currentColor" aria-hidden="true" style="display:none;">
+      <path d="M8 5v14l11-7z"/>
+    </svg>
+  </button>
+  <span class="dock-sep" aria-hidden="true"></span>
+  <div id="speed-group" role="radiogroup" aria-label="Playback Speed">
+    <button class="speed-pill" type="button" role="radio" aria-checked="false" data-speed="0.25">0.25×</button>
+    <button class="speed-pill" type="button" role="radio" aria-checked="false" data-speed="0.5">0.5×</button>
+    <button class="speed-pill is-active" type="button" role="radio" aria-checked="true" data-speed="1.0">1.0×</button>
+    <button class="speed-pill" type="button" role="radio" aria-checked="false" data-speed="2.0">2.0×</button>
+  </div>
+  <span class="dock-sep" aria-hidden="true"></span>
+  <input id="scrubber" type="range" min="0" max="8.000" step="0.001" value="0" aria-label="Timeline Scrubber">
+</div>
+
+<script>
+(function () {
+  'use strict';
+
+  // ============================================================================
+  // 1. DETERMINISTIC SEEDED PRNG (Mulberry32, Fixed Seed = 42)
+  // ============================================================================
+  const SEED = 42;
+  function createPRNG(seed) {
+    let s = seed >>> 0;
+    return function () {
+      s = (s + 0x6D2B79F5) >>> 0;
+      let t = Math.imul(s ^ (s >>> 15), 1 | s);
+      t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+      return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+    };
+  }
+
+  function clamp(x, a, b) {
+    return x < a ? a : (x > b ? b : x);
+  }
+  function mix(a, b, t) {
+    return a + (b - a) * t;
+  }
+  function smoothstep(e0, e1, x) {
+    const t = clamp((x - e0) / (e1 - e0), 0.0, 1.0);
+    return t * t * (3.0 - 2.0 * t);
+  }
+
+  // ============================================================================
+  // 2. HYDROSTATIC TEARDROP BALLOON PROFILE & PARAMETRIC EVALUATION
+  // ============================================================================
+  // v in [0, 1]: 0 = bottom pole (y = -1.16), 1 = top neck at knot (y = +1.34)
+  // Bullet impact axis: y = -0.08, z = 0, traveling from +X to -X.
+  const IMPACT_Y = -0.08;
+  const ENTRY_X = 1.055;
+  const EXIT_X = -1.055;
+  const KNOT_Y = 1.34;
+
+  function evalBalloonProfile(v) {
+    const u = clamp(v, 0.0, 1.0);
+    const theta = u * Math.PI; // 0 at bottom, PI at top
+    // Vertical coordinate with hydrostatic sag
+    const y = -1.16 * Math.cos(theta) - 0.11 * Math.sin(theta) + 0.18 * Math.pow(u, 2.6);
+    // Radial profile: fuller at bottom/waist, tapering smoothly to upper neck
+    const baseSin = Math.sin(theta);
+    const lowerBulge = 1.0 + 0.17 * Math.sin(u * Math.PI) * (1.0 - 0.82 * u);
+    const neckTaper = 1.0 - 0.56 * Math.pow(u, 2.25);
+    const neckCollar = 0.046 * Math.pow(u, 5.0);
+    const r = Math.max(0.044, 1.08 * baseSin * lowerBulge * neckTaper + neckCollar);
+    return { y: y, r: r };
+  }
+
+  function evalBalloonSurface(v, phi) {
+    const eps = 0.002;
+    const p0 = evalBalloonProfile(v);
+    const p1 = evalBalloonProfile(Math.min(1.0, v + eps));
+    const p_1 = evalBalloonProfile(Math.max(0.0, v - eps));
+    const dy = (p1.y - p_1.y) / (2.0 * eps);
+    const dr = (p1.r - p_1.r) / (2.0 * eps);
+    const invLen = 1.0 / Math.hypot(dy, dr);
+    const nr = dy * invLen;
+    const ny = -dr * invLen;
+    const cosP = Math.cos(phi);
+    const sinP = Math.sin(phi);
+    return {
+      x: p0.r * cosP,
+      y: p0.y,
+      z: p0.r * sinP,
+      r: p0.r,
+      nx: nr * cosP,
+      ny: ny,
+      nz: nr * sinP
+    };
+  }
+
+  // Exact bullet tip X position as a continuous, smooth function of simTime in [0, 8.0]
+  // Phase 1 (0.000s - 1.000s): approaches from +5.15 to right boundary (+1.055)
+  // Phase 2 (1.000s - 1.600s): penetrates right boundary (+1.055 -> +0.580)
+  // Phase 3 (1.600s - 2.400s): burrows to center (+0.580 -> -0.020)
+  // Phase 4 (2.400s - 3.800s): carves cavitation tunnel to left boundary (-0.020 -> -1.055)
+  // Phase 5 (3.800s - 5.000s): emerges from left boundary (-1.055 -> -4.350)
+  // Phase 6 (5.000s - 8.000s): continues off-screen left (-4.350 -> -12.600)
+  function getBulletTipX(t) {
+    if (t <= 1.000) {
+      return 5.150 - 4.095 * t;
+    } else if (t <= 3.800) {
+      const s = (t - 1.000) / 2.800; // 0 to 1 across water interior
+      // Slight hydrodynamic drag curve inside water:
+      // s=0 -> 1.055, t=1.6 (s=0.2143) -> 0.562, t=2.4 (s=0.5) -> -0.015, t=3.8 (s=1.0) -> -1.055
+      const dragCurve = s + 0.045 * Math.sin(s * Math.PI * 2.0);
+      return 1.055 - 2.110 * dragCurve;
+    } else {
+      const dt = t - 3.800;
+      return -1.055 - 2.745 * dt;
+    }
+  }
+
+  // ============================================================================
+  // 3. STAGE, RENDERER, CAMERA & STUDIO LIGHTING
+  // ============================================================================
+  const canvas = document.getElementById('stage');
+  const renderer = new THREE.WebGLRenderer({
+    canvas: canvas,
+    antialias: true,
+    alpha: true
+  });
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+  renderer.setSize(window.innerWidth, window.innerHeight, false);
+  renderer.outputEncoding = THREE.sRGBEncoding;
+  renderer.toneMapping = THREE.ACESFilmicToneMapping;
+  renderer.toneMappingExposure = 1.18;
+
+  const scene = new THREE.Scene();
+
+  // 85mm equivalent narrow perspective camera (FOV = 35 deg) locked along Z-axis
+  const camera = new THREE.PerspectiveCamera(35, window.innerWidth / window.innerHeight, 0.1, 100);
+  camera.position.set(0.0, -0.08, 8.15);
+  camera.lookAt(0.0, -0.14, 0.0);
+
+  window.addEventListener('resize', function () {
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+    renderer.setSize(window.innerWidth, window.innerHeight, false);
+    camera.aspect = window.innerWidth / window.innerHeight;
+    camera.updateProjectionMatrix();
+    renderAt(simTime);
+  });
+
+  // Procedural Studio Environment Map (detached offscreen canvases)
+  function createStudioCubeTexture() {
+    const size = 128;
+    const canvases = [];
+    // 0: +X (Right rim - warm white/magenta accent), 1: -X (Left rim - cool cyan accent),
+    // 2: +Y (Top softbox), 3: -Y (Dark studio floor bounce), 4: +Z (Front fill), 5: -Z (Back dark)
+    const configs = [
+      { bg: '#0c0f17', spot1: 'rgba(255, 230, 245, 0.95)', spot2: 'rgba(255, 70, 165, 0.55)', x: 0.45, y: 0.42 },
+      { bg: '#0a1019', spot1: 'rgba(215, 250, 255, 0.95)', spot2: 'rgba(40, 215, 255, 0.65)', x: 0.55, y: 0.45 },
+      { bg: '#101521', spot1: 'rgba(255, 255, 255, 0.98)', spot2: 'rgba(180, 215, 255, 0.60)', x: 0.50, y: 0.50 },
+      { bg: '#07090e', spot1: 'rgba(40, 75, 130, 0.35)', spot2: 'rgba(20, 30, 50, 0.25)', x: 0.50, y: 0.50 },
+      { bg: '#0d1018', spot1: 'rgba(220, 235, 255, 0.45)', spot2: 'rgba(90, 130, 190, 0.25)', x: 0.35, y: 0.35 },
+      { bg: '#090b11', spot1: 'rgba(130, 220, 255, 0.50)', spot2: 'rgba(255, 90, 170, 0.40)', x: 0.50, y: 0.45 }
+    ];
+    for (let i = 0; i < 6; i++) {
+      const c = document.createElement('canvas');
+      c.width = size;
+      c.height = size;
+      const ctx = c.getContext('2d');
+      const cfg = configs[i];
+      ctx.fillStyle = cfg.bg;
+      ctx.fillRect(0, 0, size, size);
+
+      const g1 = ctx.createRadialGradient(
+        cfg.x * size, cfg.y * size, 2,
+        cfg.x * size, cfg.y * size, size * 0.65
+      );
+      g1.addColorStop(0.0, cfg.spot1);
+      g1.addColorStop(0.45, cfg.spot2);
+      g1.addColorStop(1.0, 'rgba(0,0,0,0)');
+      ctx.fillStyle = g1;
+      ctx.fillRect(0, 0, size, size);
+
+      // Crisp studio strip highlight bar for realistic water/latex specular reflection
+      if (i === 0 || i === 1 || i === 2) {
+        ctx.fillStyle = 'rgba(255, 255, 255, 0.85)';
+        ctx.fillRect(size * 0.18, size * 0.42, size * 0.64, size * 0.14);
+      }
+      canvases.push(c);
+    }
+    const cubeTex = new THREE.CubeTexture(canvases);
+    cubeTex.needsUpdate = true;
+    return cubeTex;
+  }
+
+  const studioEnvMap = createStudioCubeTexture();
+  scene.environment = studioEnvMap;
+
+  // Three-Point Studio Lighting + Dual Rim Lights (Cool White + Cyan/Magenta)
+  const ambientLight = new THREE.AmbientLight(0x1e2638, 0.75);
+  scene.add(ambientLight);
+
+  // Key light (overhead slightly front-right cool studio softbox)
+  const keyLight = new THREE.DirectionalLight(0xf8fbff, 1.55);
+  keyLight.position.set(2.2, 4.5, 3.8);
+  scene.add(keyLight);
+
+  // Rim Light 1: Strong Left/Back Cool Cyan Rim Light
+  const cyanRimLight = new THREE.DirectionalLight(0x38e8ff, 2.55);
+  cyanRimLight.position.set(-4.5, 1.8, -3.4);
+  scene.add(cyanRimLight);
+
+  // Rim Light 2: Strong Right/Back Cool White & Subtle Magenta Rim Light
+  const magentaRimLight = new THREE.DirectionalLight(0xff6ec7, 2.10);
+  magentaRimLight.position.set(4.5, -1.4, -3.2);
+  scene.add(magentaRimLight);
+
+  // Rim Light 3: Back-Top Pure White Crown Light for water edge definition
+  const crownRimLight = new THREE.DirectionalLight(0xffffff, 1.85);
+  crownRimLight.position.set(0.0, 4.2, -3.5);
+  scene.add(crownRimLight);
+
+  // Subtle bottom fill for falling droplets
+  const bottomFill = new THREE.DirectionalLight(0x3b82f6, 0.65);
+  bottomFill.position.set(0.0, -4.5, 2.0);
+  scene.add(bottomFill);
+
+  // ============================================================================
+  // 4. PROCEDURAL OFF-SCREEN PARTICLE & DROPLET SPRITE TEXTURES
+  // ============================================================================
+  function createDropletSpriteTexture() {
+    const size = 128;
+    const c = document.createElement('canvas');
+    c.width = size;
+    c.height = size;
+    const ctx = c.getContext('2d');
+    const cx = size * 0.5;
+    const cy = size * 0.5;
+    const r = size * 0.46;
+
+    // Base refractive body + Fresnel glowing rim
+    const grad = ctx.createRadialGradient(cx, cy, r * 0.05, cx, cy, r);
+    grad.addColorStop(0.0, 'rgba(175, 225, 255, 0.42)');
+    grad.addColorStop(0.52, 'rgba(130, 200, 245, 0.28)');
+    grad.addColorStop(0.78, 'rgba(215, 248, 255, 0.78)');
+    grad.addColorStop(0.90, 'rgba(255, 255, 255, 0.92)');
+    grad.addColorStop(1.0, 'rgba(255, 255, 255, 0.0)');
+    ctx.fillStyle = grad;
+    ctx.beginPath();
+    ctx.arc(cx, cy, r, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Specular hot-spot (top-left studio key reflection)
+    const spec = ctx.createRadialGradient(cx - r * 0.32, cy - r * 0.32, 0, cx - r * 0.32, cy - r * 0.32, r * 0.36);
+    spec.addColorStop(0.0, 'rgba(255, 255, 255, 1.0)');
+    spec.addColorStop(0.45, 'rgba(235, 250, 255, 0.65)');
+    spec.addColorStop(1.0, 'rgba(255, 255, 255, 0.0)');
+    ctx.fillStyle = spec;
+    ctx.beginPath();
+    ctx.arc(cx - r * 0.32, cy - r * 0.32, r * 0.36, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Secondary caustic reflection (bottom-right rim)
+    const rim = ctx.createRadialGradient(cx + r * 0.34, cy + r * 0.30, 0, cx + r * 0.34, cy + r * 0.30, r * 0.30);
+    rim.addColorStop(0.0, 'rgba(140, 240, 255, 0.85)');
+    rim.addColorStop(1.0, 'rgba(140, 240, 255, 0.0)');
+    ctx.fillStyle = rim;
+    ctx.beginPath();
+    ctx.arc(cx + r * 0.34, cy + r * 0.30, r * 0.30, 0, Math.PI * 2);
+    ctx.fill();
+
+    const tex = new THREE.CanvasTexture(c);
+    tex.encoding = THREE.sRGBEncoding;
+    tex.needsUpdate = true;
+    return tex;
+  }
+
+  function createMistSpriteTexture() {
+    const size = 128;
+    const c = document.createElement('canvas');
+    c.width = size;
+    c.height = size;
+    const ctx = c.getContext('2d');
+    const cx = size * 0.5;
+    const cy = size * 0.5;
+    const r = size * 0.48;
+
+    const grad = ctx.createRadialGradient(cx, cy, 0, cx, cy, r);
+    grad.addColorStop(0.0, 'rgba(235, 248, 255, 0.72)');
+    grad.addColorStop(0.35, 'rgba(200, 235, 255, 0.42)');
+    grad.addColorStop(0.70, 'rgba(165, 215, 248, 0.14)');
+    grad.addColorStop(1.0, 'rgba(165, 215, 248, 0.0)');
+    ctx.fillStyle = grad;
+    ctx.fillRect(0, 0, size, size);
+
+    const tex = new THREE.CanvasTexture(c);
+    tex.encoding = THREE.sRGBEncoding;
+    tex.needsUpdate = true;
+    return tex;
+  }
+
+  const dropletSpriteTex = createDropletSpriteTexture();
+  const mistSpriteTex = createMistSpriteTexture();
+
+  // ============================================================================
+  // 5. SUSPENSION TETHER, KNOT & RECOILED LATEX COLLAR
+  // ============================================================================
+  const tetherGroup = new THREE.Group();
+  scene.add(tetherGroup);
+
+  // Off-screen suspension line from y = +3.8 down to knot at y = KNOT_Y
+  const stringGeo = new THREE.CylinderGeometry(0.009, 0.009, 2.5, 12);
+  stringGeo.translate(0, 1.25, 0);
+  const stringMat = new THREE.MeshStandardMaterial({
+    color: 0xd0d7e2,
+    roughness: 0.65,
+    metalness: 0.1
+  });
+  const stringMesh = new THREE.Mesh(stringGeo, stringMat);
+  stringMesh.position.set(0, KNOT_Y, 0);
+  tetherGroup.add(stringMesh);
+
+  // Tied crimson latex knot & rolled lip at the top neck
+  const knotGroup = new THREE.Group();
+  knotGroup.position.set(0, KNOT_Y, 0);
+  tetherGroup.add(knotGroup);
+
+  const crimsonKnotMat = new THREE.MeshPhysicalMaterial({
+    color: 0xe61c24,
+    emissive: 0x260205,
+    roughness: 0.16,
+    metalness: 0.02,
+    clearcoat: 1.0,
+    clearcoatRoughness: 0.12,
+    reflectivity: 0.9,
+    envMap: studioEnvMap,
+    envMapIntensity: 1.3
+  });
+
+  const knotTorus = new THREE.Mesh(new THREE.TorusGeometry(0.052, 0.024, 16, 32), crimsonKnotMat);
+  knotTorus.rotation.x = Math.PI * 0.5;
+  knotTorus.position.y = 0.015;
+  knotGroup.add(knotTorus);
+
+  // Flared nozzle above knot
+  const nozzlePoints = [
+    new THREE.Vector2(0.036, 0.01),
+    new THREE.Vector2(0.048, 0.05),
+    new THREE.Vector2(0.072, 0.11),
+    new THREE.Vector2(0.082, 0.13),
+    new THREE.Vector2(0.068, 0.135)
+  ];
+  const nozzleGeo = new THREE.LatheGeometry(nozzlePoints, 28);
+  const nozzleMesh = new THREE.Mesh(nozzleGeo, crimsonKnotMat);
+  knotGroup.add(nozzleMesh);
+
+  // Recoiled latex shreds dangling from the knot after burst (t >= 1.45s)
+  const shredHangGroup = new THREE.Group();
+  knotGroup.add(shredHangGroup);
+  const shredHangMeshes = [];
+  const prngInit = createPRNG(SEED);
+  for (let i = 0; i < 14; i++) {
+    const len = 0.14 + prngInit() * 0.24;
+    const width = 0.022 + prngInit() * 0.028;
+    const g = new THREE.BoxGeometry(width, len, 0.012, 2, 8, 1);
+    // Curve the dangling shred slightly
+    const pos = g.attributes.position;
+    const bend = (prngInit() - 0.5) * 0.09;
+    const twist = (prngInit() - 0.5) * 1.4;
+    for (let k = 0; k < pos.count; k++) {
+      const py = pos.getY(k) - len * 0.5;
+      const frac = clamp(-py / len, 0, 1);
+      const px = pos.getX(k) * (1.0 - 0.55 * frac);
+      const pz = pos.getZ(k) + Math.sin(frac * Math.PI * 1.5) * bend;
+      const ca = Math.cos(frac * twist);
+      const sa = Math.sin(frac * twist);
+      pos.setXYZ(k, px * ca - pz * sa, py, px * sa + pz * ca);
+    }
+    g.computeVertexNormals();
+    const m = new THREE.Mesh(g, crimsonKnotMat);
+    const angle = (i / 14) * Math.PI * 2 + (prngInit() - 0.5) * 0.25;
+    m.userData = {
+      angle: angle,
+      baseRotZ: (prngInit() - 0.5) * 0.65,
+      baseRotX: (prngInit() - 0.5) * 0.65,
+      freq: 8.0 + prngInit() * 7.0,
+      phase: prngInit() * Math.PI * 2
+    };
+    m.position.set(Math.cos(angle) * 0.04, -0.01, Math.sin(angle) * 0.04);
+    shredHangGroup.add(m);
+    shredHangMeshes.push(m);
+  }
+
+  // ============================================================================
+  // 6. CRIMSON LATEX BALLOON MEMBRANE (High-Res Custom Shader with Elastic Tear)
+  // ============================================================================
+  // Builds a high-resolution parametric teardrop mesh with custom vertex/fragment
+  // shaders that simulate:
+  // - Deep crimson (#e61c24) translucent latex with subsurface scatter & Fresnel rim
+  // - Elastic contact indentation & concentric stress ripples (1.000s - 1.130s)
+  // - Rapid jagged rupture & curled snap-back lip retracting toward top tether (1.115s - 1.600s)
+  function createLatexMembrane() {
+    const segV = 112;
+    const segPhi = 128;
+    const geo = new THREE.BufferGeometry();
+    const numVerts = (segV + 1) * (segPhi + 1);
+    const positions = new Float32Array(numVerts * 3);
+    const normals = new Float32Array(numVerts * 3);
+    const uvs = new Float32Array(numVerts * 2);
+    const tearParams = new Float32Array(numVerts * 2); // [tearNormalizedDist, angularJaggedNoise]
+
+    // Deterministic angular jagged noise table for realistic scalloped latex tear
+    const rng = createPRNG(SEED + 101);
+    const harmonicsA = [];
+    const harmonicsP = [];
+    for (let h = 1; h <= 9; h++) {
+      harmonicsA.push((rng() - 0.5) * (0.09 / Math.pow(h, 0.65)));
+      harmonicsP.push(rng() * Math.PI * 2);
+    }
+
+    let ptr = 0;
+    for (let iv = 0; iv <= segV; iv++) {
+      const v = iv / segV;
+      for (let ip = 0; ip <= segPhi; ip++) {
+        const phi = (ip / segPhi) * Math.PI * 2.0;
+        const surf = evalBalloonSurface(v, phi);
+        positions[ptr * 3 + 0] = surf.x;
+        positions[ptr * 3 + 1] = surf.y;
+        positions[ptr * 3 + 2] = surf.z;
+
+        normals[ptr * 3 + 0] = surf.nx;
+        normals[ptr * 3 + 1] = surf.ny;
+        normals[ptr * 3 + 2] = surf.nz;
+
+        uvs[ptr * 2 + 0] = ip / segPhi;
+        uvs[ptr * 2 + 1] = v;
+
+        // Compute distance from impact point (+ENTRY_X, IMPACT_Y, 0) normalized to [0, 1]
+        // such that impact point = 0.0 and top knot (0, KNOT_Y, 0) = 1.0
+        const dx = surf.x - ENTRY_X;
+        const dy = surf.y - IMPACT_Y;
+        const dz = surf.z;
+        const dImpact = Math.sqrt(dx * dx + dy * dy + dz * dz);
+
+        // Angle around impact axis for jagged tear teeth
+        const ang = Math.atan2(dz, dy);
+        let jag = 0.0;
+        for (let h = 0; h < harmonicsA.length; h++) {
+          jag += harmonicsA[h] * Math.sin((h + 1) * ang + harmonicsP[h]);
+        }
+
+        // Normalize tear progression so right side bursts first, sweeps across waist & base,
+        // and finishes snapping up into the top knot at v = 1.0
+        const rawOrder = (dImpact / 2.38) * (1.0 - 0.18 * Math.pow(v, 3.0)) + 0.16 * Math.pow(v, 2.2);
+        const tearDist = clamp(rawOrder + jag * Math.sin(v * Math.PI), 0.0, 1.02);
+
+        tearParams[ptr * 2 + 0] = tearDist;
+        tearParams[ptr * 2 + 1] = jag;
+        ptr++;
+      }
+    }
+
+    const indices = [];
+    for (let iv = 0; iv < segV; iv++) {
+      for (let ip = 0; ip < segPhi; ip++) {
+        const a = iv * (segPhi + 1) + ip;
+        const b = a + segPhi + 1;
+        const c = a + 1;
+        const d = b + 1;
+        indices.push(a, b, c);
+        indices.push(b, d, c);
+      }
+    }
+
+    geo.setIndex(indices);
+    geo.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+    geo.setAttribute('normal', new THREE.BufferAttribute(normals, 3));
+    geo.setAttribute('uv', new THREE.BufferAttribute(uvs, 2));
+    geo.setAttribute('aTear', new THREE.BufferAttribute(tearParams, 2));
+
+    const mat = new THREE.ShaderMaterial({
+      uniforms: {
+        uTime: { value: 0.0 },
+        uBulletX: { value: 5.15 },
+        uTearFront: { value: -0.1 },
+        uIndentAmp: { value: 0.0 },
+        uEnvMap: { value: studioEnvMap }
+      },
+      vertexShader: `
+        attribute vec2 aTear;
+        uniform float uTime;
+        uniform float uBulletX;
+        uniform float uTearFront;
+        uniform float uIndentAmp;
+
+        varying vec3 vWorldPos;
+        varying vec3 vWorldNormal;
+        varying float vTearDelta;
+        varying float vRimCurl;
+        varying float vVCoord;
+
+        void main() {
+          vec3 pos = position;
+          vec3 norm = normal;
+          vVCoord = uv.y;
+
+          float tearDist = aTear.x;
+          float jag = aTear.y;
+          float delta = tearDist - uTearFront;
+          vTearDelta = delta;
+
+          // 1. Elastic indentation & concentric surface stress ripples around impact point (1.000s - 1.180s)
+          vec3 impactPt = vec3(1.055, -0.08, 0.0);
+          float dImp = distance(pos, impactPt);
+          if (uIndentAmp > 0.0001) {
+            float indentCone = exp(-dImp * dImp * 14.0);
+            pos.x -= uIndentAmp * 0.16 * indentCone;
+            // Concentric elastic tension wave propagating along latex
+            float wavePhase = dImp * 26.0 - (uTime - 1.000) * 68.0;
+            float waveEnv = exp(-dImp * 2.8) * smoothstep(0.0, 0.05, dImp);
+            float ripple = sin(wavePhase) * waveEnv * uIndentAmp * 0.032;
+            pos += norm * ripple;
+            norm = normalize(norm + vec3(indentCone * uIndentAmp * 0.45, ripple * 4.0, 0.0));
+          }
+
+          // 2. Rapid skin tear & elastic snap-back contraction toward top tether and base (1.115s - 1.600s)
+          float curlZone = 0.0;
+          if (uTearFront > 0.0) {
+            // Rolled snap-back lip right ahead of the tearing front
+            curlZone = exp(-max(0.0, delta) * 18.0) * step(-0.015, delta);
+            // Global elastic retraction pulling surviving membrane rapidly toward top tether knot (0, 1.34, 0)
+            float retractProg = clamp(uTearFront * 1.05, 0.0, 1.0);
+            vec3 knotPos = vec3(0.0, 1.34, 0.0);
+            float pullFactor = pow(retractProg, 1.45) * (0.38 + 0.55 * (1.0 - tearDist));
+            pos = mix(pos, knotPos, clamp(pullFactor, 0.0, 0.92));
+
+            // Outward curl and snap-back ridge thickening at the tearing boundary
+            pos += norm * (curlZone * (0.065 + 0.04 * sin(uv.x * 62.83 + uTime * 35.0)));
+            pos.x -= curlZone * 0.085 * (1.0 - uv.y);
+            norm = normalize(norm + vec3(-curlZone * 0.7, curlZone * 0.5, jag * curlZone * 2.0));
+          }
+          vRimCurl = curlZone;
+
+          vec4 worldPosition = modelMatrix * vec4(pos, 1.0);
+          vWorldPos = worldPosition.xyz;
+          vWorldNormal = normalize(mat3(modelMatrix) * norm);
+          gl_Position = projectionMatrix * viewMatrix * worldPosition;
+        }
+      `,
+      fragmentShader: `
+        uniform samplerCube uEnvMap;
+        uniform float uTearFront;
+        varying vec3 vWorldPos;
+        varying vec3 vWorldNormal;
+        varying float vTearDelta;
+        varying float vRimCurl;
+        varying float vVCoord;
+
+        void main() {
+          if (uTearFront > 0.0 && vTearDelta < 0.0) {
+            discard;
+          }
+
+          vec3 V = normalize(cameraPosition - vWorldPos);
+          vec3 N = normalize(vWorldNormal);
+          bool isBack = !gl_FrontFacing;
+          if (isBack) N = -N;
+
+          float NdotV = max(dot(N, V), 0.001);
+          float fresnel = pow(1.0 - NdotV, 3.4);
+
+          // Deep crimson red (#e61c24) base with warm subsurface glow
+          vec3 baseCrimson = vec3(0.902, 0.110, 0.141);
+          vec3 deepCore = vec3(0.38, 0.015, 0.035);
+          vec3 sssWarm = vec3(1.00, 0.24, 0.18);
+
+          // Studio lighting vectors
+          vec3 Lkey = normalize(vec3(2.2, 4.5, 3.8));
+          vec3 Lcyan = normalize(vec3(-4.5, 1.8, -3.4));
+          vec3 Lmag = normalize(vec3(4.5, -1.4, -3.2));
+          vec3 Ltop = normalize(vec3(0.0, 4.2, -3.5));
+
+          float diffKey = max(dot(N, Lkey), 0.0);
+          // Subsurface wrap lighting through translucent latex
+          float wrapKey = max(0.0, (dot(N, Lkey) + 0.55) / 1.55);
+          float backTrans = pow(max(0.0, dot(-V, Lcyan) * 0.6 + dot(-V, Lmag) * 0.6 + 0.35), 2.0);
+
+          // High specular gloss (dual lobe for wet/glossy stretched latex)
+          vec3 Hkey = normalize(Lkey + V);
+          vec3 Hcyan = normalize(Lcyan + V);
+          vec3 Hmag = normalize(Lmag + V);
+          vec3 Htop = normalize(Ltop + V);
+
+          float spec1 = pow(max(dot(N, Hkey), 0.0), 110.0) * 1.35 + pow(max(dot(N, Hkey), 0.0), 22.0) * 0.28;
+          float specCyan = pow(max(dot(N, Hcyan), 0.0), 64.0) * 1.10;
+          float specMag = pow(max(dot(N, Hmag), 0.0), 64.0) * 0.95;
+          float specTop = pow(max(dot(N, Htop), 0.0), 80.0) * 0.90;
+
+          vec3 R = reflect(-V, N);
+          vec3 envCol = textureCube(uEnvMap, R).rgb;
+
+          vec3 col = mix(deepCore, baseCrimson, 0.35 + 0.65 * wrapKey);
+          // Warm internal fluid/latex subsurface glow near center-bottom and rim
+          col += sssWarm * (0.28 * backTrans + 0.18 * (1.0 - NdotV));
+
+          // Rolled snap-back lip is thicker, brighter crimson-scarlet due to relaxed tension
+          col = mix(col, vec3(1.0, 0.28, 0.25), vRimCurl * 0.72);
+
+          // Studio rim & specular highlights
+          vec3 rimLights = vec3(0.22, 0.88, 1.0) * (specCyan + fresnel * max(0.0, dot(N, Lcyan)) * 0.75)
+                         + vec3(1.0, 0.55, 0.82) * (specMag + fresnel * max(0.0, dot(N, Lmag)) * 0.65)
+                         + vec3(1.0, 1.0, 1.0) * (spec1 + specTop);
+
+          col += envCol * (0.14 + 0.48 * fresnel) + rimLights;
+
+          // Fresnel edge highlight
+          col += vec3(1.0, 0.72, 0.76) * fresnel * 0.38;
+
+          if (isBack) {
+            col *= 0.68;
+          }
+
+          // Semi-translucent elastic latex alpha (denser at Fresnel edge & rolled tear lip)
+          float alpha = clamp(0.84 + 0.14 * fresnel + 0.15 * vRimCurl, 0.0, 0.98);
+          gl_FragColor = vec4(col, alpha);
+        }
+      `,
+      transparent: true,
+      side: THREE.DoubleSide,
+      depthWrite: true
+    });
+
+    const mesh = new THREE.Mesh(geo, mat);
+    mesh.renderOrder = 4;
+    return mesh;
+  }
+
+  const latexMesh = createLatexMembrane();
+  scene.add(latexMesh);
+
+  // Flying crimson latex shreds/ribbons ejected during the violent skin burst (1.13s - 2.60s)
+  const LATEX_SHRED_COUNT = 28;
+  const shredGeo = new THREE.BoxGeometry(0.09, 0.028, 0.008, 3, 1, 1);
+  // Slight curl in shred geometry
+  {
+    const p = shredGeo.attributes.position;
+    for (let i = 0; i < p.count; i++) {
+      const x = p.getX(i);
+      p.setZ(i, p.getZ(i) + Math.sin(x * 35.0) * 0.012);
+    }
+    shredGeo.computeVertexNormals();
+  }
+  const flyingShredsMesh = new THREE.InstancedMesh(shredGeo, crimsonKnotMat, LATEX_SHRED_COUNT);
+  flyingShredsMesh.renderOrder = 5;
+  scene.add(flyingShredsMesh);
+
+  const flyingShredsData = [];
+  {
+    const rng = createPRNG(SEED + 202);
+    for (let i = 0; i < LATEX_SHRED_COUNT; i++) {
+      const v0 = 0.18 + rng() * 0.72;
+      const phi0 = (rng() - 0.5) * Math.PI * 1.7;
+      const surf = evalBalloonSurface(v0, phi0);
+      const tSpawn = 1.13 + (1.0 - surf.x / 1.1) * 0.18 + rng() * 0.12;
+      // Elastic recoil velocity: snaps rapidly toward top-left & outward
+      const vx = -0.8 + (rng() - 0.4) * 2.2 + surf.nx * 1.4;
+      const vy = 1.6 + rng() * 2.6 + surf.ny * 1.1;
+      const vz = surf.nz * (1.2 + rng() * 1.5);
+      flyingShredsData.push({
+        x0: surf.x, y0: surf.y, z0: surf.z,
+        vx: vx, vy: vy, vz: vz,
+        rx: rng() * 6.28, ry: rng() * 6.28, rz: rng() * 6.28,
+        vrx: (rng() - 0.5) * 28.0,
+        vry: (rng() - 0.5) * 28.0,
+        vrz: (rng() - 0.5) * 28.0,
+        scale: 0.65 + rng() * 0.95,
+        tSpawn: tSpawn
+      });
+    }
+  }
+
+  // ============================================================================
+  // 7. FREE-STANDING WATER MASS & DEFORMING FLUID CORE (waterBodyMesh)
+  // ============================================================================
+  // Represents the inertia-held water volume inside the balloon:
+  // - Retains the exact teardrop shape during Inertial Stasis (1.600s - 2.400s)
+  // - Exhibits surface capillary ripples, internal cavitation glow, radial pressure bulge (2.4s - 3.8s)
+  // - Punches open at entry (+X) and exit (-X) with Rayleigh-Taylor breakup into falling sheets (3.8s - 6.8s)
+  function createWaterBodyMesh() {
+    const segV = 96;
+    const segPhi = 112;
+    const geo = new THREE.BufferGeometry();
+    const numVerts = (segV + 1) * (segPhi + 1);
+    const positions = new Float32Array(numVerts * 3);
+    const normals = new Float32Array(numVerts * 3);
+    const uvs = new Float32Array(numVerts * 2);
+    const cellNoise = new Float32Array(numVerts * 2);
+
+    const rng = createPRNG(SEED + 303);
+    // Deterministic 3D feature points for Rayleigh-Taylor / Plateau-Rayleigh sheet perforation
+    const seeds = [];
+    for (let k = 0; k < 44; k++) {
+      const sv = 0.08 + rng() * 0.84;
+      const sphi = rng() * Math.PI * 2;
+      const ss = evalBalloonSurface(sv, sphi);
+      seeds.push({ x: ss.x, y: ss.y, z: ss.z, rate: 0.75 + rng() * 0.55 });
+    }
+
+    let ptr = 0;
+    for (let iv = 0; iv <= segV; iv++) {
+      const v = iv / segV;
+      for (let ip = 0; ip <= segPhi; ip++) {
+        const phi = (ip / segPhi) * Math.PI * 2.0;
+        const surf = evalBalloonSurface(v, phi);
+        // Slightly inset by 0.005 so latex sits cleanly outside prior to burst
+        positions[ptr * 3 + 0] = surf.x * 0.995;
+        positions[ptr * 3 + 1] = surf.y * 0.995;
+        positions[ptr * 3 + 2] = surf.z * 0.995;
+
+        normals[ptr * 3 + 0] = surf.nx;
+        normals[ptr * 3 + 1] = surf.ny;
+        normals[ptr * 3 + 2] = surf.nz;
+
+        uvs[ptr * 2 + 0] = ip / segPhi;
+        uvs[ptr * 2 + 1] = v;
+
+        // Nearest seed distance for organic cellular breakup during Phase 6
+        let dMin1 = 99.0;
+        let dMin2 = 99.0;
+        for (let k = 0; k < seeds.length; k++) {
+          const d = Math.hypot(surf.x - seeds[k].x, surf.y - seeds[k].y, surf.z - seeds[k].z) * seeds[k].rate;
+          if (d < dMin1) {
+            dMin2 = dMin1;
+            dMin1 = d;
+          } else if (d < dMin2) {
+            dMin2 = d;
+          }
+        }
+        // Combine cellular Voronoi edge metric with longitudinal Rayleigh-Taylor rib wave
+        const rib = 0.5 + 0.5 * Math.sin(phi * 14.0 + Math.sin(v * 9.0) * 1.5);
+        cellNoise[ptr * 2 + 0] = clamp(dMin1 * 1.85, 0.0, 1.0);
+        cellNoise[ptr * 2 + 1] = rib;
+        ptr++;
+      }
+    }
+
+    const indices = [];
+    for (let iv = 0; iv < segV; iv++) {
+      for (let ip = 0; ip < segPhi; ip++) {
+        const a = iv * (segPhi + 1) + ip;
+        const b = a + segPhi + 1;
+        const c = a + 1;
+        const d = b + 1;
+        indices.push(a, b, c);
+        indices.push(b, d, c);
+      }
+    }
+
+    geo.setIndex(indices);
+    geo.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+    geo.setAttribute('normal', new THREE.BufferAttribute(normals, 3));
+    geo.setAttribute('uv', new THREE.BufferAttribute(uvs, 2));
+    geo.setAttribute('aCell', new THREE.BufferAttribute(cellNoise, 2));
+
+    const mat = new THREE.ShaderMaterial({
+      uniforms: {
+        uTime: { value: 0.0 },
+        uBulletX: { value: 5.15 },
+        uEnvMap: { value: studioEnvMap }
+      },
+      vertexShader: `
+        attribute vec2 aCell;
+        uniform float uTime;
+        uniform float uBulletX;
+
+        varying vec3 vWorldPos;
+        varying vec3 vWorldNormal;
+        varying vec3 vLocalPos;
+        varying vec2 vCell;
+        varying float vHoleMask;
+        varying float vRipple;
+
+        void main() {
+          vec3 pos = position;
+          vec3 norm = normal;
+          vCell = aCell;
+          float phi = uv.x * 6.2831853;
+          float v = uv.y;
+
+          // Distance from entry (+1.055, -0.08, 0) and exit (-1.055, -0.08, 0)
+          float dEntry = distance(pos, vec3(1.055, -0.08, 0.0));
+          float dExit  = distance(pos, vec3(-1.055, -0.08, 0.0));
+
+          // 1. Elastic de-wetting & acoustic capillary ripples across the bare water surface (1.15s - 4.5s)
+          float rippleAmp = smoothstep(1.12, 1.55, uTime) * (1.0 - smoothstep(4.2, 6.2, uTime));
+          float wave1 = sin(dEntry * 24.0 - (uTime - 1.10) * 22.0);
+          float wave2 = cos(v * 32.0 + phi * 8.0 - uTime * 14.0) * 0.45;
+          float surfRipple = (wave1 + wave2) * 0.014 * rippleAmp;
+          vRipple = surfRipple;
+
+          // 2. Hydrodynamic cavitation radial expansion (2.20s - 5.80s)
+          float cavBulgeTime = smoothstep(2.05, 4.40, uTime) + 0.55 * smoothstep(4.40, 6.50, uTime);
+          float waistMask = sin(v * 3.14159265);
+          // Rayleigh-Taylor longitudinal ribs form as the water shell expands
+          float rtRibs = (aCell.y - 0.35) * 0.24 * smoothstep(3.10, 5.20, uTime);
+          float radialScale = 1.0 + cavBulgeTime * (0.28 + rtRibs) * waistMask;
+          pos.x *= 1.0 + cavBulgeTime * 0.10;
+          pos.z *= radialScale;
+          pos.y += (pos.y + 0.1) * cavBulgeTime * 0.14;
+
+          // 3. Right entry crater & flared Worthington collar (1.35s - 6.0s)
+          float entryProgress = smoothstep(1.25, 3.60, uTime);
+          float entryRadius = 0.14 + 0.34 * entryProgress;
+          float entryRing = exp(-pow((dEntry - entryRadius) / 0.18, 2.0)) * entryProgress;
+          pos.x += entryRing * 0.22;
+          pos += norm * (entryRing * 0.09 + surfRipple);
+
+          // 4. Left exit bulge & forward cone breach (3.45s - 6.0s)
+          float preExitBulge = smoothstep(3.10, 3.80, uTime) * (1.0 - smoothstep(3.80, 4.35, uTime));
+          float exitConeDom = exp(-dExit * dExit * 5.5);
+          pos.x -= preExitBulge * exitConeDom * 0.18;
+
+          float exitBreach = smoothstep(3.76, 4.85, uTime);
+          float exitRadius = 0.12 + 0.42 * exitBreach;
+          float exitRing = exp(-pow((dExit - exitRadius) / 0.22, 2.0)) * exitBreach;
+          pos.x -= exitRing * 0.34;
+          pos += norm * (exitRing * 0.12);
+
+          // 5. Phase 6: Gravity sag & splashdown cascade (4.60s - 8.00s)
+          float fallT = max(0.0, uTime - 4.45);
+          // Lower heavier ligaments & droplets accelerate downward under gravity
+          float weightFactor = 0.72 + 0.55 * (1.0 - v) + 0.35 * aCell.y;
+          pos.y -= 0.5 * 1.55 * fallT * fallT * weightFactor;
+          pos.x += norm.x * fallT * 0.38 * (0.5 + aCell.x);
+          pos.z += norm.z * fallT * 0.42 * (0.5 + aCell.y);
+
+          // Hole mask for entry hole, exit hole, and Phase 6 Rayleigh-Taylor sheet breakup
+          float holeEntry = smoothstep(entryRadius - 0.04, entryRadius + 0.02, dEntry);
+          float holeExit = (uTime > 3.76) ? smoothstep(exitRadius - 0.04, exitRadius + 0.02, dExit) : 1.0;
+          float holeMask = min(holeEntry, holeExit);
+
+          // Progressive sheet perforation from 4.45s to 7.10s
+          float disintegrate = smoothstep(4.40, 6.85, uTime);
+          float cellThreshold = aCell.x * 0.65 + aCell.y * 0.35;
+          if (cellThreshold < disintegrate * 1.08) {
+            holeMask = 0.0;
+          }
+          vHoleMask = holeMask;
+
+          vec3 perturbedN = normalize(norm + vec3(
+            surfRipple * 10.0 - exitRing * 0.6 + entryRing * 0.6,
+            surfRipple * 8.0,
+            (aCell.y - 0.5) * smoothstep(2.8, 5.0, uTime) * 0.55
+          ));
+
+          vLocalPos = pos;
+          vec4 worldPosition = modelMatrix * vec4(pos, 1.0);
+          vWorldPos = worldPosition.xyz;
+          vWorldNormal = normalize(mat3(modelMatrix) * perturbedN);
+          gl_Position = projectionMatrix * viewMatrix * worldPosition;
+        }
+      `,
+      fragmentShader: `
+        uniform samplerCube uEnvMap;
+        uniform float uTime;
+        uniform float uBulletX;
+
+        varying vec3 vWorldPos;
+        varying vec3 vWorldNormal;
+        varying vec3 vLocalPos;
+        varying vec2 vCell;
+        varying float vHoleMask;
+        varying float vRipple;
+
+        void main() {
+          if (vHoleMask < 0.15) {
+            discard;
+          }
+
+          vec3 V = normalize(cameraPosition - vWorldPos);
+          vec3 N = normalize(vWorldNormal);
+          if (!gl_FrontFacing) N = -N;
+
+          float NdotV = max(dot(N, V), 0.001);
+          float fresnel = pow(1.0 - NdotV, 3.2);
+
+          // Studio reflection + dual chromatic refraction vectors
+          vec3 R = reflect(-V, N);
+          vec3 T_r = refract(-V, N, 1.0 / 1.331);
+          vec3 T_b = refract(-V, N, 1.0 / 1.342);
+
+          vec3 envReflect = textureCube(uEnvMap, R).rgb;
+          vec3 envRefractR = textureCube(uEnvMap, T_r).rgb;
+          vec3 envRefractB = textureCube(uEnvMap, T_b).rgb;
+          vec3 refractCol = vec3(envRefractR.r, (envRefractR.g + envRefractB.g) * 0.5, envRefractB.b);
+
+          // Pure crystal water absorption tint
+          vec3 waterTint = vec3(0.76, 0.93, 1.0);
+          vec3 deepWater = vec3(0.05, 0.13, 0.22);
+
+          // Internal illumination from the bullet shockwave & cavitation tunnel (1.0s - 4.8s)
+          float distToAxis = length(vLocalPos.yz - vec2(-0.08, 0.0));
+          float inCavX = smoothstep(uBulletX - 0.15, uBulletX + 0.25, vLocalPos.x) * step(vLocalPos.x, 1.15);
+          float cavGlow = exp(-distToAxis * 3.2) * inCavX * smoothstep(1.00, 1.35, uTime) * (1.0 - smoothstep(4.5, 6.2, uTime));
+
+          // Direct studio rim and specular highlights
+          vec3 Lkey = normalize(vec3(2.2, 4.5, 3.8));
+          vec3 Lcyan = normalize(vec3(-4.5, 1.8, -3.4));
+          vec3 Lmag = normalize(vec3(4.5, -1.4, -3.2));
+          vec3 Ltop = normalize(vec3(0.0, 4.2, -3.5));
+
+          float specKey = pow(max(dot(N, normalize(Lkey + V)), 0.0), 160.0) * 2.2;
+          float specCyan = pow(max(dot(N, normalize(Lcyan + V)), 0.0), 75.0) * 1.45;
+          float specMag = pow(max(dot(N, normalize(Lmag + V)), 0.0), 75.0) * 1.25;
+          float specTop = pow(max(dot(N, normalize(Ltop + V)), 0.0), 110.0) * 1.35;
+
+          float rimCyan = fresnel * max(0.0, dot(N, Lcyan) * 0.65 + 0.35);
+          float rimMag  = fresnel * max(0.0, dot(N, Lmag) * 0.65 + 0.35);
+
+          vec3 col = mix(deepWater + refractCol * waterTint * 0.85, envReflect * 1.35, 0.22 + 0.72 * fresnel);
+
+          // Add internal cavitation scattering glow
+          col += vec3(0.62, 0.92, 1.0) * cavGlow * 0.55;
+
+          // Add dual rim light refraction (cool cyan + subtle magenta + crisp white)
+          col += vec3(0.25, 0.90, 1.00) * (specCyan + rimCyan * 0.78);
+          col += vec3(1.00, 0.55, 0.85) * (specMag + rimMag * 0.52);
+          col += vec3(1.00, 1.00, 1.00) * (specKey + specTop + fresnel * 0.32);
+
+          // Bright white foam/meniscus highlight around tearing fluid edges in Phase 5 & 6
+          float edgeMeniscus = smoothstep(0.35, 0.0, abs(vCell.x * 0.65 + vCell.y * 0.35 - smoothstep(4.30, 6.80, uTime))) * smoothstep(3.8, 4.6, uTime);
+          col += vec3(0.85, 0.96, 1.0) * edgeMeniscus * 0.55;
+
+          // Fade alpha cleanly as sheets disintegrate into individual droplets during Phase 6
+          float fadeLate = 1.0 - smoothstep(5.40, 7.20, uTime);
+          float alpha = clamp((0.30 + 0.62 * fresnel + 0.22 * cavGlow + 0.25 * edgeMeniscus) * fadeLate, 0.0, 0.94);
+
+          gl_FragColor = vec4(col, alpha);
+        }
+      `,
+      transparent: true,
+      side: THREE.DoubleSide,
+      depthWrite: false
+    });
+
+    const mesh = new THREE.Mesh(geo, mat);
+    mesh.renderOrder = 3;
+    return mesh;
+  }
+
+  const waterBodyMesh = createWaterBodyMesh();
+  scene.add(waterBodyMesh);
+
+  // ============================================================================
+  // 8. INTERNAL CAVITATION VAPOR TUNNEL, SHOCKWAVE & ENTRY/EXIT CROWNS
+  // ============================================================================
+  // 8a. Internal Acoustic Shockwave Sphere (propagates ahead of bullet at 1.00s - 2.35s)
+  const shockGeo = new THREE.SphereGeometry(1.0, 48, 32);
+  const shockMat = new THREE.ShaderMaterial({
+    uniforms: {
+      uOpacity: { value: 0.0 }
+    },
+    vertexShader: `
+      varying vec3 vNormal;
+      varying vec3 vViewDir;
+      void main() {
+        vec4 wp = modelMatrix * vec4(position, 1.0);
+        vNormal = normalize(mat3(modelMatrix) * normal);
+        vViewDir = normalize(cameraPosition - wp.xyz);
+        gl_Position = projectionMatrix * viewMatrix * wp;
+      }
+    `,
+    fragmentShader: `
+      uniform float uOpacity;
+      varying vec3 vNormal;
+      varying vec3 vViewDir;
+      void main() {
+        float ndv = abs(dot(normalize(vNormal), normalize(vViewDir)));
+        float ring = pow(1.0 - ndv, 3.2);
+        vec3 col = mix(vec3(0.45, 0.88, 1.0), vec3(1.0, 1.0, 1.0), ring);
+        gl_FragColor = vec4(col, ring * uOpacity);
+      }
+    `,
+    transparent: true,
+    blending: THREE.AdditiveBlending,
+    depthWrite: false,
+    side: THREE.DoubleSide
+  });
+  const shockwaveMesh = new THREE.Mesh(shockGeo, shockMat);
+  shockwaveMesh.renderOrder = 2;
+  scene.add(shockwaveMesh);
+
+  // 8b. Hydrodynamic Cavitation Vapor Tunnel (Phase 3, 4, 5: 1.05s - 5.60s)
+  // Cylinder aligned along X-axis with Kelvin-Helmholtz striated rings and glowing vapor walls
+  function createCavitationTunnel() {
+    const segX = 80;
+    const segR = 48;
+    const geo = new THREE.CylinderGeometry(1.0, 1.0, 1.0, segR, segX, true);
+    geo.rotateZ(-Math.PI * 0.5); // Align height along +X -> -X, u in [0, 1] along X
+
+    const mat = new THREE.ShaderMaterial({
+      uniforms: {
+        uTime: { value: 0.0 },
+        uBulletX: { value: 5.15 },
+        uEnvMap: { value: studioEnvMap }
+      },
+      vertexShader: `
+        uniform float uTime;
+        uniform float uBulletX;
+
+        varying vec3 vWorldPos;
+        varying vec3 vWorldNormal;
+        varying float vAxialU;
+        varying float vValid;
+        varying float vTurbulence;
+
+        void main() {
+          // position.x in [-0.5, +0.5] -> map to axial coordinate s in [0, 1]
+          // s = 0 at right entry (+1.055), s = 1 at tunnel tip (clamped bullet nose)
+          float s = 0.5 - position.x;
+          vAxialU = s;
+
+          float xStart = 1.055;
+          float xEnd = clamp(uBulletX, -1.18, 1.055);
+          float tunnelLen = max(0.001, xStart - xEnd);
+          float xPos = mix(xStart, xEnd, s);
+
+          // Radial profile of the low-pressure hydrodynamic vapor cavity:
+          // Tapers to bullet nose at s=1, swells in middle/wake, flares at entry/exit
+          float tipTaper = pow(max(0.0, 1.0 - pow(s, 2.6)), 0.58);
+          float wakeExpand = smoothstep(1.20, 3.80, uTime) * 0.34 + smoothstep(3.80, 5.20, uTime) * 0.22;
+
+          // Striated Kelvin-Helmholtz annular pressure rings along the cavity wall
+          float ringWave = sin(xPos * 28.0 + uTime * 16.0) * 0.08 + cos(xPos * 52.0 - uTime * 24.0) * 0.04;
+          float pinchOsc = 1.0 + 0.16 * sin(s * 9.42 - uTime * 8.0) * smoothstep(2.4, 4.2, uTime);
+
+          float radius = (0.045 + wakeExpand * (0.42 + 0.58 * sin(s * 3.14159))) * tipTaper * pinchOsc;
+          // After bullet exits at t=3.80s, open up the left exit end of the tunnel too
+          float exitOpen = smoothstep(3.78, 4.40, uTime);
+          radius = mix(radius, (0.22 + 0.26 * smoothstep(3.8, 5.2, uTime)) * (0.75 + 0.25 * sin(s * 3.14159)), exitOpen * pow(s, 1.5));
+          radius *= (1.0 + ringWave);
+
+          vTurbulence = 0.5 + 0.5 * sin(xPos * 34.0 + atan(position.z, position.y) * 6.0);
+
+          // Gravity sag after 4.5s
+          float fallT = max(0.0, uTime - 4.50);
+          float yCenter = -0.08 - 0.5 * 1.45 * fallT * fallT;
+
+          vec3 pos = vec3(xPos, yCenter + position.y * radius, position.z * radius);
+          vec3 norm = normalize(vec3((1.0 - s) * 0.18, position.y, position.z));
+
+          vValid = (uTime > 1.01 && tunnelLen > 0.02) ? 1.0 : 0.0;
+          vec4 wp = modelMatrix * vec4(pos, 1.0);
+          vWorldPos = wp.xyz;
+          vWorldNormal = normalize(mat3(modelMatrix) * norm);
+          gl_Position = projectionMatrix * viewMatrix * wp;
+        }
+      `,
+      fragmentShader: `
+        uniform samplerCube uEnvMap;
+        uniform float uTime;
+        varying vec3 vWorldPos;
+        varying vec3 vWorldNormal;
+        varying float vAxialU;
+        varying float vValid;
+        varying float vTurbulence;
+
+        void main() {
+          if (vValid < 0.5) discard;
+          float fadeOut = 1.0 - smoothstep(4.65, 5.85, uTime);
+          if (fadeOut <= 0.01) discard;
+
+          vec3 V = normalize(cameraPosition - vWorldPos);
+          vec3 N = normalize(vWorldNormal);
+          if (!gl_FrontFacing) N = -N;
+
+          float ndv = max(dot(N, V), 0.001);
+          float fresnel = pow(1.0 - ndv, 2.2);
+
+          vec3 R = reflect(-V, N);
+          vec3 envCol = textureCube(uEnvMap, R).rgb;
+
+          // Frosted silvery-cyan vapor cavity illumination + bright shock tip behind bullet
+          float tipHot = pow(vAxialU, 3.0) * (1.0 - smoothstep(3.8, 4.3, uTime));
+          vec3 vaporBase = mix(vec3(0.45, 0.82, 0.98), vec3(0.95, 0.99, 1.0), fresnel * 0.75 + vTurbulence * 0.25);
+          vec3 col = vaporBase + envCol * 0.65 + vec3(0.6, 0.95, 1.0) * tipHot * 0.85;
+
+          float alpha = clamp((0.28 + 0.58 * fresnel + 0.25 * vTurbulence + 0.30 * tipHot) * fadeOut, 0.0, 0.92);
+          gl_FragColor = vec4(col, alpha);
+        }
+      `,
+      transparent: true,
+      side: THREE.DoubleSide,
+      depthWrite: false
+    });
+
+    const mesh = new THREE.Mesh(geo, mat);
+    mesh.renderOrder = 2;
+    return mesh;
+  }
+
+  const cavitationMesh = createCavitationTunnel();
+  scene.add(cavitationMesh);
+
+  // 8c. Backward Entry Splash Crown (+X Worthington Jet) & Forward Exit Plume Cone (-X)
+  function createSplashCrownMesh(isExit) {
+    const segU = 40;
+    const segPhi = 64;
+    const geo = new THREE.CylinderGeometry(1.0, 1.0, 1.0, segPhi, segU, true);
+    geo.rotateZ(-Math.PI * 0.5);
+
+    const mat = new THREE.ShaderMaterial({
+      uniforms: {
+        uTime: { value: 0.0 },
+        uIsExit: { value: isExit ? 1.0 : 0.0 },
+        uEnvMap: { value: studioEnvMap }
+      },
+      vertexShader: `
+        uniform float uTime;
+        uniform float uIsExit;
+        varying vec3 vWorldPos;
+        varying vec3 vWorldNormal;
+        varying float vU;
+        varying float vFinger;
+        varying float vActive;
+
+        void main() {
+          // u = 0 at balloon surface, u = 1 at outer crown rim
+          float u = 0.5 + position.x;
+          vU = u;
+          float phi = atan(position.z, position.y);
+
+          float tStart = (uIsExit > 0.5) ? 3.76 : 1.95;
+          float tPeak  = (uIsExit > 0.5) ? 5.20 : 4.20;
+          float elapsed = max(0.0, uTime - tStart);
+          vActive = (uTime >= tStart && uTime <= 6.80) ? 1.0 : 0.0;
+
+          // Serrated crown fingers along outer rim
+          float fingers = 0.5 + 0.5 * sin(phi * 13.0 + sin(phi * 5.0) * 1.4);
+          vFinger = fingers;
+
+          float maxLen = (uIsExit > 0.5) ? (1.85 * smoothstep(0.0, 1.35, elapsed)) : (1.25 * smoothstep(0.0, 1.65, elapsed));
+          float baseR  = (uIsExit > 0.5) ? (0.16 + 0.28 * smoothstep(0.0, 1.2, elapsed)) : (0.14 + 0.22 * smoothstep(0.0, 1.5, elapsed));
+          float flareR = baseR + u * ((uIsExit > 0.5) ? 0.82 : 0.58) * (0.65 + 0.35 * elapsed);
+
+          float dir = (uIsExit > 0.5) ? -1.0 : 1.0;
+          float xOrigin = (uIsExit > 0.5) ? -1.02 : 1.02;
+          float xPos = xOrigin + dir * u * maxLen * (0.82 + 0.28 * fingers);
+
+          // Parabolic gravity droop on the crown sheet
+          float fallT = max(0.0, uTime - ((uIsExit > 0.5) ? 4.35 : 3.20));
+          float yDrop = -0.5 * 1.35 * fallT * fallT * (0.35 + 0.65 * u);
+
+          vec3 pos = vec3(xPos, -0.08 + yDrop + position.y * flareR, position.z * flareR);
+          vec3 norm = normalize(vec3(-dir * 0.42, position.y, position.z));
+
+          vec4 wp = modelMatrix * vec4(pos, 1.0);
+          vWorldPos = wp.xyz;
+          vWorldNormal = normalize(mat3(modelMatrix) * norm);
+          gl_Position = projectionMatrix * viewMatrix * wp;
+        }
+      `,
+      fragmentShader: `
+        uniform samplerCube uEnvMap;
+        uniform float uTime;
+        uniform float uIsExit;
+        varying vec3 vWorldPos;
+        varying vec3 vWorldNormal;
+        varying float vU;
+        varying float vFinger;
+        varying float vActive;
+
+        void main() {
+          if (vActive < 0.5) discard;
+          // Serrated finger cutout near u = 1
+          float rimCut = 0.72 + 0.28 * vFinger;
+          if (vU > rimCut) discard;
+
+          float tFadeStart = (uIsExit > 0.5) ? 4.85 : 3.90;
+          float fade = 1.0 - smoothstep(tFadeStart, tFadeStart + 1.65, uTime);
+          if (fade <= 0.01) discard;
+
+          vec3 V = normalize(cameraPosition - vWorldPos);
+          vec3 N = normalize(vWorldNormal);
+          if (!gl_FrontFacing) N = -N;
+
+          float fresnel = pow(1.0 - max(dot(N, V), 0.001), 2.5);
+          vec3 R = reflect(-V, N);
+          vec3 envCol = textureCube(uEnvMap, R).rgb;
+
+          vec3 rimBead = vec3(0.88, 0.97, 1.0) * smoothstep(rimCut - 0.18, rimCut, vU);
+          vec3 col = mix(vec3(0.42, 0.78, 0.96), envCol * 1.35, 0.4 + 0.55 * fresnel) + rimBead * 0.65;
+
+          float alpha = clamp((0.24 + 0.55 * fresnel + 0.35 * smoothstep(rimCut - 0.15, rimCut, vU)) * (1.0 - 0.35 * vU) * fade, 0.0, 0.86);
+          gl_FragColor = vec4(col, alpha);
+        }
+      `,
+      transparent: true,
+      side: THREE.DoubleSide,
+      depthWrite: false
+    });
+
+    const mesh = new THREE.Mesh(geo, mat);
+    mesh.renderOrder = 3;
+    return mesh;
+  }
+
+  const entryCrownMesh = createSplashCrownMesh(false);
+  const exitCrownMesh = createSplashCrownMesh(true);
+  scene.add(entryCrownMesh);
+  scene.add(exitCrownMesh);
+
+  // ============================================================================
+  // 9. CONICAL COPPER/BRASS BULLET & MACH / BOW SHOCK SHEATH
+  // ============================================================================
+  const bulletGroup = new THREE.Group();
+  scene.add(bulletGroup);
+
+  // Build FMJ Spitzer Boat-Tail Copper/Brass Projectile pointing toward -X (tip at x = 0, base at x = +0.42)
+  function createBulletMesh() {
+    const group = new THREE.Group();
+
+    // Copper FMJ ogive nose + body (x from 0.00 to +0.34)
+    const jacketPts = [];
+    const nPts = 28;
+    for (let i = 0; i <= nPts; i++) {
+      const u = i / nPts; // 0 = nose tip, 1 = rear of copper jacket
+      const x = u * 0.34;
+      let r;
+      if (u < 0.62) {
+        // Secant ogive profile
+        const s = u / 0.62;
+        r = 0.072 * Math.pow(s, 0.68);
+      } else {
+        // Cylindrical bearing band with subtle cannelure groove at u = 0.78
+        const groove = Math.exp(-Math.pow((u - 0.78) / 0.035, 2.0)) * 0.006;
+        r = 0.072 - groove;
+      }
+      jacketPts.push(new THREE.Vector2(r, x));
+    }
+    const jacketGeo = new THREE.LatheGeometry(jacketPts, 36);
+    jacketGeo.rotateZ(-Math.PI * 0.5); // Tip at (0,0,0), extends along +X
+
+    const copperMat = new THREE.MeshStandardMaterial({
+      color: 0xd97543,
+      metalness: 0.90,
+      roughness: 0.18,
+      envMap: studioEnvMap,
+      envMapIntensity: 1.5
+    });
+    const jacketMesh = new THREE.Mesh(jacketGeo, copperMat);
+    group.add(jacketMesh);
+
+    // Brass boat-tail rear base (x from 0.34 to 0.42)
+    const brassPts = [
+      new THREE.Vector2(0.072, 0.34),
+      new THREE.Vector2(0.068, 0.38),
+      new THREE.Vector2(0.058, 0.42),
+      new THREE.Vector2(0.000, 0.42)
+    ];
+    const brassGeo = new THREE.LatheGeometry(brassPts, 36);
+    brassGeo.rotateZ(-Math.PI * 0.5);
+    const brassMat = new THREE.MeshStandardMaterial({
+      color: 0xe6be5a,
+      metalness: 0.92,
+      roughness: 0.20,
+      envMap: studioEnvMap,
+      envMapIntensity: 1.4
+    });
+    const brassMesh = new THREE.Mesh(brassGeo, brassMat);
+    group.add(brassMesh);
+
+    // Engraved rifling lands along the bearing surface so axial spin is visually unmistakable
+    const riflingMat = new THREE.MeshStandardMaterial({
+      color: 0xf7b98c,
+      metalness: 0.95,
+      roughness: 0.12,
+      envMap: studioEnvMap
+    });
+    for (let k = 0; k < 6; k++) {
+      const ang = (k / 6) * Math.PI * 2;
+      const ribGeo = new THREE.BoxGeometry(0.14, 0.007, 0.007);
+      const rib = new THREE.Mesh(ribGeo, riflingMat);
+      rib.position.set(0.26, Math.cos(ang) * 0.071, Math.sin(ang) * 0.071);
+      rib.rotation.x = ang + 0.22;
+      group.add(rib);
+    }
+
+    // Subtle Mach air-compression / hydrodynamic bow cone around bullet nose
+    const bowGeo = new THREE.ConeGeometry(0.24, 0.52, 36, 1, true);
+    bowGeo.rotateZ(Math.PI * 0.5); // Tip at +0.26, base at -0.26 -> shift so tip is at x = -0.01
+    bowGeo.translate(0.25, 0, 0);
+    const bowMat = new THREE.ShaderMaterial({
+      uniforms: {
+        uIntensity: { value: 0.35 }
+      },
+      vertexShader: `
+        varying vec2 vUv;
+        varying vec3 vNormal;
+        varying vec3 vView;
+        void main() {
+          vUv = uv;
+          vec4 wp = modelMatrix * vec4(position, 1.0);
+          vNormal = normalize(mat3(modelMatrix) * normal);
+          vView = normalize(cameraPosition - wp.xyz);
+          gl_Position = projectionMatrix * viewMatrix * wp;
+        }
+      `,
+      fragmentShader: `
+        uniform float uIntensity;
+        varying vec2 vUv;
+        varying vec3 vNormal;
+        varying vec3 vView;
+        void main() {
+          float fres = pow(1.0 - abs(dot(vNormal, vView)), 2.2);
+          float fadeRear = smoothstep(0.0, 0.85, vUv.y);
+          vec3 col = vec3(0.75, 0.93, 1.0);
+          gl_FragColor = vec4(col, fres * fadeRear * uIntensity);
+        }
+      `,
+      transparent: true,
+      blending: THREE.AdditiveBlending,
+      depthWrite: false,
+      side: THREE.DoubleSide
+    });
+    const bowMesh = new THREE.Mesh(bowGeo, bowMat);
+    group.add(bowMesh);
+    group.userData.bowMat = bowMat;
+
+    return group;
+  }
+
+  const bulletMesh = createBulletMesh();
+  bulletGroup.add(bulletMesh);
+
+  // ============================================================================
+  // 10. FLUID & SPLATTER ENGINE (1,800 Instanced 3D Droplets + 4,200 Spray Particles)
+  // ============================================================================
+  // 10a. 1,800 3D Refractive/Specular Water Droplets & Stretched Fluid Ligaments (THREE.InstancedMesh)
+  const DROPLET_COUNT = 1800;
+  const dropletGeo = new THREE.SphereGeometry(1.0, 12, 10);
+  const dropletMat = new THREE.ShaderMaterial({
+    uniforms: {
+      uEnvMap: { value: studioEnvMap }
+    },
+    vertexShader: `
+      varying vec3 vWorldPos;
+      varying vec3 vWorldNormal;
+      void main() {
+        vec4 wp = modelMatrix * instanceMatrix * vec4(position, 1.0);
+        vWorldPos = wp.xyz;
+        vWorldNormal = normalize(mat3(modelMatrix) * mat3(instanceMatrix) * normal);
+        gl_Position = projectionMatrix * viewMatrix * wp;
+      }
+    `,
+    fragmentShader: `
+      uniform samplerCube uEnvMap;
+      varying vec3 vWorldPos;
+      varying vec3 vWorldNormal;
+      void main() {
+        vec3 V = normalize(cameraPosition - vWorldPos);
+        vec3 N = normalize(vWorldNormal);
+        float ndv = max(dot(N, V), 0.001);
+        float fresnel = pow(1.0 - ndv, 2.8);
+
+        vec3 R = reflect(-V, N);
+        vec3 envCol = textureCube(uEnvMap, R).rgb;
+
+        vec3 Lkey = normalize(vec3(2.2, 4.5, 3.8));
+        vec3 Lcyan = normalize(vec3(-4.5, 1.8, -3.4));
+        vec3 Lmag = normalize(vec3(4.5, -1.4, -3.2));
+
+        float specKey = pow(max(dot(N, normalize(Lkey + V)), 0.0), 110.0) * 2.1;
+        float specCyan = pow(max(dot(N, normalize(Lcyan + V)), 0.0), 55.0) * 1.3;
+        float specMag = pow(max(dot(N, normalize(Lmag + V)), 0.0), 55.0) * 1.1;
+
+        vec3 baseWater = vec3(0.18, 0.42, 0.62);
+        vec3 col = mix(baseWater, envCol * 1.35, 0.35 + 0.60 * fresnel);
+        col += vec3(0.25, 0.90, 1.0) * (specCyan + fresnel * max(0.0, dot(N, Lcyan)) * 0.7);
+        col += vec3(1.0, 0.55, 0.85) * (specMag + fresnel * max(0.0, dot(N, Lmag)) * 0.55);
+        col += vec3(1.0, 1.0, 1.0) * specKey;
+
+        gl_FragColor = vec4(col, 0.88);
+      }
+    `,
+    transparent: true,
+    depthWrite: true
+  });
+
+  const dropletsInstanced = new THREE.InstancedMesh(dropletGeo, dropletMat, DROPLET_COUNT);
+  dropletsInstanced.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
+  dropletsInstanced.renderOrder = 4;
+  scene.add(dropletsInstanced);
+
+  // Precompute deterministic initial states for all 1,800 3D droplets (Seed = 42)
+  // Divided into 4 physical populations:
+  // - Type 0 (320): Entry puncture & backward cavitation crown droplets (+X jet, tSpawn 1.14s - 3.60s)
+  // - Type 1 (420): Exit puncture high-speed forward conical plume droplets (-X cone, tSpawn 3.76s - 4.75s)
+  // - Type 2 (860): Main balloon body Rayleigh-Taylor / Plateau-Rayleigh breakup droplets (tSpawn 3.85s - 5.45s)
+  // - Type 3 (200): Internal cavitation tunnel aerated vapor bubbles (tSpawn 1.06s - 3.78s)
+  const dropletData = new Array(DROPLET_COUNT);
+  {
+    const rng = createPRNG(SEED + 404);
+    for (let i = 0; i < DROPLET_COUNT; i++) {
+      if (i < 320) {
+        // Type 0: Entry & Backward Cavitation Splash (+X)
+        const ang = rng() * Math.PI * 2.0;
+        const coneR = 0.04 + rng() * 0.24;
+        const speed = 0.85 + rng() * 2.95;
+        const spread = 0.22 + rng() * 0.58;
+        const tSpawn = 1.14 + Math.pow(rng(), 1.3) * 2.40;
+        dropletData[i] = {
+          type: 0,
+          x0: ENTRY_X - 0.04,
+          y0: IMPACT_Y + Math.cos(ang) * coneR,
+          z0: Math.sin(ang) * coneR,
+          vx: speed,
+          vy: Math.cos(ang) * speed * spread + 0.15,
+          vz: Math.sin(ang) * speed * spread,
+          rBase: 0.011 + Math.pow(rng(), 2.2) * 0.032,
+          stretch: 1.2 + rng() * 1.6,
+          oscFreq: 9.0 + rng() * 14.0,
+          oscPhase: rng() * Math.PI * 2,
+          tSpawn: tSpawn,
+          gravity: 1.25 + rng() * 0.45,
+          drag: 0.38 + rng() * 0.25
+        };
+      } else if (i < 740) {
+        // Type 1: Exit Puncture Forward Conical Plume (-X)
+        const ang = rng() * Math.PI * 2.0;
+        const coneR = 0.03 + rng() * 0.28;
+        const speed = 1.40 + rng() * 4.20;
+        const spread = 0.16 + Math.pow(rng(), 1.2) * 0.56;
+        const tSpawn = 3.76 + Math.pow(rng(), 1.4) * 1.05;
+        dropletData[i] = {
+          type: 1,
+          x0: EXIT_X + 0.04,
+          y0: IMPACT_Y + Math.cos(ang) * coneR,
+          z0: Math.sin(ang) * coneR,
+          vx: -speed,
+          vy: Math.cos(ang) * speed * spread + 0.12,
+          vz: Math.sin(ang) * speed * spread,
+          rBase: 0.010 + Math.pow(rng(), 2.0) * 0.034,
+          stretch: 1.4 + rng() * 2.1,
+          oscFreq: 10.0 + rng() * 16.0,
+          oscPhase: rng() * Math.PI * 2,
+          tSpawn: tSpawn,
+          gravity: 1.20 + rng() * 0.45,
+          drag: 0.42 + rng() * 0.30
+        };
+      } else if (i < 1600) {
+        // Type 2: Main Water Balloon Disintegration & Splashdown (Phase 5 & 6)
+        const v = 0.04 + rng() * 0.91;
+        const phi = rng() * Math.PI * 2.0;
+        const layer = 0.45 + 0.55 * Math.pow(rng(), 0.45);
+        const surf = evalBalloonSurface(v, phi);
+        const x0 = surf.x * layer;
+        const y0 = surf.y * layer;
+        const z0 = surf.z * layer;
+
+        // Breakup time depends on proximity to entry/exit and radial layer
+        const tBreak = 4.05 + rng() * 1.15 - 0.25 * (1.0 - Math.abs(v - 0.48));
+        const radialVel = (0.35 + rng() * 0.95) * layer;
+        const axialBias = (x0 > 0 ? 0.35 : -0.45) * (0.4 + rng() * 0.7);
+        dropletData[i] = {
+          type: 2,
+          x0: x0,
+          y0: y0,
+          z0: z0,
+          nx: surf.nx,
+          ny: surf.ny,
+          nz: surf.nz,
+          vx: surf.nx * radialVel + axialBias,
+          vy: surf.ny * radialVel * 0.65 + (rng() - 0.35) * 0.45,
+          vz: surf.nz * radialVel,
+          rBase: 0.016 + Math.pow(rng(), 1.85) * 0.044,
+          stretch: 1.05 + rng() * 1.15,
+          oscFreq: 7.0 + rng() * 11.0,
+          oscPhase: rng() * Math.PI * 2,
+          tSpawn: tBreak,
+          gravity: 1.42 + rng() * 0.40,
+          drag: 0.22 + rng() * 0.18
+        };
+      } else {
+        // Type 3: Internal Cavitation Wake Bubbles
+        const s = rng(); // 0 at right entry, 1 at left exit
+        const x0 = mix(ENTRY_X - 0.05, EXIT_X + 0.05, s);
+        const tPass = 1.02 + s * 2.76;
+        const ang = rng() * Math.PI * 2.0;
+        const rad = 0.02 + rng() * 0.16;
+        dropletData[i] = {
+          type: 3,
+          x0: x0,
+          y0: IMPACT_Y + Math.cos(ang) * rad,
+          z0: Math.sin(ang) * rad,
+          vx: (rng() - 0.5) * 0.35,
+          vy: Math.cos(ang) * (0.18 + rng() * 0.32),
+          vz: Math.sin(ang) * (0.18 + rng() * 0.32),
+          rBase: 0.008 + rng() * 0.018,
+          stretch: 1.0,
+          oscFreq: 14.0 + rng() * 10.0,
+          oscPhase: rng() * Math.PI * 2,
+          tSpawn: tPass,
+          gravity: 1.35,
+          drag: 0.5
+        };
+      }
+    }
+  }
+
+  // 10b. 4,200 Atomized Mist & Micro-Droplet Particles (GPU-driven THREE.Points)
+  function createSprayParticleSystem(count, texture, isFineMist) {
+    const geo = new THREE.BufferGeometry();
+    const pos0 = new Float32Array(count * 3);
+    const vel0 = new Float32Array(count * 3);
+    const meta = new Float32Array(count * 4); // [tSpawn, size, gravity, drag]
+
+    const rng = createPRNG(SEED + (isFineMist ? 505 : 606));
+    for (let i = 0; i < count; i++) {
+      const u = rng();
+      let x0, y0, z0, vx, vy, vz, tSpawn, size, grav, drag;
+
+      if (u < 0.26) {
+        // Backward cavitation mist & fine spray from right entry hole (+X)
+        const ang = rng() * Math.PI * 2.0;
+        const r = rng() * 0.22;
+        const spd = (isFineMist ? 0.7 : 1.1) + rng() * (isFineMist ? 2.8 : 3.6);
+        const cone = 0.18 + rng() * 0.62;
+        x0 = ENTRY_X - 0.02;
+        y0 = IMPACT_Y + Math.cos(ang) * r;
+        z0 = Math.sin(ang) * r;
+        vx = spd;
+        vy = Math.cos(ang) * spd * cone + (rng() - 0.4) * 0.3;
+        vz = Math.sin(ang) * spd * cone;
+        tSpawn = 1.08 + Math.pow(rng(), 1.35) * 2.75;
+        size = isFineMist ? (0.12 + rng() * 0.26) : (0.040 + rng() * 0.065);
+        grav = isFineMist ? (0.35 + rng() * 0.35) : (1.15 + rng() * 0.45);
+        drag = isFineMist ? (0.95 + rng() * 0.65) : (0.45 + rng() * 0.35);
+      } else if (u < 0.64) {
+        // Forward conical plume & atomized mist from left exit puncture (-X)
+        const ang = rng() * Math.PI * 2.0;
+        const r = rng() * 0.25;
+        const spd = (isFineMist ? 1.2 : 1.6) + rng() * (isFineMist ? 4.2 : 5.2);
+        const cone = 0.12 + Math.pow(rng(), 1.25) * 0.58;
+        x0 = EXIT_X + 0.02;
+        y0 = IMPACT_Y + Math.cos(ang) * r;
+        z0 = Math.sin(ang) * r;
+        vx = -spd;
+        vy = Math.cos(ang) * spd * cone + (rng() - 0.45) * 0.35;
+        vz = Math.sin(ang) * spd * cone;
+        tSpawn = 3.76 + Math.pow(rng(), 1.5) * 1.15;
+        size = isFineMist ? (0.15 + rng() * 0.32) : (0.042 + rng() * 0.070);
+        grav = isFineMist ? (0.38 + rng() * 0.38) : (1.10 + rng() * 0.45);
+        drag = isFineMist ? (0.90 + rng() * 0.65) : (0.42 + rng() * 0.32);
+      } else {
+        // Phase 5 & 6: Central balloon fluid sheet disintegration spray & cascading droplets
+        const v = 0.05 + rng() * 0.90;
+        const phi = rng() * Math.PI * 2.0;
+        const layer = 0.55 + 0.45 * rng();
+        const surf = evalBalloonSurface(v, phi);
+        x0 = surf.x * layer;
+        y0 = surf.y * layer;
+        z0 = surf.z * layer;
+        const outSpd = 0.35 + rng() * 1.25;
+        vx = surf.nx * outSpd + (x0 > 0 ? 0.25 : -0.38) * rng();
+        vy = surf.ny * outSpd * 0.65 + (rng() - 0.35) * 0.55;
+        vz = surf.nz * outSpd;
+        tSpawn = 3.85 + rng() * 1.55;
+        size = isFineMist ? (0.16 + rng() * 0.34) : (0.048 + rng() * 0.075);
+        grav = isFineMist ? (0.65 + rng() * 0.45) : (1.38 + rng() * 0.42);
+        drag = isFineMist ? (0.65 + rng() * 0.40) : (0.28 + rng() * 0.22);
+      }
+
+      pos0[i * 3 + 0] = x0;
+      pos0[i * 3 + 1] = y0;
+      pos0[i * 3 + 2] = z0;
+
+      vel0[i * 3 + 0] = vx;
+      vel0[i * 3 + 1] = vy;
+      vel0[i * 3 + 2] = vz;
+
+      meta[i * 4 + 0] = tSpawn;
+      meta[i * 4 + 1] = size;
+      meta[i * 4 + 2] = grav;
+      meta[i * 4 + 3] = drag;
+    }
+
+    geo.setAttribute('position', new THREE.BufferAttribute(pos0, 3));
+    geo.setAttribute('aVel', new THREE.BufferAttribute(vel0, 3));
+    geo.setAttribute('aMeta', new THREE.BufferAttribute(meta, 4));
+
+    const mat = new THREE.ShaderMaterial({
+      uniforms: {
+        uTime: { value: 0.0 },
+        uScale: { value: window.innerHeight * 0.5 },
+        uTex: { value: texture },
+        uIsMist: { value: isFineMist ? 1.0 : 0.0 }
+      },
+      vertexShader: `
+        attribute vec3 aVel;
+        attribute vec4 aMeta;
+        uniform float uTime;
+        uniform float uScale;
+        uniform float uIsMist;
+
+        varying float vAlpha;
+        varying vec3 vTint;
+
+        void main() {
+          float tSpawn = aMeta.x;
+          float baseSize = aMeta.y;
+          float grav = aMeta.z;
+          float drag = aMeta.w;
+
+          float dt = uTime - tSpawn;
+          if (dt <= 0.0) {
+            vAlpha = 0.0;
+            gl_Position = vec4(2.0, 2.0, 2.0, 1.0);
+            gl_PointSize = 0.0;
+            return;
+          }
+
+          // Analytical ballistic trajectory with aerodynamic drag & gravity
+          float dragDisp = (1.0 - exp(-drag * dt)) / max(0.001, drag);
+          vec3 pos = position + aVel * dragDisp;
+          pos.y -= 0.5 * grav * dt * dt;
+
+          // Subtle studio rim tint (left side cyan-tinted, right side cool-white/magenta)
+          float sideFactor = clamp((pos.x + 2.5) / 5.0, 0.0, 1.0);
+          vTint = mix(vec3(0.72, 0.95, 1.0), vec3(1.0, 0.90, 0.97), sideFactor);
+
+          float fadeIn = smoothstep(0.0, 0.06, dt);
+          float fadeOut = 1.0 - smoothstep(2.2, 4.4, dt) * (uIsMist * 0.72 + 0.18);
+          vAlpha = fadeIn * fadeOut * (uIsMist > 0.5 ? 0.30 : 0.88);
+
+          vec4 mvPosition = modelViewMatrix * vec4(pos, 1.0);
+          float growth = (uIsMist > 0.5) ? (1.0 + dt * 0.55) : 1.0;
+          gl_PointSize = clamp(baseSize * growth * (uScale / -mvPosition.z), 1.0, 96.0);
+          gl_Position = projectionMatrix * mvPosition;
+        }
+      `,
+      fragmentShader: `
+        uniform sampler2D uTex;
+        varying float vAlpha;
+        varying vec3 vTint;
+        void main() {
+          if (vAlpha <= 0.005) discard;
+          vec4 texCol = texture2D(uTex, gl_PointCoord);
+          if (texCol.a <= 0.01) discard;
+          gl_FragColor = vec4(texCol.rgb * vTint, texCol.a * vAlpha);
+        }
+      `,
+      transparent: true,
+      depthWrite: false,
+      blending: isFineMist ? THREE.AdditiveBlending : THREE.NormalBlending
+    });
+
+    const pts = new THREE.Points(geo, mat);
+    pts.renderOrder = isFineMist ? 5 : 4;
+    return pts;
+  }
+
+  const microDropletPoints = createSprayParticleSystem(2600, dropletSpriteTex, false);
+  const fineMistPoints = createSprayParticleSystem(1600, mistSpriteTex, true);
+  scene.add(microDropletPoints);
+  scene.add(fineMistPoints);
+
+  // ============================================================================
+  // 11. DETERMINISTIC ANALYTICAL EVALUATOR: renderAt(simTime)
+  // ============================================================================
+  const dummyObj = new THREE.Object3D();
+  const zeroScaleMatrix = new THREE.Matrix4().makeScale(0, 0, 0);
+
+  function renderAt(tInput) {
+    const t = clamp(tInput, 0.000, 8.000);
+    const bulletTipX = getBulletTipX(t);
+
+    // 1. Update Bullet Position, Gyroscopic Spin, and Bow Shock
+    bulletGroup.position.set(bulletTipX, IMPACT_Y, 0.0);
+    bulletGroup.rotation.x = -t * 64.0; // High-speed rifling spin in slow-motion
+    // Bow cone intensity: subtle in air, bright hydrodynamic sheath in water & exit
+    const inWater = smoothstep(0.98, 1.06, t) * (1.0 - smoothstep(4.2, 5.0, t));
+    bulletMesh.userData.bowMat.uniforms.uIntensity.value = 0.22 + 0.52 * inWater;
+
+    // 2. Update Top Suspension Tether & Knot Recoil
+    // When latex snaps back into the knot around t = 1.40s, the knot jerks upward and oscillates
+    let knotRecoilY = 0.0;
+    let knotSwingZ = 0.0;
+    if (t > 1.15) {
+      const dtRec = t - 1.15;
+      const env = smoothstep(1.15, 1.52, t) * Math.exp(-Math.max(0.0, t - 1.52) * 0.65);
+      knotRecoilY = 0.065 * env + 0.038 * Math.sin(dtRec * 14.0) * Math.exp(-dtRec * 0.75);
+      knotSwingZ = 0.055 * Math.sin(dtRec * 9.5) * Math.exp(-dtRec * 0.55);
+    }
+    knotGroup.position.set(0.0, KNOT_Y + knotRecoilY, 0.0);
+    knotGroup.rotation.z = knotSwingZ;
+
+    // Dangling recoiled latex shreds at the knot (visible after skin snaps up at t >= 1.38s)
+    const shredCollarScale = smoothstep(1.32, 1.58, t);
+    shredHangGroup.scale.setScalar(shredCollarScale);
+    shredHangGroup.visible = shredCollarScale > 0.01;
+    if (shredHangGroup.visible) {
+      for (let i = 0; i < shredHangMeshes.length; i++) {
+        const m = shredHangMeshes[i];
+        const ud = m.userData;
+        const damp = Math.exp(-Math.max(0.0, t - 1.55) * 0.52);
+        m.rotation.z = ud.baseRotZ + Math.sin(t * ud.freq + ud.phase) * 0.55 * damp;
+        m.rotation.x = ud.baseRotX + Math.cos(t * (ud.freq * 0.85) + ud.phase) * 0.45 * damp;
+      }
+    }
+
+    // 3. Update Crimson Latex Balloon Membrane
+    // Elastic contact indentation (1.000s - 1.150s) & Rapid skin tear (1.115s - 1.600s)
+    const indentAmp = smoothstep(0.995, 1.090, t) * (1.0 - smoothstep(1.115, 1.240, t));
+    const tearFront = (t < 1.115) ? -0.05 : ((t - 1.115) / 0.465); // Reaches 1.04 at t = 1.580s
+    latexMesh.visible = tearFront < 1.03;
+    if (latexMesh.visible) {
+      latexMesh.material.uniforms.uTime.value = t;
+      latexMesh.material.uniforms.uBulletX.value = bulletTipX;
+      latexMesh.material.uniforms.uIndentAmp.value = indentAmp;
+      latexMesh.material.uniforms.uTearFront.value = tearFront;
+    }
+
+    // Update flying crimson latex shreds during burst
+    for (let i = 0; i < LATEX_SHRED_COUNT; i++) {
+      const sd = flyingShredsData[i];
+      const dt = t - sd.tSpawn;
+      if (dt <= 0.0 || dt > 5.5) {
+        flyingShredsMesh.setMatrixAt(i, zeroScaleMatrix);
+      } else {
+        const drag = (1.0 - Math.exp(-1.4 * dt)) / 1.4;
+        const px = sd.x0 + sd.vx * drag;
+        const py = sd.y0 + sd.vy * drag - 0.5 * 1.85 * dt * dt;
+        const pz = sd.z0 + sd.vz * drag;
+        dummyObj.position.set(px, py, pz);
+        dummyObj.rotation.set(
+          sd.rx + sd.vrx * dt,
+          sd.ry + sd.vry * dt,
+          sd.rz + sd.vrz * dt
+        );
+        const s = sd.scale * smoothstep(0.0, 0.04, dt) * (1.0 - smoothstep(3.8, 5.4, dt));
+        dummyObj.scale.set(s, s, s);
+        dummyObj.updateMatrix();
+        flyingShredsMesh.setMatrixAt(i, dummyObj.matrix);
+      }
+    }
+    flyingShredsMesh.instanceMatrix.needsUpdate = true;
+
+    // 4. Update Free-Standing Water Mass & Deforming Fluid Core
+    waterBodyMesh.visible = t < 7.25;
+    if (waterBodyMesh.visible) {
+      waterBodyMesh.material.uniforms.uTime.value = t;
+      waterBodyMesh.material.uniforms.uBulletX.value = bulletTipX;
+    }
+
+    // 5. Update Internal Acoustic Shockwave Sphere (1.005s - 2.350s)
+    if (t >= 1.005 && t <= 2.350) {
+      shockwaveMesh.visible = true;
+      const dtS = t - 1.005;
+      const shockR = 0.06 + dtS * 1.62;
+      const shockX = mix(ENTRY_X - 0.06, 0.0, clamp(dtS * 0.85, 0.0, 1.0));
+      shockwaveMesh.position.set(shockX, IMPACT_Y, 0.0);
+      shockwaveMesh.scale.setScalar(shockR);
+      shockMat.uniforms.uOpacity.value = 0.55 * smoothstep(1.005, 1.06, t) * (1.0 - smoothstep(1.65, 2.35, t));
+    } else {
+      shockwaveMesh.visible = false;
+    }
+
+    // 6. Update Cavitation Tunnel & Entry/Exit Splash Crowns
+    cavitationMesh.visible = (t >= 1.01 && t <= 5.90);
+    if (cavitationMesh.visible) {
+      cavitationMesh.material.uniforms.uTime.value = t;
+      cavitationMesh.material.uniforms.uBulletX.value = bulletTipX;
+    }
+    entryCrownMesh.visible = (t >= 1.95 && t <= 6.60);
+    if (entryCrownMesh.visible) {
+      entryCrownMesh.material.uniforms.uTime.value = t;
+    }
+    exitCrownMesh.visible = (t >= 3.76 && t <= 6.80);
+    if (exitCrownMesh.visible) {
+      exitCrownMesh.material.uniforms.uTime.value = t;
+    }
+
+    // 7. Update 1,800 3D Instanced Water Droplets & Stretched Ligaments
+    const bulgeFactor = smoothstep(2.05, 4.40, t);
+    for (let i = 0; i < DROPLET_COUNT; i++) {
+      const d = dropletData[i];
+      if (d.type === 2) {
+        // Main water mass droplets: start appearing as the water shell bulges & breaks apart
+        const preAppear = t - (d.tSpawn - 0.55);
+        if (preAppear <= 0.0) {
+          dropletsInstanced.setMatrixAt(i, zeroScaleMatrix);
+          continue;
+        }
+        const dt = Math.max(0.0, t - d.tSpawn);
+        const preScale = smoothstep(0.0, 0.55, preAppear);
+        // Radial bulge displacement prior to breakup
+        const bx = d.x0 + d.nx * bulgeFactor * 0.22;
+        const by = d.y0 + d.ny * bulgeFactor * 0.14;
+        const bz = d.z0 + d.nz * bulgeFactor * 0.24;
+
+        const dragDisp = (1.0 - Math.exp(-d.drag * dt)) / d.drag;
+        const px = bx + d.vx * dragDisp;
+        const py = by + d.vy * dragDisp - 0.5 * d.gravity * dt * dt;
+        const pz = bz + d.vz * dragDisp;
+
+        // Instantaneous velocity for realistic velocity-aligned droplet elongation
+        const curVx = d.vx * Math.exp(-d.drag * dt);
+        const curVy = d.vy * Math.exp(-d.drag * dt) - d.gravity * dt;
+        const curVz = d.vz * Math.exp(-d.drag * dt);
+
+        dummyObj.position.set(px, py, pz);
+        dummyObj.lookAt(px + curVx, py + curVy, pz + curVz);
+
+        // Rayleigh surface-tension oscillation between prolate and oblate spheroids
+        const osc = 1.0 + 0.22 * Math.sin(t * d.oscFreq + d.oscPhase);
+        const r = d.rBase * preScale;
+        const elong = 1.0 + (d.stretch - 1.0) * smoothstep(0.0, 0.4, dt) * osc;
+        const invElong = 1.0 / Math.sqrt(elong);
+        dummyObj.scale.set(r * invElong, r * invElong, r * elong);
+        dummyObj.updateMatrix();
+        dropletsInstanced.setMatrixAt(i, dummyObj.matrix);
+      } else {
+        // Types 0, 1, 3: Entry jet, Exit cone, and Internal cavitation bubbles
+        const dt = t - d.tSpawn;
+        if (dt <= 0.0 || (d.type === 3 && t > 5.60)) {
+          dropletsInstanced.setMatrixAt(i, zeroScaleMatrix);
+          continue;
+        }
+        const dragDisp = (1.0 - Math.exp(-d.drag * dt)) / d.drag;
+        const px = d.x0 + d.vx * dragDisp;
+        const gravY = (d.type === 3 && t < 4.40) ? 0.0 : (0.5 * d.gravity * dt * Math.max(0.0, dt - (d.type === 3 ? 1.5 : 0.0)));
+        const py = d.y0 + d.vy * dragDisp - gravY;
+        const pz = d.z0 + d.vz * dragDisp;
+
+        const curVx = d.vx * Math.exp(-d.drag * dt);
+        const curVy = d.vy * Math.exp(-d.drag * dt) - (d.type === 3 && t < 4.40 ? 0.0 : d.gravity * dt);
+        const curVz = d.vz * Math.exp(-d.drag * dt);
+
+        dummyObj.position.set(px, py, pz);
+        dummyObj.lookAt(px + curVx, py + curVy, pz + curVz);
+
+        const osc = 1.0 + 0.18 * Math.sin(t * d.oscFreq + d.oscPhase);
+        const fade = (d.type === 3) ? (1.0 - smoothstep(4.4, 5.5, t)) : 1.0;
+        const r = d.rBase * smoothstep(0.0, 0.04, dt) * fade;
+        const elong = d.stretch * osc;
+        const invElong = 1.0 / Math.sqrt(elong);
+        dummyObj.scale.set(r * invElong, r * invElong, r * elong);
+        dummyObj.updateMatrix();
+        dropletsInstanced.setMatrixAt(i, dummyObj.matrix);
+      }
+    }
+    dropletsInstanced.instanceMatrix.needsUpdate = true;
+
+    // 8. Update GPU Spray & Fine Mist Particle Systems
+    const pScale = window.innerHeight * 0.5;
+    microDropletPoints.material.uniforms.uTime.value = t;
+    microDropletPoints.material.uniforms.uScale.value = pScale;
+    fineMistPoints.material.uniforms.uTime.value = t;
+    fineMistPoints.material.uniforms.uScale.value = pScale;
+
+    renderer.render(scene, camera);
+  }
+
+  // ============================================================================
+  // 12. TIMELINE, 5-STATE MACHINE & PLAYBACK CONTROLS
+  // ============================================================================
+  const DURATION = 8.000;
+  const STATES = {
+    COUNTDOWN: 'COUNTDOWN',
+    PLAYING: 'PLAYING',
+    PAUSED: 'PAUSED',
+    REFIRE_HOLD: 'REFIRE_HOLD',
+    ENDED: 'ENDED'
+  };
+
+  const countdownEl = document.getElementById('countdown');
+  const btnRefire = document.getElementById('btn-refire');
+  const btnToggle = document.getElementById('btn-toggle');
+  const iconPause = document.getElementById('icon-pause');
+  const iconPlay = document.getElementById('icon-play');
+  const speedPills = Array.prototype.slice.call(document.querySelectorAll('.speed-pill'));
+  const scrubber = document.getElementById('scrubber');
+
+  let state = STATES.COUNTDOWN;
+  let simTime = 0.000;
+  let playbackSpeed = 1.0;
+  let countdownElapsed = 0.000;
+  let holdElapsed = 0.000;
+  let lastWallTime = null;
+
+  function setToggleIconState(isPauseIcon) {
+    if (isPauseIcon) {
+      iconPause.style.display = '';
+      iconPlay.style.display = 'none';
+      btnToggle.setAttribute('aria-label', 'Pause');
+    } else {
+      iconPause.style.display = 'none';
+      iconPlay.style.display = '';
+      btnToggle.setAttribute('aria-label', 'Play');
+    }
+  }
+
+  function hideCountdown() {
+    countdownEl.style.display = 'none';
+    countdownEl.textContent = '';
+  }
+
+  // 1. Render initial resting scene (simTime = 0.000) before starting COUNTDOWN on first rAF
+  simTime = 0.000;
+  scrubber.value = '0';
+  countdownEl.style.display = 'block';
+  countdownEl.textContent = '3';
+  setToggleIconState(true);
+  renderAt(0.000);
+
+  // 3. Play / Pause Toggle (#btn-toggle)
+  btnToggle.addEventListener('click', function () {
+    if (state === STATES.PLAYING) {
+      state = STATES.PAUSED;
+      setToggleIconState(false);
+    } else if (state === STATES.COUNTDOWN || state === STATES.REFIRE_HOLD) {
+      countdownElapsed = 0.000;
+      holdElapsed = 0.000;
+      hideCountdown();
+      simTime = 0.000;
+      scrubber.value = '0';
+      state = STATES.PAUSED;
+      setToggleIconState(false);
+      renderAt(0.000);
+    } else if (state === STATES.PAUSED) {
+      state = STATES.PLAYING;
+      setToggleIconState(true);
+    } else if (state === STATES.ENDED) {
+      hideCountdown();
+      simTime = 0.000;
+      scrubber.value = '0';
+      state = STATES.PLAYING;
+      setToggleIconState(true);
+      renderAt(0.000);
+    }
+  });
+
+  // 4. Speed Selector Pills (.speed-pill)
+  speedPills.forEach(function (pill) {
+    pill.addEventListener('click', function () {
+      const spd = parseFloat(pill.getAttribute('data-speed'));
+      if (!isNaN(spd)) {
+        playbackSpeed = spd;
+      }
+      speedPills.forEach(function (p) {
+        const active = p === pill;
+        p.classList.toggle('is-active', active);
+        p.setAttribute('aria-checked', active ? 'true' : 'false');
+      });
+    });
+  });
+
+  // 5. Scrubbing Slider (#scrubber)
+  scrubber.addEventListener('input', function () {
+    if (state === STATES.COUNTDOWN || state === STATES.REFIRE_HOLD) {
+      countdownElapsed = 0.000;
+      holdElapsed = 0.000;
+    }
+    hideCountdown();
+    simTime = clamp(parseFloat(scrubber.value) || 0.000, 0.000, DURATION);
+    state = STATES.PAUSED;
+    setToggleIconState(false);
+    renderAt(simTime);
+  });
+
+  // 6. Silent Re-Fire (#btn-refire -> REFIRE_HOLD State)
+  btnRefire.addEventListener('click', function () {
+    countdownElapsed = 0.000;
+    holdElapsed = 0.000;
+    hideCountdown();
+    simTime = 0.000;
+    scrubber.value = '0';
+    state = STATES.REFIRE_HOLD;
+    setToggleIconState(true);
+    renderAt(0.000);
+  });
+
+  // Main Animation Loop
+  function onAnimationFrame(now) {
+    requestAnimationFrame(onAnimationFrame);
+
+    if (lastWallTime === null) {
+      // First requestAnimationFrame callback after initial resting scene has rendered
+      lastWallTime = now;
+      countdownElapsed = 0.000;
+      return;
+    }
+
+    const EPS = 1e-7;
+    const rawDt = Math.max(0.000, (now - lastWallTime) * 0.001);
+    lastWallTime = now;
+    const dt = clamp(rawDt, 0.000, 0.100);
+
+    if (state === STATES.COUNTDOWN) {
+      countdownElapsed += rawDt;
+      if (countdownElapsed < 1.000 - EPS) {
+        countdownEl.style.display = 'block';
+        countdownEl.textContent = '3';
+        simTime = 0.000;
+        scrubber.value = '0';
+      } else if (countdownElapsed < 2.000 - EPS) {
+        countdownEl.style.display = 'block';
+        countdownEl.textContent = '2';
+        simTime = 0.000;
+        scrubber.value = '0';
+      } else if (countdownElapsed < 3.000 - EPS) {
+        countdownEl.style.display = 'block';
+        countdownEl.textContent = '1';
+        simTime = 0.000;
+        scrubber.value = '0';
+      } else {
+        const overflow = clamp(countdownElapsed - 3.000, 0.000, dt);
+        hideCountdown();
+        state = STATES.PLAYING;
+        setToggleIconState(true);
+        simTime = Math.min(DURATION, overflow * playbackSpeed);
+        scrubber.value = simTime.toFixed(3);
+        renderAt(simTime);
+      }
+    } else if (state === STATES.REFIRE_HOLD) {
+      hideCountdown();
+      holdElapsed += rawDt;
+      if (holdElapsed >= 1.000 - EPS) {
+        const overflow = clamp(holdElapsed - 1.000, 0.000, dt);
+        state = STATES.PLAYING;
+        setToggleIconState(true);
+        simTime = Math.min(DURATION, overflow * playbackSpeed);
+        scrubber.value = simTime.toFixed(3);
+        renderAt(simTime);
+      }
+    } else if (state === STATES.PLAYING) {
+      simTime = Math.min(DURATION, simTime + dt * playbackSpeed);
+      if (simTime >= DURATION - EPS) {
+        simTime = DURATION;
+        scrubber.value = DURATION.toFixed(3);
+        renderAt(simTime);
+        state = STATES.ENDED;
+        setToggleIconState(false);
+      } else {
+        scrubber.value = simTime.toFixed(3);
+        renderAt(simTime);
+      }
+    }
+  }
+
+  requestAnimationFrame(onAnimationFrame);
+})();
+</script>
+</body>
+</html>
