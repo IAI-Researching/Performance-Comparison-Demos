@@ -6,7 +6,7 @@
 
 ## 🎯 Purpose & Methodology
 
-This repository houses head-to-head, reproducible evaluations comparing frontier AI models and their native developer harnesses (Claude Code `2.1.322`, Antigravity CLI `1.5.6`, Codex CLI `0.167.1`, Kimi Code `2.5.3`, OpenCode `2.2.7`) on demanding single-file 3D applications, physics simulations, and complex interactive systems.
+This repository houses head-to-head, reproducible evaluations comparing frontier AI models across native agentic developer harnesses on demanding single-file 3D applications, physics simulations, and complex interactive systems. Specific harness versions and runtime environments are dynamically captured at execution time and preserved in the benchmark telemetry.
 
 ### The Autonomous Pass@1 Benchmark Protocol
 
@@ -47,3 +47,21 @@ To measure real-world engineering utility without artificial constraints or huma
 - [`TELEMETRY.md`](TELEMETRY.md): Comprehensive executive comparison matrix and compliance audit.
 - [`telemetry.json`](telemetry.json): Machine-readable telemetry array.
 - [`CHECKSUMS.sha256`](CHECKSUMS.sha256): Cryptographic signatures for all deliverables.
+
+---
+
+## 🏆 Benchmark Deliverables
+
+| Model | Developer Harness | Verification | Wall-Clock | Deliverable |
+| :--- | :--- | :---: | :---: | :---: |
+| **GLM 5.3 Flash** | OpenCode | **PASS (100%)** | 613.2s | [`glm-5.3-flash/`](glm-5.3-flash/) |
+| **Kimi Code K3.1 Pro** | Kimi Code | **PASS (100%)** | 785.5s | [`kimi-k3.1-pro/`](kimi-k3.1-pro/) |
+| **Codex GPT 6 Astra** | Codex CLI | **PASS (100%)** | 861.6s | [`codex-gpt-6-astra/`](codex-gpt-6-astra/) |
+| **GLM 5.3** (Flagship) | OpenCode | **PASS (100%)** | 1058.0s | [`glm-5.3/`](glm-5.3/) |
+| **Codex GPT 6.1 Sol** | Codex CLI | **PASS (100%)** | 1250.4s | [`codex-gpt-6.1-sol/`](codex-gpt-6.1-sol/) |
+| **Gemini 4 Carbon** | Antigravity CLI | **PASS (100%)** | 1559.0s | [`gemini-4-carbon/`](gemini-4-carbon/) |
+| **Gemini 4 Argon** | Antigravity CLI | **PASS (100%)** | 1661.1s | [`gemini-4-argon/`](gemini-4-argon/) |
+| **Claude Fable 5.1** | Claude Code | **PASS (100%)** | 4423.1s | [`claude-fable-5.1/`](claude-fable-5.1/) |
+| **Claude Fable 5.2** | Claude Code | **PASS (100%)** | 5835.3s | [`claude-fable-5.2/`](claude-fable-5.2/) |
+
+*See [`TELEMETRY.md`](TELEMETRY.md) for full token metrics, cache ratios, and runtime verification logs.*
