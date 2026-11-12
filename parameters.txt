@@ -1,0 +1,99 @@
+# Autonomous Pass@1 Benchmark Protocol: Parameters
+
+Benchmark: ballistics/water-balloon
+Protocol: Autonomous Pass@1
+Intervention: Zero human-in-the-loop
+Filesystem Isolation: macOS Seatbelt (`baseline/sandbox.sb`) blocking `/Volumes`, repository roots, sibling `/private/tmp` runs, and personal host folders (`~/Desktop`, `~/Documents`, `~/Downloads`, `~/Projects`, `~/Developer`).
+Environment Policy: Allowlisted child environment (`XDG_*` and `TMPDIR` scoped to `/private/tmp/pcd-sbx-<model>-<id>`), parent-owned telemetry capture outside child writable `RUN_ROOT`.
+
+---
+
+## Harness Execution Commands (Invoked Inside `sandbox-exec -f baseline/sandbox.sb`)
+
+### Track 1: Claude Code (Claude Code 2.1.322 — First-Party Native)
+Command:
+claude -p \
+  --model <model_id> \
+  --effort max \
+  --dangerously-skip-permissions \
+  --no-session-persistence \
+  --setting-sources "" \
+  --disallowedTools "WebSearch,WebFetch" \
+  --output-format stream-json \
+  --verbose \
+  "<PROMPT>"
+
+Models:
+- claude-fable-5-1 (Claude Fable 5.1, Max)
+- claude-fable-5-2 (Claude Fable 5.2, Max)
+
+---
+
+### Track 2: Antigravity CLI (Antigravity CLI 1.5.6 — First-Party Native)
+Command:
+agy \
+  --model <model_id> \
+  --dangerously-skip-permissions \
+  --disable-slash-commands \
+  --settings "{}" \
+  --output-format json \
+  --prompt="<PROMPT>"
+
+Models:
+- gemini-4-argon-high (Gemini 4 Argon, High)
+- gemini-4-carbon-high (Gemini 4 Carbon, High)
+
+---
+
+### Track 3: Codex CLI (Codex CLI 0.167.1 — First-Party Native)
+Environment:
+CODEX_HOME=<ephemeral_home_with_auth_json_only>
+
+Command:
+codex exec \
+  --model <model_id> \
+  -c model_reasoning_effort="max" \
+  -c web_search="disabled" \
+  --dangerously-bypass-approvals-and-sandbox \
+  --ephemeral \
+  --ignore-user-config \
+  --skip-git-repo-check \
+  --json \
+  "<PROMPT>"
+
+Models:
+- gpt-6-astra (Codex GPT 6 Astra, Max)
+- gpt-6.1-sol (Codex GPT 6.1 Sol, Max)
+
+---
+
+### Track 4: Kimi Code (Kimi Code 2.5.3 — First-Party Native)
+Environment:
+KIMI_CODE_HOME=<ephemeral_home_with_auth_and_effort_max_config_toml>
+
+Command:
+kimi \
+  -m "kimi-code/k3.1-pro" \
+  -p "<PROMPT>" \
+  --output-format stream-json
+
+Models:
+- kimi-code/k3.1-pro (Kimi Code K3.1 Pro, Max)
+
+---
+
+### Track 5: OpenCode (OpenCode 2.2.7 — First-Party Native)
+Environment:
+XDG_DATA_HOME=<ephemeral_xdg_data_with_credentials_only_opencode_db>
+
+Command:
+opencode --standalone run \
+  --auto \
+  --archived \
+  --thinking \
+  --format json \
+  -m "fireworks-ai/accounts/fireworks/models/glm-5p3-flash#max" \
+  "<PROMPT>"
+
+Models:
+- fireworks-ai/accounts/fireworks/models/glm-5p3-flash#max (GLM 5.3 Flash, Max)
