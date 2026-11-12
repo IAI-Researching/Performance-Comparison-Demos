@@ -45,7 +45,7 @@
     "total_tokens": 2355503
   },
   "evaluation": {
-    "file": "/Volumes/Projects_mUSB/IAI_Researching/new run/kimi-k3.1-pro/index.html",
+    "file": "/Volumes/Projects_mUSB/IAI_Researching/Performance-Comparison-Demos/ballistics/water-balloon/kimi-k3.1-pro/index.html",
     "checks": [
       {
         "name": "Valid UTF-8 Non-Empty Deliverable",

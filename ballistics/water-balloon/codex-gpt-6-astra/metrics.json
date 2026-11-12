@@ -45,7 +45,7 @@
     "total_tokens": 2963414
   },
   "evaluation": {
-    "file": "/Volumes/Projects_mUSB/IAI_Researching/new run/codex-gpt-6-astra/index.html",
+    "file": "/Volumes/Projects_mUSB/IAI_Researching/Performance-Comparison-Demos/ballistics/water-balloon/codex-gpt-6-astra/index.html",
     "checks": [
       {
         "name": "Valid UTF-8 Non-Empty Deliverable",

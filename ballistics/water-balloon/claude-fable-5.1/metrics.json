@@ -45,7 +45,7 @@
     "total_tokens": 3952882
   },
   "evaluation": {
-    "file": "/Volumes/Projects_mUSB/IAI_Researching/new run/claude-fable-5.1/index.html",
+    "file": "/Volumes/Projects_mUSB/IAI_Researching/Performance-Comparison-Demos/ballistics/water-balloon/claude-fable-5.1/index.html",
     "checks": [
       {
         "name": "Valid UTF-8 Non-Empty Deliverable",

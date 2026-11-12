@@ -45,7 +45,7 @@
     "total_tokens": 2500595
   },
   "evaluation": {
-    "file": "/Volumes/Projects_mUSB/IAI_Researching/new run/codex-gpt-6.1-sol/index.html",
+    "file": "/Volumes/Projects_mUSB/IAI_Researching/Performance-Comparison-Demos/ballistics/water-balloon/codex-gpt-6.1-sol/index.html",
     "checks": [
       {
         "name": "Valid UTF-8 Non-Empty Deliverable",

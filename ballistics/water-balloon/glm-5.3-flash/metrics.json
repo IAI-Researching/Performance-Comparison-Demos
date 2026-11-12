@@ -45,7 +45,7 @@
     "total_tokens": 605479
   },
   "evaluation": {
-    "file": "/Volumes/Projects_mUSB/IAI_Researching/new run/glm-5.3-flash/index.html",
+    "file": "/Volumes/Projects_mUSB/IAI_Researching/Performance-Comparison-Demos/ballistics/water-balloon/glm-5.3-flash/index.html",
     "checks": [
       {
         "name": "Valid UTF-8 Non-Empty Deliverable",
