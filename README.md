@@ -1,6 +1,6 @@
 # Performance Comparison Demos
 
-> Standardized autonomous benchmarks of frontier AI models across developer harnesses on complex code generation—evaluated under strict zero-context isolation with full performance telemetry.
+> Standardized autonomous benchmarks of frontier AI models across native developer harnesses (or dedicated agentic orchestrators) on demanding 3D physics applications with full performance telemetry.
 
 ---
 
