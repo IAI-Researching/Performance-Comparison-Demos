@@ -16,9 +16,9 @@ To measure real-world engineering utility without artificial constraints or huma
    - Every session starts completely stateless with zero previous conversation history, no memory persistence, and no carried-over project settings.
    - All agents receive the exact same byte-identical prompt.
 
-2. **Full Native Toolsets**:
-   - Rather than stripping tools from coding agents, each harness is invoked with its full native capability (file creation, multi-pass editing, reading, and bash execution).
-   - This measures how effectively each agent harness plans, implements, inspects, and refines code autonomously.
+2. **Full Toolset Execution**:
+   - Rather than stripping or restricting tools from coding agents, each harness is invoked with its complete capabilities (file creation, multi-pass editing, inspection, and terminal execution).
+   - This measures how effectively each agent environment plans, implements, inspects, and refines code autonomously.
 
 3. **Strict Zero-Intervention (Pass@1)**:
    - Exactly one initial prompt is sent.

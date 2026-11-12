@@ -82,7 +82,8 @@ Models:
 
 ---
 
-### Track 5: OpenCode (OpenCode 2.2.7 — First-Party Native)
+### Track 5: OpenCode (OpenCode 2.2.7 — Dedicated Agentic Orchestrator)
+Note: Utilized for models lacking an official first-party orchestrable CLI.
 Environment:
 XDG_DATA_HOME=<ephemeral_xdg_data_with_credentials_only_opencode_db>
 
@@ -92,8 +93,9 @@ opencode --standalone run \
   --archived \
   --thinking \
   --format json \
-  -m "fireworks-ai/accounts/fireworks/models/glm-5p3-flash#max" \
+  -m "<model_id>" \
   "<PROMPT>"
 
 Models:
+- fireworks-ai/accounts/fireworks/models/glm-5p3#max (GLM 5.3, Max)
 - fireworks-ai/accounts/fireworks/models/glm-5p3-flash#max (GLM 5.3 Flash, Max)
