@@ -44,6 +44,8 @@ Models:
 - gemini-4-argon-high (Gemini 4 Argon, High)
 - gemini-4-carbon-high (Gemini 4 Carbon, High)
 - gemini-4-hydrogen-high (Gemini 4 Hydrogen, High)
+- gemini-4-hydrogen-xhigh (Gemini 4 Hydrogen, XHigh)
+- gemini-3.8-flash-high (Gemini 3.8 Flash, High)
 
 ---
 
@@ -101,3 +103,17 @@ opencode --standalone run \
 Models:
 - fireworks-ai/accounts/fireworks/models/glm-5p3#max (GLM 5.3, Max)
 - fireworks-ai/accounts/fireworks/models/glm-5p3-flash#max (GLM 5.3 Flash, Max)
+
+---
+
+### Track 6: MiniMax Code (MiniMax Code 0.7.4 — First-Party Native)
+Command:
+mcode exec \
+  --model minimax/MiniMax-M3.1-Flash \
+  --effort max \
+  --permission full \
+  --output-format stream-json \
+  "<PROMPT>"
+
+Models:
+- minimax/MiniMax-M3.1-Flash (MiniMax M3.1 Flash, Max)
