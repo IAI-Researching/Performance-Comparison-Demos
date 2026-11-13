@@ -5,8 +5,8 @@
   "requested_config": {
     "harness": "agy",
     "harness_name": "Antigravity CLI",
-    "harness_version": "1.5.7",
-    "harness_label": "Antigravity CLI 1.5.7",
+    "harness_version": "1.5.6",
+    "harness_label": "Antigravity CLI 1.5.6",
     "model_id": "gemini-4-carbon-high",
     "effort": "high"
   },
@@ -15,34 +15,34 @@
     "evaluator_sha256": "8548ec2a423793ff8c3df9ad9e8911ed262f753b375e376ca617209697619174",
     "runtime_verifier_sha256": "de447e7fd310cb34a077023e427b6280399ccb9a785a4130f1ff87b2f02ff725",
     "sandbox_profile_sha256": "bc16c89f45a5218a83dda0c9ac9547f268112be9fa0b17a22bd873a021ad31f1",
-    "raw_output_sha256": "2f0d77e1d96a0f4d22196aaaefcab1962b289aca3e582c86d4b92394df07abc4",
+    "raw_output_sha256": "97aa8644c69b890dbf2dc9092dc011db7ec378978987a7dc48f444326471e658",
     "raw_output_redacted": false,
     "extra_workdir_files": []
   },
   "execution": {
-    "started_at": "2026-11-12T23:10:37.127791+00:00",
-    "completed_at": "2026-11-12T23:47:44.063914+00:00",
-    "wall_clock_seconds": 2226.92,
+    "started_at": "2026-11-11T21:16:23.383189+00:00",
+    "completed_at": "2026-11-11T21:42:22.416028+00:00",
+    "wall_clock_seconds": 1559.03,
     "exit_code": 0,
     "timed_out": false,
-    "outcome": "FAIL_VERIFICATION"
+    "outcome": "PASS"
   },
   "deliverable": {
     "file": "index.html",
-    "bytes": 95714,
-    "lines_of_code": 2338,
-    "sha256": "48f8fb525f1da5c77dd3ea7e4cf21d140822781563d338d7c72a6e0a29256bc9"
+    "bytes": 99631,
+    "lines_of_code": 2557,
+    "sha256": "076115f2e6ece74454c00af9669e248f81988e013f142e7a4b5e52601094a42b"
   },
   "usage": {
     "available": true,
-    "agent_turns": 21,
-    "tool_calls": 17,
-    "input_tokens": 447277,
-    "cached_read_tokens": 1650969,
+    "agent_turns": 26,
+    "tool_calls": 25,
+    "input_tokens": 210534,
+    "cached_read_tokens": 2795612,
     "cache_creation_tokens": 0,
-    "thinking_tokens": 75690,
-    "output_tokens": 126437,
-    "total_tokens": 2224683
+    "thinking_tokens": 52814,
+    "output_tokens": 107376,
+    "total_tokens": 3113522
   },
   "evaluation": {
     "file": "/Volumes/Projects_mUSB/IAI_Researching/Performance-Comparison-Demos/ballistics/water-balloon/gemini-4-carbon/index.html",
@@ -50,7 +50,7 @@
       {
         "name": "Valid UTF-8 Non-Empty Deliverable",
         "passed": true,
-        "detail": "Size: 95,714 bytes, 2338 LOC"
+        "detail": "Size: 99,631 bytes, 2557 LOC"
       },
       {
         "name": "Parsed Single-File HTML Structure",
@@ -85,7 +85,7 @@
       {
         "name": "[Runtime] WebGL Stage, Draw Calls & Three.js r128 Verified",
         "passed": true,
-        "detail": "THREE r128, glStats={'contextsCreated': 1, 'drawCalls': 464, 'clears': 47}, canvases=1, rect={'x': 0, 'y': 0, 'w': 1920, 'h': 1080}"
+        "detail": "THREE r128, glStats={'contextsCreated': 1, 'drawCalls': 655, 'clears': 48}, canvases=1, rect={'x': 0, 'y': 0, 'w': 1920, 'h': 1080}"
       },
       {
         "name": "[Runtime] 3.0s Countdown Sequence (3->2->1->Hidden) Verified",
@@ -105,17 +105,17 @@
       {
         "name": "[Runtime] WebGL Canvas-Only 3D Frame Progression & Scrubber Advance",
         "passed": true,
-        "detail": "canvasHashes=(c65514d30337 -> d5ce3efe8474), drawCalls=(464 -> 773), scrubber=(0.866 -> 1.466)"
+        "detail": "canvasHashes=(92f647424256 -> 4490499cdc3d), drawCalls=(670 -> 1080), scrubber=(0.783 -> 1.366)"
       },
       {
         "name": "[Runtime] Pause/Resume Canvas Freeze & 2.0x Playback Rate Verified",
         "passed": true,
-        "detail": "pausedScrub=(1.483 -> 1.483), pausedCanvasFrozen=True, observedRate2x=1.93x"
+        "detail": "pausedScrub=(1.383 -> 1.383), pausedCanvasFrozen=True, observedRate2x=1.98x"
       },
       {
         "name": "[Runtime] Cross-Reload Seed-42 Determinism, Backward Seek & Endpoint Hold",
         "passed": true,
-        "detail": "h(tA)=67d99c9b89392eb8, backward=67d99c9b89392eb8, freshReload=67d99c9b89392eb8, endClamp=8/8, endedCanvasFrozen=True"
+        "detail": "h(tA)=c5aab3e3f2998624, backward=c5aab3e3f2998624, freshReload=c5aab3e3f2998624, endClamp=8/8, endedCanvasFrozen=True"
       },
       {
         "name": "[Runtime] Silent 1.0s Re-Fire Hold & Auto-Restart Verified",
@@ -129,8 +129,8 @@
       },
       {
         "name": "[Runtime] Full-Lifecycle Zero JS, Worker, Console & WebGL Errors",
-        "passed": false,
-        "detail": "exceptions=[], errors=[\"THREE.WebGLProgram: shader error:  0 35715 False gl.getProgramInfoLog Vertex shader is not compiled. THREE.WebGLShader: gl.getShaderInfoLog() vertex\\nERROR: 0:76: 'textureCube' : no matching overloaded function found\\nERROR: 0:76: 'rgb' :  field selection requires structure, vector, or interface block on left hand side\\nERROR: 0:76: '=' : dimension mismatch\\nERROR: 0:76: '=' : cannot convert from 'const mediump float' to 'highp 3-component vector of float'1: #version 300 es\\n2: #define attribute in\\n3: #define varying out\\n4: #define texture2D texture\\n5: precision highp float;\\n6: precision highp int;\\n7: #define HIGH_PRECISION\\n8: #define SHADER_NAME ShaderMaterial\\n9: #define VERTEX_TEXTURES\\n10: #define GAMMA_FACTOR 2\\n11: #define MAX_BONES 0\\n12: #define BONE_TEXTURE\\n13: #define FLIP_SIDED\\n14: uniform mat4 modelMatrix;\\n15: uniform mat4 modelViewMatrix;\\n16: uniform mat4 projectionMatrix;\\n17: uniform mat4 viewMatrix;\\n18: uniform mat3 normalMatrix;\\n19: uniform vec3 cameraPosition;\\n20: uniform bool isOrthographic;\\n21: #ifdef USE_INSTANCING\\n22: \\tattribute mat4 instanceMatrix;\\n23: #endif\\n24: #ifdef USE_INSTANCING_COLOR\\n25: \\tattribute vec3 instanceColor;\\n26: #endif\\n27: attribute vec3 position;\\n28: attribute vec3 normal;\\n29: attribute vec2 uv;\\n30: #ifdef USE_TANGENT\\n31: \\tattribute vec4 tangent;\\n32: #endif\\n33: #if defined( USE_COLOR_ALPHA )\\n34: \\tattribute vec4 color;\\n35: #elif defined( USE_COLOR )\\n36: \\tattribute vec3 color;\\n37: #endif\\n38: #ifdef USE_MORPHTARGETS\\n39: \\tattribute vec3 morphTarget0;\\n40: \\tattribute vec3 morphTarget1;\\n41: \\tattribute vec3 morphTarget2;\\n42: \\tattribute vec3 morphTarget3;\\n43: \\t#ifdef USE_MORPHNORMALS\\n44: \\t\\tattribute vec3 morphNormal0;\\n45: \\t\\tattribute vec3 morphNormal1;\\n46: \\t\\tattribute vec3 morphNormal2;\\n47: \\t\\tattribute vec3 morphNormal3;\\n48: \\t#else\\n49: \\t\\tattribute vec3 morphTarget4;\\n50: \\t\\tattribute vec3 morphTarget5;\\n51: \\t\\tattribute vec3 morphTarget6;\\n52: \\t\\tattribute vec3 morphTarget7;\\n53: \\t#endif\\n54: #endif\\n55: #ifdef USE_SKINNING\\n56: \\tattribute vec4 skinIndex;\\n57: \\tattribute vec4 skinWeight;\\n58: #endif\\n59: \\n60: uniform float uSimTime;\\n61: uniform float uBulletTipX;\\n62: uniform float uTearFront;\\n63: varying vec3 vWorldPos;\\n64: varying vec3 vWorldNormal;\\n65: varying float vTearMargin;\\n66: varying float vStrain;\\n67: varying float vElevS;\\n68: vec3 finishHDR(vec3 col) {\\n69:   col *= 1.12;\\n70:   vec3 a = col * (col + 0.0245786) - 0.000090537;\\n71:   vec3 b = col * (0.983729 * col + 0.4329510) + 0.238081;\\n72:   vec3 mapped = clamp(a / b, 0.0, 1.0);\\n73:   return pow(mapped, vec3(1.0 / 2.2));\\n74: }\\n75: vec3 sampleEnvLinear(samplerCube env, vec3 dir) {\\n76:   vec3 raw = textureCube(env, dir).rgb;\\n77:   vec3 lin = pow(max(raw, vec3(0.0)), vec3(2.2));\\n78:   float peak = max(raw.r, max(raw.g, raw.b));\\n79:   return lin * (1.0 + 3.2 * smoothstep(0.72, 0.99, peak));\\n80: }\\n81: vec3 evalBalloonBase(float s, float phi) {\\n82:   float sc = clamp(s, 0.0, 1.0);\\n83:   float theta = sc * 3.14159265;\\n84:   float u = 0.5 * (1.0 - cos(theta));\\n85:   float y = -1.08 + 2.38 * (0.78 * u + 0.22 * sc * u);\\n86:   float sag = sin(theta) * (1.26 - 0.58 * sc - 0.25 * sc * sc);\\n87:   float neck = 0.102 * sc * sc * sc;\\n88:   float blend = smoothstep(0.84, 1.0, sc);\\n89:   float r = mix(sag, neck, blend) + neck * (1.0 - blend) * 0.35;\\n90:   return vec3(r * cos(phi), y, r * sin(phi));\\n91: }\\n92: vec3 evalLatexSurface(float s, float phi, out float outMargin, out float outStrain) {\\n93:   vec3 p0 = evalBalloonBase(s, phi);\\n94:   p0.xz *= 1.015;\\n95:   p0.y = mix(p0.y, p0.y * 1.008, 1.0 - s);\\n96:   outStrain = 0.0;\\n97:   // Angle/distance from right impact point (+0.918, 0, 0)\\n98:   vec3 impVec = normalize(vec3(p0.x, p0.y * 0.80, p0.z) + vec3(1e-5, 0.0, 0.0));\\n99:   float angFromImp = acos(clamp(impVec.x, -1.0, 1.0)) / 3.14159265;\\n100:   float az = atan(p0.y, p0.z);\\n101:   float teeth = 0.044 * sin(az * 7.0 + 0.65) + 0.027 * sin(az * 13.0 - 1.35) + 0.015 * cos(az * 21.0 + 2.2);\\n102:   float tearCoord = angFromImp + teeth * smoothstep(0.025, 0.22, angFromImp);\\n103:   outMargin = tearCoord - uTearFront;\\n104:   vec3 p = p0;\\n105:   // Elastic contact indentation & concentric ripples (1.000s - 1.180s)\\n106:   if (uSimTime > 0.985) {\\n107:     float rYZ = length(p0.yz);\\n108:     if (p0.x > 0.15) {\\n109:       float indentAmt = clamp(0.918 - uBulletTipX, 0.0, 0.22) * (1.0 - smoothstep(1.13, 1.24, uSimTime));\\n110:       float cone = exp(-rYZ * rYZ / 0.095) * smoothstep(0.15, 0.65, p0.x);\\n111:       p.x -= indentAmt * cone * 1.12;\\n112:       p.yz *= 1.0 - 0.07 * indentAmt * cone;\\n113:       outStrain += cone * indentAmt * 4.5;\\n114:     }\\n115:     float dtImp = max(0.0, uSimTime - 1.000);\\n116:     float waveFront = angFromImp * 1.85 - dtImp * 4.2;\\n117:     float ripple = 0.013 * sin(waveFront * 36.0) * exp(-abs(waveFront) * 5.2) * smoothstep(1.000, 1.020, uSimTime) * (1.0 - smoothstep(1.15, 1.48, uSimTime));\\n118:     vec3 radN = normalize(vec3(p0.x, (p0.y - 0.05) * 0.55, p0.z) + vec3(0.0, 1e-4, 0.0));\\n119:     p += radN * ripple;\\n120:   }\\n121:   // Rapid elastic retraction toward top tether & lower base (3-5x faster than fluid)\\n122:   if (uSimTime > 1.120) {\\n123:     float retract = clamp((uSimTime - 1.120) / 0.460, 0.0, 1.0);\\n124:     float localEdge = smoothstep(0.38, 0.0, max(outMargin, 0.0)) * smoothstep(1.120, 1.160, uSimTime);\\n125:     float splitLine = -0.58 + 0.14 * cos(az * 3.0 + 0.4);\\n126:     if (p0.y > splitLine) {\\n127:       vec3 knotTarget = vec3(p0.x * 0.14, 1.31 - (1.31 - p0.y) * 0.16, p0.z * 0.14);\\n128:       float pull = clamp(0.76 * retract * retract + 0.30 * localEdge, 0.0, 0.96);\\n129:       p = mix(p, knotTarget, pull);\\n130:     } else {\\n131:       vec3 baseTarget = vec3(p0.x * 0.28 - 0.12, -1.06 + (p0.y + 1.06) * 0.22, p0.z * 0.28);\\n132:       float pull = clamp(0.72 * retract * retract + 0.30 * localEdge, 0.0, 0.95);\\n133:       p = mix(p, baseTarget, pull);\\n134:     }\\n135:     // Rolled free recoil rim along the tearing fracture front\\n136:     float rimBand = clamp(1.0 - max(outMargin, 0.0) / 0.085, 0.0, 1.0);\\n137:     float roll = sin(rimBand * 3.14159265) * smoothstep(1.120, 1.145, uSimTime);\\n138:     vec3 outDir = normalize(vec3(p.x, (p.y - 0.05) * 0.45, p.z) + vec3(0.0, 1e-4, 0.0));\\n139:     p += outDir * (0.044 * roll);\\n140:     outStrain += rimBand * 0.85;\\n141:   }\\n142:   return p;\\n143: }\\n144: void main() {\\n145:   float phi = uv.x * 6.2831853;\\n146:   float s = clamp(uv.y, 0.003, 0.992);\\n147:   vElevS = s;\\n148:   float m0, st0, m1, st1, m2, st2;\\n149:   vec3 p = evalLatexSurface(s, phi, m0, st0);\\n150:   float eps = 0.005;\\n151:   vec3 pPhi = evalLatexSurface(s, phi + eps * 6.2831853, m1, st1);\\n152:   vec3 pS = evalLatexSurface(s + eps, phi, m2, st2);\\n153:   vec3 n = normalize(cross(pS - p, pPhi - p) + vec3(0.0, 1e-6, 0.0));\\n154:   vTearMargin = m0;\\n155:   vStrain = st0;\\n156:   vec4 wp = modelMatrix * vec4(p, 1.0);\\n157:   vWorldPos = wp.xyz;\\n158:   vWorldNormal = normalize(mat3(modelMatrix) * n);\\n159:   gl_Position = projectionMatrix * viewMatrix * wp;\\n160: } \", \"THREE.WebGLProgram: shader error:  1282 35715 False gl.getProgramInfoLog Vertex shader is not compiled. THREE.WebGLShader: gl.getShaderInfoLog() vertex\\nERROR: 0:75: 'textureCube' : no matching overloaded function found\\nERROR: 0:75: 'rgb' :  field selection requires structure, vector, or interface block on left hand side\\nERROR: 0:75: '=' : dimension mismatch\\nERROR: 0:75: '=' : cannot convert from 'const mediump float' to 'highp 3-component vector of float'1: #version 300 es\\n2: #define attribute in\\n3: #define varying out\\n4: #define texture2D texture\\n5: precision highp float;\\n6: precision highp int;\\n7: #define HIGH_PRECISION\\n8: #define SHADER_NAME ShaderMaterial\\n9: #define VERTEX_TEXTURES\\n10: #define GAMMA_FACTOR 2\\n11: #define MAX_BONES 0\\n12: #define BONE_TEXTURE\\n13: uniform mat4 modelMatrix;\\n14: uniform mat4 modelViewMatrix;\\n15: uniform mat4 projectionMatrix;\\n16: uniform mat4 viewMatrix;\\n17: uniform mat3 normalMatrix;\\n18: uniform vec3 cameraPosition;\\n19: uniform bool isOrthographic;\\n20: #ifdef USE_INSTANCING\\n21: \\tattribute mat4 instanceMatrix;\\n22: #endif\\n23: #ifdef USE_INSTANCING_COLOR\\n24: \\tattribute vec3 instanceColor;\\n25: #endif\\n26: attribute vec3 position;\\n27: attribute vec3 normal;\\n28: attribute vec2 uv;\\n29: #ifdef USE_TANGENT\\n30: \\tattribute vec4 tangent;\\n31: #endif\\n32: #if defined( USE_COLOR_ALPHA )\\n33: \\tattribute vec4 color;\\n34: #elif defined( USE_COLOR )\\n35: \\tattribute vec3 color;\\n36: #endif\\n37: #ifdef USE_MORPHTARGETS\\n38: \\tattribute vec3 morphTarget0;\\n39: \\tattribute vec3 morphTarget1;\\n40: \\tattribute vec3 morphTarget2;\\n41: \\tattribute vec3 morphTarget3;\\n42: \\t#ifdef USE_MORPHNORMALS\\n43: \\t\\tattribute vec3 morphNormal0;\\n44: \\t\\tattribute vec3 morphNormal1;\\n45: \\t\\tattribute vec3 morphNormal2;\\n46: \\t\\tattribute vec3 morphNormal3;\\n47: \\t#else\\n48: \\t\\tattribute vec3 morphTarget4;\\n49: \\t\\tattribute vec3 morphTarget5;\\n50: \\t\\tattribute vec3 morphTarget6;\\n51: \\t\\tattribute vec3 morphTarget7;\\n52: \\t#endif\\n53: #endif\\n54: #ifdef USE_SKINNING\\n55: \\tattribute vec4 skinIndex;\\n56: \\tattribute vec4 skinWeight;\\n57: #endif\\n58: \\n59: uniform float uSimTime;\\n60: uniform float uBulletTipX;\\n61: uniform float uTearFront;\\n62: varying vec3 vWorldPos;\\n63: varying vec3 vWorldNormal;\\n64: varying float vTearMargin;\\n65: varying float vStrain;\\n66: varying float vElevS;\\n67: vec3 finishHDR(vec3 col) {\\n68:   col *= 1.12;\\n69:   vec3 a = col * (col + 0.0245786) - 0.000090537;\\n70:   vec3 b = col * (0.983729 * col + 0.4329510) + 0.238081;\\n71:   vec3 mapped = clamp(a / b, 0.0, 1.0);\\n72:   return pow(mapped, vec3(1.0 / 2.2));\\n73: }\\n74: vec3 sampleEnvLinear(samplerCube env, vec3 dir) {\\n75:   vec3 raw = textureCube(env, dir).rgb;\\n76:   vec3 lin = pow(max(raw, vec3(0.0)), vec3(2.2));\\n77:   float peak = max(raw.r, max(raw.g, raw.b));\\n78:   return lin * (1.0 + 3.2 * smoothstep(0.72, 0.99, peak));\\n79: }\\n80: vec3 evalBalloonBase(float s, float phi) {\\n81:   float sc = clamp(s, 0.0, 1.0);\\n82:   float theta = sc * 3.14159265;\\n83:   float u = 0.5 * (1.0 - cos(theta));\\n84:   float y = -1.08 + 2.38 * (0.78 * u + 0.22 * sc * u);\\n85:   float sag = sin(theta) * (1.26 - 0.58 * sc - 0.25 * sc * sc);\\n86:   float neck = 0.102 * sc * sc * sc;\\n87:   float blend = smoothstep(0.84, 1.0, sc);\\n88:   float r = mix(sag, neck, blend) + neck * (1.0 - blend) * 0.35;\\n89:   return vec3(r * cos(phi), y, r * sin(phi));\\n90: }\\n91: vec3 evalLatexSurface(float s, float phi, out float outMargin, out float outStrain) {\\n92:   vec3 p0 = evalBalloonBase(s, phi);\\n93:   p0.xz *= 1.015;\\n94:   p0.y = mix(p0.y, p0.y * 1.008, 1.0 - s);\\n95:   outStrain = 0.0;\\n96:   // Angle/distance from right impact point (+0.918, 0, 0)\\n97:   vec3 impVec = normalize(vec3(p0.x, p0.y * 0.80, p0.z) + vec3(1e-5, 0.0, 0.0));\\n98:   float angFromImp = acos(clamp(impVec.x, -1.0, 1.0)) / 3.14159265;\\n99:   float az = atan(p0.y, p0.z);\\n100:   float teeth = 0.044 * sin(az * 7.0 + 0.65) + 0.027 * sin(az * 13.0 - 1.35) + 0.015 * cos(az * 21.0 + 2.2);\\n101:   float tearCoord = angFromImp + teeth * smoothstep(0.025, 0.22, angFromImp);\\n102:   outMargin = tearCoord - uTearFront;\\n103:   vec3 p = p0;\\n104:   // Elastic contact indentation & concentric ripples (1.000s - 1.180s)\\n105:   if (uSimTime > 0.985) {\\n106:     float rYZ = length(p0.yz);\\n107:     if (p0.x > 0.15) {\\n108:       float indentAmt = clamp(0.918 - uBulletTipX, 0.0, 0.22) * (1.0 - smoothstep(1.13, 1.24, uSimTime));\\n109:       float cone = exp(-rYZ * rYZ / 0.095) * smoothstep(0.15, 0.65, p0.x);\\n110:       p.x -= indentAmt * cone * 1.12;\\n111:       p.yz *= 1.0 - 0.07 * indentAmt * cone;\\n112:       outStrain += cone * indentAmt * 4.5;\\n113:     }\\n114:     float dtImp = max(0.0, uSimTime - 1.000);\\n115:     float waveFront = angFromImp * 1.85 - dtImp * 4.2;\\n116:     float ripple = 0.013 * sin(waveFront * 36.0) * exp(-abs(waveFront) * 5.2) * smoothstep(1.000, 1.020, uSimTime) * (1.0 - smoothstep(1.15, 1.48, uSimTime));\\n117:     vec3 radN = normalize(vec3(p0.x, (p0.y - 0.05) * 0.55, p0.z) + vec3(0.0, 1e-4, 0.0));\\n118:     p += radN * ripple;\\n119:   }\\n120:   // Rapid elastic retraction toward top tether & lower base (3-5x faster than fluid)\\n121:   if (uSimTime > 1.120) {\\n122:     float retract = clamp((uSimTime - 1.120) / 0.460, 0.0, 1.0);\\n123:     float localEdge = smoothstep(0.38, 0.0, max(outMargin, 0.0)) * smoothstep(1.120, 1.160, uSimTime);\\n124:     float splitLine = -0.58 + 0.14 * cos(az * 3.0 + 0.4);\\n125:     if (p0.y > splitLine) {\\n126:       vec3 knotTarget = vec3(p0.x * 0.14, 1.31 - (1.31 - p0.y) * 0.16, p0.z * 0.14);\\n127:       float pull = clamp(0.76 * retract * retract + 0.30 * localEdge, 0.0, 0.96);\\n128:       p = mix(p, knotTarget, pull);\\n129:     } else {\\n130:       vec3 baseTarget = vec3(p0.x * 0.28 - 0.12, -1.06 + (p0.y + 1.06) * 0.22, p0.z * 0.28);\\n131:       float pull = clamp(0.72 * retract * retract + 0.30 * localEdge, 0.0, 0.95);\\n132:       p = mix(p, baseTarget, pull);\\n133:     }\\n134:     // Rolled free recoil rim along the tearing fracture front\\n135:     float rimBand = clamp(1.0 - max(outMargin, 0.0) / 0.085, 0.0, 1.0);\\n136:     float roll = sin(rimBand * 3.14159265) * smoothstep(1.120, 1.145, uSimTime);\\n137:     vec3 outDir = normalize(vec3(p.x, (p.y - 0.05) * 0.45, p.z) + vec3(0.0, 1e-4, 0.0));\\n138:     p += outDir * (0.044 * roll);\\n139:     outStrain += rimBand * 0.85;\\n140:   }\\n141:   return p;\\n142: }\\n143: void main() {\\n144:   float phi = uv.x * 6.2831853;\\n145:   float s = clamp(uv.y, 0.003, 0.992);\\n146:   vElevS = s;\\n147:   float m0, st0, m1, st1, m2, st2;\\n148:   vec3 p = evalLatexSurface(s, phi, m0, st0);\\n149:   float eps = 0.005;\\n150:   vec3 pPhi = evalLatexSurface(s, phi + eps * 6.2831853, m1, st1);\\n151:   vec3 pS = evalLatexSurface(s + eps, phi, m2, st2);\\n152:   vec3 n = normalize(cross(pS - p, pPhi - p) + vec3(0.0, 1e-6, 0.0));\\n153:   vTearMargin = m0;\\n154:   vStrain = st0;\\n155:   vec4 wp = modelMatrix * vec4(p, 1.0);\\n156:   vWorldPos = wp.xyz;\\n157:   vWorldNormal = normalize(mat3(modelMatrix) * n);\\n158:   gl_Position = projectionMatrix * viewMatrix * wp;\\n159: } \"], cdpAsync=[]"
+        "passed": true,
+        "detail": "Zero exceptions, console errors, or target instrumentation errors across entire run"
       },
       {
         "name": "Clean Single-File Workdir (No Auxiliary Files)",
@@ -138,9 +138,9 @@
         "detail": "Only ./index.html present in working directory"
       }
     ],
-    "passed_checks": 17,
+    "passed_checks": 18,
     "total_checks": 18,
-    "score_pct": 94.4,
-    "verdict": "FAIL"
+    "score_pct": 100.0,
+    "verdict": "PASS"
   }
 }
