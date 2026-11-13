@@ -1,0 +1,1427 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Ballistics — Water Balloon @ 15,000 FPS</title>
+<style>
+*, *::before, *::after {
+  box-sizing: border-box;
+}
+html, body {
+  margin: 0;
+  padding: 0;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  background: radial-gradient(circle at center, #161922 0%, #090a0f 100%);
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -webkit-user-select: none;
+  user-select: none;
+}
+#stage {
+  display: block;
+  width: 100vw;
+  height: 100vh;
+}
+
+#countdown {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 50;
+  pointer-events: none;
+  font-size: 96px;
+  font-weight: 700;
+  line-height: 1;
+  color: rgba(255, 255, 255, 0.35);
+  font-variant-numeric: tabular-nums;
+  display: none;
+}
+
+#dock {
+  position: fixed;
+  bottom: 24px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 100;
+  width: 536px;
+  height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 0 14px;
+  background: rgba(15, 17, 23, 0.78);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 9999px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.35);
+}
+
+#dock button {
+  font-family: inherit;
+  line-height: 1;
+  margin: 0;
+  flex-shrink: 0;
+  white-space: nowrap;
+  appearance: none;
+  -webkit-appearance: none;
+}
+
+.dock-sep {
+  width: 1px;
+  height: 18px;
+  flex-shrink: 0;
+  background: rgba(255, 255, 255, 0.12);
+}
+
+#btn-refire {
+  width: 78px;
+  height: 28px;
+  padding: 0 10px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 9999px;
+  color: #ffffff;
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+}
+#btn-refire:hover {
+  background: rgba(255, 255, 255, 0.16);
+}
+
+#btn-toggle {
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 9999px;
+  color: #ffffff;
+  cursor: pointer;
+}
+#btn-toggle:hover {
+  background: rgba(255, 255, 255, 0.16);
+}
+
+#speed-group {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  flex-shrink: 0;
+}
+.speed-pill {
+  width: 42px;
+  height: 24px;
+  padding: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 9999px;
+  color: rgba(255, 255, 255, 0.6);
+  font-size: 11px;
+  font-weight: 500;
+  font-variant-numeric: tabular-nums;
+  cursor: pointer;
+}
+.speed-pill:hover {
+  color: #ffffff;
+  background: rgba(255, 255, 255, 0.06);
+}
+.speed-pill.is-active {
+  color: #ffffff;
+  background: rgba(255, 255, 255, 0.18);
+  border-color: rgba(255, 255, 255, 0.2);
+}
+
+#scrubber {
+  width: 157px;
+  height: 4px;
+  margin: 0;
+  padding: 0;
+  flex-shrink: 0;
+  appearance: none;
+  -webkit-appearance: none;
+  background: rgba(255, 255, 255, 0.22);
+  border-radius: 9999px;
+  outline: none;
+  cursor: pointer;
+}
+#scrubber::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: #ffffff;
+  border: none;
+  cursor: pointer;
+}
+#scrubber::-moz-range-thumb {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: #ffffff;
+  border: none;
+  cursor: pointer;
+}
+</style>
+</head>
+<body>
+<canvas id="stage"></canvas>
+<div id="countdown" aria-hidden="true">3</div>
+
+<div id="dock" role="toolbar" aria-label="Simulation Controls">
+  <button id="btn-refire" type="button" aria-label="Re-fire" title="Re-fire">
+    <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+      <path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.19"/>
+    </svg>
+    <span>Re-fire</span>
+  </button>
+  <span class="dock-sep" aria-hidden="true"></span>
+  <button id="btn-toggle" type="button" aria-label="Pause" title="Play / Pause">
+    <svg id="icon-pause" viewBox="0 0 24 24" width="14" height="14" fill="currentColor" aria-hidden="true">
+      <rect x="6" y="4" width="4" height="16" rx="1"/>
+      <rect x="14" y="4" width="4" height="16" rx="1"/>
+    </svg>
+    <svg id="icon-play" viewBox="0 0 24 24" width="14" height="14" fill="currentColor" aria-hidden="true" style="display:none;">
+      <path d="M8 5v14l11-7z"/>
+    </svg>
+  </button>
+  <span class="dock-sep" aria-hidden="true"></span>
+  <div id="speed-group" role="radiogroup" aria-label="Playback Speed">
+    <button class="speed-pill" type="button" role="radio" aria-checked="false" data-speed="0.25">0.25×</button>
+    <button class="speed-pill" type="button" role="radio" aria-checked="false" data-speed="0.5">0.5×</button>
+    <button class="speed-pill is-active" type="button" role="radio" aria-checked="true" data-speed="1.0">1.0×</button>
+    <button class="speed-pill" type="button" role="radio" aria-checked="false" data-speed="2.0">2.0×</button>
+  </div>
+  <span class="dock-sep" aria-hidden="true"></span>
+  <input id="scrubber" type="range" min="0" max="8.000" step="0.001" value="0" aria-label="Timeline Scrubber">
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+/* ============================================================================
+   BALLISTICS — WATER BALLOON / 15,000 FPS SLOW MOTION
+   Fully deterministic: every visual state is a pure function of `simTime`.
+   Seeded PRNG (mulberry32, seed 42) drives all procedural generation.
+   ========================================================================== */
+(function () {
+  'use strict';
+
+  /* ------------------------------ constants ------------------------------ */
+  var SEED = 42;
+  const DURATION = 8.000;
+
+  var PH = {
+    APPROACH: [0.000, 1.000],
+    CONTACT:  [1.000, 1.600],
+    STASIS:   [1.600, 2.400],
+    CAVIT:    [2.400, 3.800],
+    EXIT:     [3.800, 5.000],
+    BREAKUP:  [5.000, 8.000]
+  };
+
+  // balloon (latex skin)
+  var R_BAL   = 0.620;
+  var H_BAL   = 1.420;
+  var Y_TOP   = 0.710;
+  var Y_BOT   = Y_TOP - H_BAL;
+  var NECK_U  = 0.520;      // widest point of the teardrop (below centre)
+
+  // free water mass
+  var R_WAT   = 0.575;
+  var H_WAT   = 1.300;
+  var Y_WTOP  = 0.660;
+  var Y_WBOT  = Y_WTOP - H_WAT;
+
+  var IMPACT = { x: R_BAL, y: 0.0, z: 0.0 };   // right-hand latex puncture
+  var EXITP  = { x: -R_WAT, y: 0.0, z: 0.0 };  // left-hand exit puncture
+
+  var GRAV = 1.70;          // world-units / s^2 (cinematic gravity)
+  var GRID_C = 48;          // azimuthal segments
+  var GRID_R = 34;          // interior rings
+
+  /* ------------------------------- utility ------------------------------- */
+  function mulberry32(a) {
+    return function () {
+      a |= 0; a = a + 0x6D2B79F5 | 0;
+      var t = Math.imul(a ^ a >>> 15, 1 | a);
+      t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t;
+      return ((t ^ t >>> 14) >>> 0) / 4294967296;
+    };
+  }
+  function clamp(v, a, b) { return v < a ? a : (v > b ? b : v); }
+  function lerp(a, b, t) { return a + (b - a) * t; }
+  function smoothstep(e0, e1, x) {
+    var t = clamp((x - e0) / (e1 - e0 || 1e-6), 0, 1);
+    return t * t * (3 - 2 * t);
+  }
+  function ramp(t, a, b) { return clamp((t - a) / (b - a || 1e-6), 0, 1); }
+  function bump(t, a, b, c, d) {
+    return smoothstep(a, b, t) * (1.0 - smoothstep(c, d, t));
+  }
+
+  /* ------------------------- shared shader chunks ------------------------ */
+  var NOISE_GLSL = [
+    'float hash13(vec3 p){',
+    '  p = fract(p*0.1031);',
+    '  p += dot(p, p.yzx + 33.33);',
+    '  return fract((p.x+p.y)*p.z);',
+    '}',
+    'float vnoise(vec3 x){',
+    '  vec3 i = floor(x); vec3 f = fract(x);',
+    '  f = f*f*(3.0-2.0*f);',
+    '  float n000=hash13(i);                 float n100=hash13(i+vec3(1.,0.,0.));',
+    '  float n010=hash13(i+vec3(0.,1.,0.)); float n110=hash13(i+vec3(1.,1.,0.));',
+    '  float n001=hash13(i+vec3(0.,0.,1.)); float n101=hash13(i+vec3(1.,0.,1.));',
+    '  float n011=hash13(i+vec3(0.,1.,1.)); float n111=hash13(i+vec3(1.,1.,1.));',
+    '  return mix(mix(mix(n000,n100,f.x),mix(n010,n110,f.x),f.y),',
+    '             mix(mix(n001,n101,f.x),mix(n011,n111,f.x),f.y),f.z);',
+    '}',
+    'float fbm(vec3 p){',
+    '  float s=0.0, a=0.5;',
+    '  for(int i=0;i<4;i++){ s += a*vnoise(p); p = p*2.03 + vec3(11.7,3.1,5.9); a *= 0.5; }',
+    '  return s;',
+    '}'
+  ].join('\n');
+
+  var LIGHT_GLSL = [
+    'uniform vec3 uLPos[4];',
+    'uniform vec3 uLCol[4];'
+  ].join('\n');
+
+  /* ------------------------------ renderer ------------------------------- */
+  var canvas = document.getElementById('stage');
+  var renderer = new THREE.WebGLRenderer({
+    canvas: canvas, antialias: true, alpha: true
+  });
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+  renderer.setSize(window.innerWidth, window.innerHeight, false);
+  renderer.outputEncoding = THREE.sRGBEncoding;
+  renderer.setClearColor(0x000000, 0);
+
+  var scene = new THREE.Scene();
+  var camera = new THREE.PerspectiveCamera(35, window.innerWidth / window.innerHeight, 0.1, 100);
+  camera.position.set(0, 0, 6.40);
+  camera.lookAt(0, 0, 0);
+
+  // three-point studio rig: cool key + dual rim (cyan / magenta) + warm fill
+  var RIG = [
+    { pos: new THREE.Vector3(2.40, 2.40, 3.20), col: new THREE.Color(0xd8e6ff), i: 1.55 },
+    { pos: new THREE.Vector3(-3.20, 1.45, -2.40), col: new THREE.Color(0x46d4ff), i: 2.30 },
+    { pos: new THREE.Vector3(3.20, 0.20, -2.60), col: new THREE.Color(0xff5aa6), i: 1.70 },
+    { pos: new THREE.Vector3(-1.40, -2.20, 2.80), col: new THREE.Color(0xffd9b0), i: 0.55 }
+  ];
+  for (var li = 0; li < RIG.length; li++) {
+    var L = new THREE.PointLight(RIG[li].col.getHex(), RIG[li].i, 0, 2);
+    L.position.copy(RIG[li].pos);
+    scene.add(L);
+  }
+  var lightPosUniform = RIG.map(function (r) { return r.pos.clone(); });
+  var lightColUniform = RIG.map(function (r) { return r.col.clone().multiplyScalar(r.i); });
+
+  /* ------------------------ procedural sprite texture -------------------- */
+  function makeDropSprite(size) {
+    var c = document.createElement('canvas');       // detached: never appended to DOM
+    c.width = c.height = size;
+    var x = c.getContext('2d');
+    var h = size / 2;
+    var g = x.createRadialGradient(h, h, 0, h, h, h);
+    g.addColorStop(0.00, 'rgba(255,255,255,0.88)');
+    g.addColorStop(0.18, 'rgba(232,246,255,0.62)');
+    g.addColorStop(0.46, 'rgba(190,222,250,0.26)');
+    g.addColorStop(0.72, 'rgba(150,190,235,0.14)');
+    g.addColorStop(0.90, 'rgba(226,244,255,0.30)');  // fresnel-ish rim
+    g.addColorStop(1.00, 'rgba(160,200,240,0.0)');
+    x.fillStyle = g; x.fillRect(0, 0, size, size);
+    var hs = x.createRadialGradient(h * 0.74, h * 0.68, 0, h * 0.74, h * 0.68, h * 0.26);
+    hs.addColorStop(0, 'rgba(255,255,255,0.85)');
+    hs.addColorStop(1, 'rgba(255,255,255,0)');
+    x.fillStyle = hs; x.fillRect(0, 0, size, size);
+    var t = new THREE.CanvasTexture(c);
+    t.minFilter = THREE.LinearFilter;
+    t.magFilter = THREE.LinearFilter;
+    t.generateMipmaps = false;
+    return t;
+  }
+  var DROP_TEX = makeDropSprite(128);
+
+  /* --------------------------- geometry builders ------------------------- */
+  function teardropRadius(u, R) {
+    if (u <= NECK_U) {
+      var t = u / NECK_U;
+      var s = t * t * (3 - 2 * t);
+      return R * (0.10 + 0.90 * s);
+    }
+    var t2 = (u - NECK_U) / (1 - NECK_U);
+    var q = Math.max(0, 1 - t2 * t2);
+    return R * Math.pow(q, 0.52);
+  }
+
+  function buildTeardrop(R, H, yTop, C, NR) {
+    var nVerts = NR * C + 2;
+    var pos = new Float32Array(nVerts * 3);
+    var uArr = new Float32Array(nVerts);
+    var idx = [];
+
+    pos[0] = 0; pos[1] = yTop; pos[2] = 0; uArr[0] = 0;
+    for (var i = 1; i <= NR; i++) {
+      var u = i / (NR + 1);
+      var r = teardropRadius(u, R);
+      var y = yTop - u * H;
+      uArr[1 + (i - 1) * C] = u;
+      for (var j = 0; j < C; j++) {
+        var a = (j / C) * Math.PI * 2;
+        var vi = 1 + (i - 1) * C + j;
+        pos[vi * 3] = r * Math.cos(a);
+        pos[vi * 3 + 1] = y;
+        pos[vi * 3 + 2] = r * Math.sin(a);
+        uArr[vi] = u;
+      }
+    }
+    var bot = 1 + NR * C;
+    pos[bot * 3] = 0; pos[bot * 3 + 1] = yTop - H; pos[bot * 3 + 2] = 0;
+    uArr[bot] = 1.0;
+
+    // index buffer
+    for (var j2 = 0; j2 < C; j2++) {
+      idx.push(0, 1 + j2, 1 + ((j2 + 1) % C));
+    }
+    for (var i2 = 1; i2 < NR; i2++) {
+      var b1 = 1 + (i2 - 1) * C, b2 = 1 + i2 * C;
+      for (var j3 = 0; j3 < C; j3++) {
+        var jn = (j3 + 1) % C;
+        idx.push(b1 + j3, b2 + j3, b2 + jn);
+        idx.push(b1 + j3, b2 + jn, b1 + jn);
+      }
+    }
+    var bLast = 1 + (NR - 1) * C;
+    for (var j4 = 0; j4 < C; j4++) {
+      idx.push(bLast + j4, bot, bLast + ((j4 + 1) % C));
+    }
+
+    var g = new THREE.BufferGeometry();
+    g.setAttribute('position', new THREE.BufferAttribute(pos, 3));
+    g.setAttribute('normal', new THREE.BufferAttribute(new Float32Array(nVerts * 3), 3));
+    g.setIndex(idx);
+    g.userData = { u: uArr, C: C, NR: NR };
+    return g;
+  }
+
+  function computeGridNormals(geo) {
+    var C = geo.userData.C, NR = geo.userData.NR;
+    var p = geo.attributes.position.array;
+    var n = geo.attributes.normal.array;
+    var bot = 1 + NR * C;
+    function at(ring, j) { return 1 + (ring - 1) * C + ((j % C) + C) % C; }
+    for (var ring = 1; ring <= NR; ring++) {
+      var up = (ring === 1) ? 0 : at(ring - 1, 0);
+      var dn = (ring === NR) ? bot : at(ring + 1, 0);
+      for (var j = 0; j < C; j++) {
+        var a = at(ring, j);
+        var upI = (ring === 1) ? 0 : at(ring - 1, j);
+        var dnI = (ring === NR) ? bot : at(ring + 1, j);
+        var ux = p[dnI * 3] - p[upI * 3];
+        var uy = p[dnI * 3 + 1] - p[upI * 3 + 1];
+        var uz = p[dnI * 3 + 2] - p[upI * 3 + 2];
+        var jl = at(ring, j - 1), jr = at(ring, j + 1);
+        var tx = p[jr * 3] - p[jl * 3];
+        var ty = p[jr * 3 + 1] - p[jl * 3 + 1];
+        var tz = p[jr * 3 + 2] - p[jl * 3 + 2];
+        var cx = ty * uz - tz * uy;
+        var cy = tz * ux - tx * uz;
+        var cz = tx * uy - ty * ux;
+        var l = Math.sqrt(cx * cx + cy * cy + cz * cz) || 1;
+        n[a * 3] = cx / l; n[a * 3 + 1] = cy / l; n[a * 3 + 2] = cz / l;
+      }
+    }
+    n[0] = 0; n[1] = 1; n[2] = 0;
+    n[bot * 3] = 0; n[bot * 3 + 1] = -1; n[bot * 3 + 2] = 0;
+    geo.attributes.normal.needsUpdate = true;
+  }
+
+  /* ------------------------------- materials ----------------------------- */
+  function makeSurfaceMaterial(opts) {
+    var uniforms = {
+      uTime:      { value: 0 },
+      uLPos:      { value: lightPosUniform },
+      uLCol:      { value: lightColUniform },
+      uCamPos:    { value: new THREE.Vector3(0, 0, 6.4) },
+      uColor:     { value: new THREE.Color(opts.color) },
+      uOpacity:   { value: opts.opacity },
+      uSpecPow:   { value: opts.specPow },
+      uSpecGain:  { value: opts.specGain },
+      uRimGain:   { value: opts.rimGain },
+      uDiffGain:  { value: opts.diffGain },
+      uSSS:       { value: opts.sss },
+      uWobble:    { value: 0 },
+      uFilm:      { value: opts.film ? 1 : 0 },
+      uTunnelOn:  { value: 0 },
+      uTunnelX0:  { value: 0 },
+      uTunnelX1:  { value: 0 },
+      uTunnelR:   { value: 0.1 },
+      uTunnelY:   { value: 0 },
+      uExitOn:    { value: 0 },
+      uExitR:     { value: 0.0 },
+      uExitP:     { value: new THREE.Vector3(0, 0, 0) }
+    };
+    var mat = new THREE.ShaderMaterial({
+      uniforms: uniforms,
+      transparent: true,
+      depthWrite: false,
+      side: opts.side || THREE.DoubleSide,
+      blending: opts.blending || THREE.NormalBlending,
+      vertexShader: [
+        'varying vec3 vN;',
+        'varying vec3 vWP;',
+        'varying vec3 vLocal;',
+        'void main(){',
+        '  vLocal = position;',
+        '  vec4 wp = modelMatrix * vec4(position,1.0);',
+        '  vWP = wp.xyz;',
+        '  vN = normalize(normalMatrix * normal);',
+        '  gl_Position = projectionMatrix * viewMatrix * wp;',
+        '}'
+      ].join('\n'),
+      fragmentShader: [
+        'precision highp float;',
+        LIGHT_GLSL,
+        'uniform float uTime, uOpacity, uSpecPow, uSpecGain, uRimGain, uDiffGain, uSSS, uWobble, uFilm;',
+        'uniform vec3 uColor;',
+        'uniform vec3 uCamPos;',
+        'uniform float uTunnelOn, uTunnelX0, uTunnelX1, uTunnelR, uTunnelY, uExitOn, uExitR;',
+        'uniform vec3 uExitP;',
+        'varying vec3 vN;',
+        'varying vec3 vWP;',
+        'varying vec3 vLocal;',
+        NOISE_GLSL,
+        'void main(){',
+        // cavity / exit carve-outs (soft-edged alpha cut-outs) -------------------
+        '  float cut = 0.0;',
+        '  if(uTunnelOn > 0.5){',
+        '    float x = vWP.x;',
+        '    if(x < uTunnelX0 && x > uTunnelX1 - 0.04){',
+        '      float dy = abs(vWP.y - uTunnelY);',
+        '      float s = smoothstep(uTunnelR*1.45, uTunnelR*0.55, dy);',
+        '      s *= smoothstep(uTunnelX1 - 0.04, uTunnelX1 + 0.18, x);',
+        '      cut = max(cut, s);',
+        '    }',
+        '  }',
+        '  if(uExitOn > 0.5){',
+        '    float de = length(vWP - uExitP);',
+        '    cut = max(cut, smoothstep(uExitR*1.35, uExitR*0.5, de));',
+        '  }',
+        // perturbed normal (micro surface / refraction shimmer) -------------------
+        // NB: the shell is rendered double sided; always orient the normal toward
+        // the viewer so front and back facets shade identically (no overdraw seams)
+        '  vec3 V = normalize(uCamPos - vWP);',
+        '  vec3 N = normalize(vN);',
+        '  if (dot(N, V) < 0.0) N = -N;',
+        '  if(uWobble > 0.0001){',
+        '    float n1 = vnoise(vWP*22.0 + vec3(0.0,0.0,uTime*2.4));',
+        '    float n2 = vnoise(vWP*17.0 + vec3(uTime*1.1,0.0,0.0));',
+        '    vec3 pert = vec3(n1-0.5, n2-0.5, (n1+n2)*0.5-0.5);',
+        '    N = normalize(N + pert*uWobble);',
+        '  }',
+        '  float ndv = clamp(dot(N,V),0.0,1.0);',
+        '  float fres = pow(1.0-ndv, 3.0);',
+        '  vec3 base = vec3(0.0), spec = vec3(0.0), rim = vec3(0.0);',
+        '  for(int i=0;i<4;i++){',
+        '    vec3 lv = uLPos[i]-vWP;',
+        '    float dd = length(lv);',
+        '    vec3 Lv = lv/max(dd,1e-4);',
+        '    float att = 1.0/(1.0+0.30*dd*dd);',
+        '    float ndl = max(dot(N,Lv),0.0);',
+        '    base += uLCol[i]*att*ndl;',
+        '    vec3 Hv = normalize(Lv + V + vec3(1e-5));',
+        '    spec += uLCol[i]*att*pow(max(dot(N,Hv),0.0), uSpecPow);',
+        '    float back = max(dot(-N,Lv),0.0);',
+        '    base += uLCol[i]*att*back*uSSS;',
+        '    if(i>=1){ rim += uLCol[i]*pow(1.0-ndv,1.7)*0.26; }',
+        '  }',
+        '  vec3 col = uColor*(0.30 + base*uDiffGain) + spec*uSpecGain + rim*uRimGain;',
+        '  if(uFilm > 0.5){ col += uColor*0.50; }',
+        '  float a = (uFilm > 0.5) ? uOpacity*pow(fres,1.4) : uOpacity*(0.42 + 0.58*fres);',
+        '  a *= (1.0 - cut);',
+        '  a = clamp(a,0.0,1.0);',
+        '  gl_FragColor = vec4(col, a);',
+        '}'
+      ].join('\n')
+    });
+    return mat;
+  }
+
+  var skinMat = makeSurfaceMaterial({
+    color: 0xe61c24, opacity: 0.92, specPow: 120.0, specGain: 1.30,
+    rimGain: 1.30, diffGain: 0.88, sss: 0.40
+  });
+  var coreMat = makeSurfaceMaterial({
+    color: 0x8fd6e8, opacity: 0.80, specPow: 96.0, specGain: 1.55,
+    rimGain: 1.75, diffGain: 0.55, sss: 0.18, side: THREE.FrontSide
+  });
+  var sheetMat = makeSurfaceMaterial({
+    color: 0xbfe6f5, opacity: 0.80, specPow: 70.0, specGain: 1.80,
+    rimGain: 3.60, diffGain: 0.55, sss: 0.35, film: true
+  });
+
+  /* --------------------------- scene: balloon skin ----------------------- */
+  var skinGeo = buildTeardrop(R_BAL, H_BAL, Y_TOP, GRID_C, GRID_R);
+  var skinBase = new Float32Array(skinGeo.attributes.position.array);
+  var skinU = skinGeo.userData.u;
+  // deterministic crumple offsets (latex never contracts into a clean shell)
+  var skinCrumple = new Float32Array(skinBase.length);
+  var crumRng = mulberry32(SEED ^ 0xC011EE);
+  for (var sci = 0; sci < skinBase.length; sci += 3) {
+    skinCrumple[sci] = crumRng() * 2 - 1;
+    skinCrumple[sci + 1] = crumRng() * 2 - 1;
+    skinCrumple[sci + 2] = crumRng() * 2 - 1;
+  }
+  var skinMesh = new THREE.Mesh(skinGeo, skinMat);
+  skinMesh.renderOrder = 3;
+  skinMesh.frustumCulled = false;
+  scene.add(skinMesh);
+
+  // knot at the neck
+  var knotGeo = new THREE.SphereGeometry(0.052, 16, 12);
+  var knotMat = new THREE.MeshStandardMaterial({
+    color: 0xb3161d, roughness: 0.35, metalness: 0.05
+  });
+  var knot = new THREE.Mesh(knotGeo, knotMat);
+  knot.position.set(0, Y_TOP + 0.012, 0);
+  scene.add(knot);
+
+  // tether (off-screen above)
+  var tetherGroup = new THREE.Group();
+  var tetherGeo = new THREE.CylinderGeometry(0.0065, 0.0065, 3.0, 6, 1, true);
+  var tetherMesh = new THREE.Mesh(tetherGeo, new THREE.MeshBasicMaterial({ color: 0x6d7686 }));
+  tetherMesh.position.y = 1.5;
+  tetherGroup.add(tetherMesh);
+  tetherGroup.position.set(0, Y_TOP + 0.02, 0);
+  scene.add(tetherGroup);
+
+  /* ------------------------ scene: free water mass ----------------------- */
+  var coreGeo = buildTeardrop(R_WAT, H_WAT, Y_WTOP, GRID_C, GRID_R);
+  var coreBase = new Float32Array(coreGeo.attributes.position.array);
+  var coreU = coreGeo.userData.u;
+  var coreMesh = new THREE.Mesh(coreGeo, coreMat);
+  coreMesh.renderOrder = 2;
+  coreMesh.frustumCulled = false;
+  scene.add(coreMesh);
+
+  // deterministic per-vertex breakup directions
+  var bkRng = mulberry32(SEED ^ 0x5eed);
+  var coreRnd = new Float32Array(coreBase.length);
+  for (var ci = 0; ci < coreBase.length; ci += 3) {
+    var vx = bkRng() * 2 - 1, vy = bkRng() * 2 - 1, vz = bkRng() * 2 - 1;
+    var vl = Math.sqrt(vx * vx + vy * vy + vz * vz) || 1;
+    coreRnd[ci] = vx / vl; coreRnd[ci + 1] = vy / vl; coreRnd[ci + 2] = vz / vl;
+  }
+
+  /* ----------------------------- scene: bullet --------------------------- */
+  var bulletGroup = new THREE.Group();
+  var bulletMat = new THREE.MeshStandardMaterial({
+    color: 0xb9793a, metalness: 0.62, roughness: 0.30,
+    emissive: 0x1b0d03, emissiveIntensity: 1.0
+  });
+  var coneGeo = new THREE.ConeGeometry(0.082, 0.26, 22, 1);
+  coneGeo.rotateZ(Math.PI / 2);          // apex -> -X
+  coneGeo.translate(0.13, 0, 0);         // apex at local x = 0
+  var coneMesh = new THREE.Mesh(coneGeo, bulletMat);
+  bulletGroup.add(coneMesh);
+  var casingGeo = new THREE.CylinderGeometry(0.082, 0.078, 0.19, 22, 1);
+  casingGeo.rotateZ(Math.PI / 2);
+  casingGeo.translate(0.355, 0, 0);
+  bulletGroup.add(new THREE.Mesh(casingGeo, bulletMat));
+  var driveGeo = new THREE.CylinderGeometry(0.062, 0.062, 0.05, 20, 1);
+  driveGeo.rotateZ(Math.PI / 2);
+  driveGeo.translate(0.475, 0, 0);
+  bulletGroup.add(new THREE.Mesh(driveGeo, bulletMat));
+  // hot vapour core at the tip
+  var tipGlowMat = new THREE.MeshBasicMaterial({
+    color: 0xdff2ff, transparent: true, opacity: 0,
+    blending: THREE.AdditiveBlending, depthWrite: false
+  });
+  var tipGlow = new THREE.Mesh(new THREE.SphereGeometry(0.05, 12, 10), tipGlowMat);
+  bulletGroup.add(tipGlow);
+  scene.add(bulletGroup);
+
+  /* ------------------------- scene: vapour geometries -------------------- */
+  function makeVaporMaterial(color, gain) {
+    return new THREE.ShaderMaterial({
+      uniforms: {
+        uTime: { value: 0 },
+        uOpacity: { value: 0 },
+        uColor: { value: new THREE.Color(color) },
+        uGain: { value: gain },
+        uSeed: { value: 0 },
+        uAxial: { value: 0 },
+        uCamPos: { value: new THREE.Vector3(0, 0, 6.4) },
+        uLPos: { value: lightPosUniform },
+        uLCol: { value: lightColUniform }
+      },
+      transparent: true,
+      depthWrite: false,
+      blending: THREE.AdditiveBlending,
+      side: THREE.DoubleSide,
+      vertexShader: [
+        'varying vec3 vN; varying vec3 vWP; varying vec2 vUv;',
+        'void main(){',
+        '  vUv = uv;',
+        '  vec4 wp = modelMatrix * vec4(position,1.0);',
+        '  vWP = wp.xyz;',
+        '  vN = normalize(normalMatrix * normal);',
+        '  gl_Position = projectionMatrix * viewMatrix * wp;',
+        '}'
+      ].join('\n'),
+      fragmentShader: [
+        'precision highp float;',
+        'uniform float uTime, uOpacity, uGain, uSeed, uAxial;',
+        'uniform vec3 uColor;',
+        'uniform vec3 uCamPos;',
+        'varying vec3 vN; varying vec3 vWP; varying vec2 vUv;',
+        NOISE_GLSL,
+        'void main(){',
+        '  vec3 V = normalize(uCamPos - vWP);',
+        '  float facing = abs(dot(normalize(vN), V));',
+        '  float n = fbm(vWP*6.5 + vec3(uSeed, uTime*0.9, uTime*2.1));',
+        '  float n2 = fbm(vWP*17.0 - vec3(uTime*3.0, uTime*1.7, uSeed));',
+        '  float axial = 1.0;',
+        '  if(uAxial > 1.5){ axial = sin(clamp(vUv.y,0.0,1.0)*3.14159); }',
+        '  else if(uAxial > 0.5){ axial = pow(clamp(vUv.y,0.0,1.0), 0.8); }',
+        '  float a = uOpacity * (0.45 + 0.55*n) * (0.55 + 0.45*n2) * (0.10 + 0.90*facing) * axial;',
+        '  vec3 c = uColor * (0.70 + 0.60*n) * uGain;',
+        '  gl_FragColor = vec4(c*a, a);',
+        '}'
+      ].join('\n')
+    });
+  }
+
+  var tunnelMat = makeVaporMaterial(0xbfe6ff, 2.30);
+  tunnelMat.uniforms.uAxial.value = 2.0;
+  var tunnelMesh = new THREE.Mesh(
+    new THREE.CylinderGeometry(1, 1, 1, 22, 1, true), tunnelMat);
+  tunnelMesh.rotation.z = -Math.PI / 2;
+  tunnelMesh.renderOrder = 4;
+  tunnelMesh.frustumCulled = false;
+  scene.add(tunnelMesh);
+
+  var wakeMat = makeVaporMaterial(0xcfe9ff, 2.10);
+  wakeMat.uniforms.uSeed.value = 11.3;
+  wakeMat.uniforms.uAxial.value = 1.0;
+  var wakeMesh = new THREE.Mesh(
+    new THREE.CylinderGeometry(0.02, 1, 1, 22, 1, true), wakeMat);
+  wakeMesh.rotation.z = Math.PI / 2;
+  wakeMesh.renderOrder = 4;
+  wakeMesh.frustumCulled = false;
+  scene.add(wakeMesh);
+
+  var plumeMat = makeVaporMaterial(0xe8f6ff, 2.40);
+  plumeMat.uniforms.uSeed.value = 27.7;
+  plumeMat.uniforms.uAxial.value = 1.0;
+  var plumeMesh = new THREE.Mesh(
+    new THREE.CylinderGeometry(0.02, 1, 1, 26, 1, true), plumeMat);
+  plumeMesh.rotation.z = -Math.PI / 2;
+  plumeMesh.renderOrder = 5;
+  plumeMesh.frustumCulled = false;
+  scene.add(plumeMesh);
+
+  /* --------------------------- scene: fluid sheets ------------------------ */
+  var sheets = [];
+  var sheetRng = mulberry32(SEED ^ 0xA11);
+  for (var si = 0; si < 5; si++) {
+    var sg = new THREE.PlaneGeometry(1, 1, 12, 12);
+    var posAttr = sg.attributes.position.array;
+    // pre-bend into a shallow curved flap
+    for (var q = 0; q < posAttr.length; q += 3) {
+      var su = posAttr[q], sv = posAttr[q + 1];
+      posAttr[q + 2] = Math.sin((su + 0.5) * Math.PI) * 0.26 * Math.sin((sv + 0.5) * Math.PI);
+    }
+    sg.computeVertexNormals();
+    var sBase = new Float32Array(posAttr);
+    var smesh = new THREE.Mesh(sg, sheetMat);
+    smesh.renderOrder = 3;
+    smesh.frustumCulled = false;
+    smesh.visible = false;
+    scene.add(smesh);
+
+    var ang = sheetRng() * Math.PI * 2;
+    var uu = 0.25 + sheetRng() * 0.55;
+    var rr = teardropRadius(uu, R_WAT) * 0.85;
+    var yy = Y_WTOP - uu * H_WAT;
+    sheets.push({
+      mesh: smesh, geo: sg, base: sBase,
+      tb: 4.95 + sheetRng() * 1.05,
+      p0: new THREE.Vector3(rr * Math.cos(ang), yy, rr * Math.sin(ang)),
+      v0: new THREE.Vector3((sheetRng() - 0.5) * 1.2 - 0.5, -0.2 + sheetRng() * 0.5, (sheetRng() - 0.5) * 1.2),
+      k: 1.1 + sheetRng() * 1.6,
+      rz: (sheetRng() - 0.5) * 0.9,
+      ry: (sheetRng() - 0.5) * 0.6,
+      w: 0.26 + sheetRng() * 0.30,
+      h: 0.24 + sheetRng() * 0.30,
+      ph: sheetRng() * 6.283,
+      fr: 2.4 + sheetRng() * 2.4
+    });
+  }
+
+  /* --------------------------- particle system --------------------------- */
+  var GROUPS = [
+    /* CONTACT  */ { n: 520, birth: [1.00, 1.70], kind: 'contact', drop: true },
+    /* BACKWASH */ { n: 900, birth: [2.40, 3.90], kind: 'back', drop: true },
+    /* TUNNEL   */ { n: 700, birth: [2.45, 3.90], kind: 'tunnel', drop: false },
+    /* FORWARD  */ { n: 1300, birth: [3.80, 5.30], kind: 'forward', drop: true },
+    /* BREAKUP  */ { n: 900, birth: [4.60, 6.60], kind: 'breakup', drop: true },
+    /* MIST     */ { n: 700, birth: [5.00, 7.40], kind: 'mist', drop: false }
+  ];
+
+  function buildParticles(dropFlag) {
+    var rng = mulberry32(SEED ^ (dropFlag ? 0x0D00 : 0x0F00));
+    var list = [];
+    for (var gi = 0; gi < GROUPS.length; gi++) {
+      var G = GROUPS[gi];
+      if (G.drop !== dropFlag) continue;
+      for (var p = 0; p < G.n; p++) {
+        var tb = lerp(G.birth[0], G.birth[1], rng());
+        var px = 0, py = 0, pz = 0, vx = 0, vy = 0, vz = 0, k = 2, sz = 0.015, life = 2;
+        var rr = rng(), rr2 = rng();
+        switch (G.kind) {
+          case 'contact':
+            px = IMPACT.x - 0.02 + (rr - 0.5) * 0.10;
+            py = (rr2 - 0.5) * 0.52;
+            pz = (rng() - 0.5) * 0.52;
+            vx = -(0.6 + rng() * 2.4); vy = (rng() - 0.5) * 2.1; vz = (rng() - 0.5) * 2.1;
+            k = 2.2 + rng() * 3.0; sz = 0.009 + rng() * 0.023; life = 1.2 + rng() * 1.4;
+            break;
+          case 'back':
+            px = IMPACT.x - 0.04 + (rr - 0.5) * 0.12;
+            py = (rr2 - 0.5) * 0.34;
+            pz = (rng() - 0.5) * 0.34;
+            vx = 1.2 + rng() * 4.6; vy = (rng() - 0.5) * 1.9; vz = (rng() - 0.5) * 1.9;
+            k = 2.0 + rng() * 3.0; sz = 0.008 + rng() * 0.019; life = 1.0 + rng() * 1.3;
+            break;
+          case 'tunnel':
+            px = -0.62 + rng() * 1.24;
+            py = (rng() - 0.5) * 0.18;
+            pz = (rng() - 0.5) * 0.18;
+            vx = (rng() - 0.5) * 0.5; vy = (rng() - 0.5) * 0.5; vz = (rng() - 0.5) * 0.5;
+            k = 5.0 + rng() * 8.0; sz = 0.004 + rng() * 0.011; life = 0.8 + rng() * 1.1;
+            break;
+          case 'forward':
+            px = EXITP.x - 0.02 + (rr - 0.5) * 0.11;
+            py = (rr2 - 0.5) * 0.17;
+            pz = (rng() - 0.5) * 0.17;
+            vx = -(2.4 + rng() * 6.2); vy = (rng() - 0.5) * 2.7; vz = (rng() - 0.5) * 2.7;
+            k = 1.6 + rng() * 2.6; sz = 0.008 + rng() * 0.021; life = 1.2 + rng() * 1.7;
+            break;
+          case 'breakup': {
+            var uu = 0.10 + rng() * 0.86;
+            var rad = teardropRadius(uu, R_WAT) * 0.86 * Math.sqrt(rng());
+            var th = rng() * Math.PI * 2;
+            px = rad * Math.cos(th);
+            py = Y_WTOP - uu * H_WAT;
+            pz = rad * Math.sin(th);
+            vx = (rng() - 0.5) * 1.5 - 0.55; vy = (rng() - 0.5) * 1.3; vz = (rng() - 0.5) * 1.5;
+            k = 1.0 + rng() * 2.2; sz = 0.011 + rng() * 0.028; life = 2.0 + rng() * 2.1;
+            break;
+          }
+          default: { // mist
+            var uu2 = 0.12 + rng() * 0.82;
+            var rad2 = teardropRadius(uu2, R_WAT) * 0.95 * Math.sqrt(rng());
+            var th2 = rng() * Math.PI * 2;
+            px = rad2 * Math.cos(th2);
+            py = Y_WTOP - uu2 * H_WAT;
+            pz = rad2 * Math.sin(th2);
+            vx = (rng() - 0.5) * 0.7; vy = (rng() - 0.5) * 0.6; vz = (rng() - 0.5) * 0.7;
+            k = 7.0 + rng() * 10.0; sz = 0.0035 + rng() * 0.010; life = 1.8 + rng() * 1.7;
+          }
+        }
+        var cr = rng(), cg = rng(), cb = rng();
+        var col;
+        if (dropFlag) {
+          col = [0.72 + 0.28 * cr, 0.86 + 0.14 * cg, 0.96 + 0.04 * cb];
+        } else {
+          col = [0.55 + 0.35 * cr, 0.74 + 0.26 * cg, 0.95 + 0.05 * cb];
+        }
+        list.push({ tb: tb, p: [px, py, pz], v: [vx, vy, vz], k: k, s: sz, l: life, c: col });
+      }
+    }
+    var n = list.length;
+    var g = new THREE.BufferGeometry();
+    g.setAttribute('position', new THREE.BufferAttribute(new Float32Array(n * 3), 3));
+    g.setAttribute('aSize', new THREE.BufferAttribute(new Float32Array(n), 1));
+    g.setAttribute('aAlpha', new THREE.BufferAttribute(new Float32Array(n), 1));
+    var cA = new Float32Array(n * 3);
+    for (var ci = 0; ci < n; ci++) {
+      cA[ci * 3] = list[ci].c[0];
+      cA[ci * 3 + 1] = list[ci].c[1];
+      cA[ci * 3 + 2] = list[ci].c[2];
+    }
+    g.setAttribute('aColor', new THREE.BufferAttribute(cA, 3));
+    var mat = new THREE.ShaderMaterial({
+      uniforms: {
+        uMap: { value: DROP_TEX },
+        uScale: { value: 1000 }
+      },
+      transparent: true,
+      depthWrite: false,
+      blending: dropFlag ? THREE.NormalBlending : THREE.AdditiveBlending,
+      vertexShader: [
+        'attribute float aSize; attribute float aAlpha; attribute vec3 aColor;',
+        'uniform float uScale;',
+        'varying float vA; varying vec3 vC;',
+        'void main(){',
+        '  vA = aAlpha; vC = aColor;',
+        '  vec4 mv = modelViewMatrix * vec4(position,1.0);',
+        '  gl_PointSize = aSize * uScale / max(-mv.z, 0.001);',
+        '  gl_Position = projectionMatrix * mv;',
+        '}'
+      ].join('\n'),
+      fragmentShader: [
+        'precision highp float;',
+        'uniform sampler2D uMap;',
+        'varying float vA; varying vec3 vC;',
+        'void main(){',
+        '  float a = texture2D(uMap, gl_PointCoord).a * vA;',
+        '  if(a < 0.004) discard;',
+        '  gl_FragColor = vec4(vC, a);',
+        '}'
+      ].join('\n')
+    });
+    var pts = new THREE.Points(g, mat);
+    pts.renderOrder = dropFlag ? 6 : 7;
+    pts.frustumCulled = false;
+    scene.add(pts);
+    return { geo: g, list: list, n: n, mat: mat };
+  }
+
+  var dropPts = buildParticles(true);
+  var mistPts = buildParticles(false);
+
+  /* ---------------------------- impact flash ------------------------------ */
+  var flashMat = new THREE.MeshBasicMaterial({
+    map: DROP_TEX, color: 0xffffff, transparent: true, opacity: 0,
+    blending: THREE.AdditiveBlending, depthWrite: false
+  });
+  var flash = new THREE.Mesh(new THREE.PlaneGeometry(1, 1), flashMat);
+  flash.position.set(IMPACT.x + 0.02, 0, 0.55);
+  flash.renderOrder = 8;
+  scene.add(flash);
+
+  /* ============================ simulation model =========================== */
+  // Bullet tip position as a pure function of sim time.
+  //  0.00-1.00  free flight, constant velocity, enters from off-screen right
+  //  1.00-2.40  violent hydraulic drag inside the water (near-total arrest)
+  //  2.40-4.30  cavitation tunnel: bullet re-accelerates through the vapour
+  //  4.30-8.00  free flight in air again, exits frame ~t=5.22
+  function bulletX(t) {
+    if (t < 1.0) return 5.40 - 4.7824 * t;
+    if (t < 2.4) {
+      var tau = t - 1.0;
+      return 0.6176 - 0.12 * tau - 0.29140 * (1.0 - Math.exp(-16.0 * tau));
+    }
+    if (t < 4.3) {
+      var t2 = t - 2.4;
+      return 0.1582 - 0.40 * t2 * t2;
+    }
+    var u = t - 4.3, T = 0.6, v0 = 1.52, v1 = 3.0, dist;
+    if (u < T) dist = v0 * u + (v1 - v0) * u * u / (2 * T);
+    else dist = v0 * T + (v1 - v0) * T * 0.5 + v1 * (u - T);
+    return -1.2858 - dist;
+  }
+  function bulletY(t) { return 0.016 * Math.sin(t * 2.3); }
+
+  function indentCurve(t) { return 0.175 * bump(t, 1.00, 1.11, 1.26, 1.80); }
+  function craterCurve(t) { return 0.215 * smoothstep(1.00, 1.95, t); }
+  function neckCurve(t) { return 0.235 * smoothstep(3.80, 4.45, t); }
+  function wobbleAmp(t) {
+    return 0.0055 * bump(t, 1.45, 1.75, 3.20, 4.10) + 0.010 * smoothstep(4.4, 5.4, t);
+  }
+  function breakupAmp(t) { return 0.115 * smoothstep(5.00, 6.60, t); }
+  function skinOpacity(t) {
+    if (t < 1.00) return 0.94;
+    if (t < 1.60) return lerp(0.94, 0.86, smoothstep(1.0, 1.6, t));
+    if (t < 2.10) return lerp(0.86, 0.55, smoothstep(1.6, 2.1, t));
+    if (t < 2.70) return lerp(0.55, 0.16, smoothstep(2.1, 2.7, t));
+    return lerp(0.16, 0.0, smoothstep(2.7, 3.4, t));
+  }
+  function coreOpacity(t) {
+    if (t < 1.00) return 0.0;
+    if (t < 1.26) return 0.90 * smoothstep(1.00, 1.26, t);
+    if (t < 4.90) return 0.90;
+    return 0.90 * (1.0 - 0.86 * smoothstep(4.90, 7.30, t));
+  }
+
+  /* ------------------------------ skin update ----------------------------- */
+  var SKIN_TR_BASE = 1.36;
+  function updateSkin(t) {
+    var p = skinGeo.attributes.position.array;
+    var ind = indentCurve(t);
+    var n = skinGeo.userData.C * skinGeo.userData.NR + 2;
+    for (var i = 0; i < n; i++) {
+      var i3 = i * 3;
+      var bx = skinBase[i3], by = skinBase[i3 + 1], bz = skinBase[i3 + 2];
+      var dx = bx - IMPACT.x, dy = by - IMPACT.y, dz = bz - IMPACT.z;
+      var d = Math.sqrt(dx * dx + dy * dy + dz * dz);
+
+      var px = bx, py = by, pz = bz;
+      if (ind > 0) {
+        var g1 = Math.exp(-(d * d) / (0.40 * 0.40));
+        var g2 = Math.exp(-Math.pow((d - 0.47) / 0.19, 2));
+        px -= ind * g1;
+        px += 0.030 * g2 * (ind / 0.175);
+      }
+
+      // progressive peel: each vertex releases when the tear front reaches it
+      // (the front is perturbed so the tear line is ragged, not a clean arc)
+      var dTear = d + skinCrumple[i3] * 0.055 + skinCrumple[i3 + 2] * 0.035;
+      var tr = 1.0 + 0.55 * Math.min(dTear / 1.45, 1.0);
+      var pr = 0;
+      if (t > tr) {
+        pr = clamp((t - tr) / 0.22, 0, 1);
+        pr = pr * pr * (3 - 2 * pr);
+      }
+      if (pr > 0) {
+        var u = skinU[i];
+        var wUp = 1.0 - smoothstep(-0.10, 0.10, u - 0.5);
+        // toward tether (upper skin)
+        var tx = bx * 0.20 + skinCrumple[i3] * 0.030;
+        var tz = bz * 0.20 + skinCrumple[i3 + 2] * 0.030;
+        var ty = Y_TOP + 0.05 + (by - Y_TOP) * 0.30;
+        // toward base (lower skin) then falls away
+        var fall = Math.max(0, t - SKIN_TR_BASE);
+        var fy = Y_BOT + 0.03 - 0.5 * 1.25 * fall * fall;
+        var fx = bx * 0.15 + skinCrumple[i3] * 0.070;
+        var fz = bz * 0.15 + skinCrumple[i3 + 2] * 0.070;
+        var gx = wUp * tx + (1 - wUp) * fx;
+        var gy = wUp * ty + (1 - wUp) * fy;
+        var gz = wUp * tz + (1 - wUp) * fz;
+        px += (gx - px) * pr;
+        py += (gy - py) * pr;
+        pz += (gz - pz) * pr;
+      }
+      p[i3] = px; p[i3 + 1] = py; p[i3 + 2] = pz;
+    }
+    skinGeo.attributes.position.needsUpdate = true;
+    computeGridNormals(skinGeo);
+    skinMat.uniforms.uOpacity.value = skinOpacity(t);
+    skinMat.uniforms.uTime.value = t;
+    skinMat.uniforms.uWobble.value = 0.0;
+  }
+
+  /* ------------------------------ core update ----------------------------- */
+  function updateCore(t) {
+    var p = coreGeo.attributes.position.array;
+    var n = coreGeo.userData.C * coreGeo.userData.NR + 2;
+    var cr = craterCurve(t);
+    var nk = neckCurve(t);
+    var wb = wobbleAmp(t);
+    var bk = breakupAmp(t);
+    var stretch = 1.0 + 0.30 * smoothstep(5.10, 6.90, t);
+    var shrink = 1.0 - 0.52 * smoothstep(5.50, 7.40, t);
+    var ax = bulletY(t);
+
+    for (var i = 0; i < n; i++) {
+      var i3 = i * 3;
+      var px = coreBase[i3], py = coreBase[i3 + 1], pz = coreBase[i3 + 2];
+
+      if (cr > 0) {
+        var dx = px - IMPACT.x, dy = py - IMPACT.y, dz = pz - IMPACT.z;
+        var d = Math.sqrt(dx * dx + dy * dy + dz * dz);
+        var k = Math.max(0, 1 - d / 0.58);
+        px -= cr * k * k;
+      }
+      if (nk > 0) {
+        var ex = px - EXITP.x, ey = py - EXITP.y, ez = pz - EXITP.z;
+        var de = Math.sqrt(ex * ex + ey * ey + ez * ez);
+        var k2 = Math.max(0, 1 - de / 0.58);
+        px -= nk * k2 * k2;
+      }
+      if (wb > 0) {
+        var u = coreU[i];
+        px += wb * Math.sin(u * 15.0 + t * 7.0);
+        py += wb * Math.sin(u * 11.0 + t * 5.3 + 1.7);
+        pz += wb * Math.sin(u * 13.0 + t * 6.1 + 3.1);
+      }
+      if (bk > 0) {
+        // smooth Rayleigh-Taylor style churn + fine detail
+        var s1 = Math.sin(px * 7.3 + t * 2.1) * 0.55 + Math.sin(py * 5.1 - t * 1.7) * 0.35;
+        var s2 = Math.sin(pz * 6.7 + t * 2.6) * 0.50 + Math.sin(px * 11.2 - t * 3.1) * 0.25;
+        var s3 = Math.sin(py * 9.4 + t * 2.9) * 0.45 + Math.sin(pz * 12.1 + t * 1.9) * 0.25;
+        px += (s1 * 0.8 + coreRnd[i3] * 0.2) * bk;
+        py += (s3 * 0.8 + coreRnd[i3 + 1] * 0.2) * bk;
+        pz += (s2 * 0.8 + coreRnd[i3 + 2] * 0.2) * bk;
+      }
+      p[i3] = px * stretch * shrink;
+      p[i3 + 1] = py * shrink;
+      p[i3 + 2] = pz * stretch * shrink;
+    }
+    coreGeo.attributes.position.needsUpdate = true;
+    computeGridNormals(coreGeo);
+
+    coreMat.uniforms.uOpacity.value = coreOpacity(t);
+    coreMat.uniforms.uTime.value = t;
+    coreMat.uniforms.uWobble.value = 0.30 * smoothstep(1.3, 2.4, t);
+
+    // cavitation tunnel carve-out
+    var bx = bulletX(t);
+    var tunOn = 0;
+    var tX0 = IMPACT.x, tX1 = bx, tR = 0.13;
+    if (t >= 2.30 && t <= 4.60) {
+      tunOn = 1;
+      tR = 0.105 + 0.055 * smoothstep(2.30, 3.60, t);
+      if (t > 4.30) tX1 = Math.min(tX1, EXITP.x);
+    }
+    coreMat.uniforms.uTunnelOn.value = tunOn;
+    coreMat.uniforms.uTunnelX0.value = tX0;
+    coreMat.uniforms.uTunnelX1.value = tX1;
+    coreMat.uniforms.uTunnelR.value = tR;
+    coreMat.uniforms.uTunnelY.value = ax;
+
+    // exit hole
+    var exOn = 0, exR = 0;
+    if (t >= 3.78 && t <= 6.40) {
+      exOn = 1;
+      exR = 0.155 * smoothstep(3.78, 4.35, t) + 0.05 * smoothstep(5.0, 6.2, t);
+    }
+    coreMat.uniforms.uExitOn.value = exOn;
+    coreMat.uniforms.uExitR.value = exR;
+    coreMat.uniforms.uExitP.value.set(EXITP.x, EXITP.y, EXITP.z);
+  }
+
+  /* ----------------------------- sheet update ----------------------------- */
+  function updateSheets(t) {
+    for (var i = 0; i < sheets.length; i++) {
+      var S = sheets[i];
+      var tau = t - S.tb;
+      if (tau < 0 || tau > 3.4) { S.mesh.visible = false; continue; }
+      S.mesh.visible = true;
+      var e = Math.exp(-S.k * tau);
+      var f = (1 - e) / S.k;
+      var vt = -GRAV / S.k;
+      var x = S.p0.x + S.v0.x * f;
+      var y = S.p0.y + vt * tau + (S.v0.y - vt) * f;
+      var z = S.p0.z + S.v0.z * f;
+      S.mesh.position.set(x, y, z);
+      S.mesh.rotation.set(0, S.ry, S.rz + tau * 0.6);
+      S.mesh.scale.set(S.w, S.h, 1);
+
+      var p = S.geo.attributes.position.array;
+      var b = S.base;
+      for (var v = 0; v < p.length; v += 3) {
+        var wave = Math.sin(b[v] * 6.0 + S.ph + t * S.fr) * Math.sin(b[v + 1] * 4.2 - t * S.fr * 0.7);
+        p[v + 2] = b[v + 2] + wave * 0.075;
+      }
+      S.geo.attributes.position.needsUpdate = true;
+      S.geo.computeVertexNormals();
+    }
+  }
+
+  /* ---------------------------- bullet / vapor ----------------------------- */
+  function updateBullet(t) {
+    var x = bulletX(t);
+    var y = bulletY(t);
+    bulletGroup.position.set(x, y, 0);
+    bulletGroup.rotation.x = t * 9.0;
+    bulletGroup.visible = t < 6.20;
+
+    var glow = bump(t, 2.30, 2.55, 4.10, 4.70);
+    tipGlowMat.opacity = glow * 0.85;
+    tipGlow.scale.setScalar(0.6 + glow * 1.8);
+
+    // impact flash
+    var fl = bump(t, 0.96, 1.02, 1.10, 1.38);
+    flashMat.opacity = fl * 0.62;
+    flash.scale.setScalar(0.10 + fl * 0.40);
+
+    // cavitation tunnel vapour
+    if (t >= 2.30 && t <= 4.70) {
+      var bx = bulletX(t);
+      var x1 = Math.min(bx, EXITP.x);
+      var len = Math.max(0.02, IMPACT.x - x1);
+      var rad = 0.085 + 0.05 * smoothstep(2.3, 3.6, t);
+      tunnelMesh.visible = true;
+      tunnelMesh.position.set((IMPACT.x + x1) * 0.5, bulletY(t), 0);
+      tunnelMesh.scale.set(rad, len, rad);
+      tunnelMat.uniforms.uTime.value = t;
+      tunnelMat.uniforms.uOpacity.value = 0.88 * bump(t, 2.28, 2.55, 4.10, 4.70);
+    } else {
+      tunnelMesh.visible = false;
+    }
+
+    // backward cavitation wake from the entry hole
+    if (t >= 2.34 && t <= 5.20) {
+      var L = 0.12 + 1.55 * smoothstep(2.34, 4.60, t);
+      var R = 0.035 + 0.34 * smoothstep(2.34, 4.20, t);
+      wakeMesh.visible = true;
+      wakeMesh.position.set(IMPACT.x + L * 0.5, bulletY(t) * 0.4, 0);
+      wakeMesh.scale.set(R, L, R);
+      wakeMat.uniforms.uTime.value = t;
+      wakeMat.uniforms.uOpacity.value = 0.85 * bump(t, 2.32, 2.70, 4.40, 5.20);
+    } else {
+      wakeMesh.visible = false;
+    }
+
+    // forward conical plume
+    if (t >= 3.74 && t <= 8.0) {
+      var L2 = 0.18 + 2.35 * smoothstep(3.74, 5.60, t);
+      var R2 = 0.045 + 0.52 * smoothstep(3.74, 5.40, t);
+      plumeMesh.visible = true;
+      plumeMesh.position.set(EXITP.x - L2 * 0.5, 0, 0);
+      plumeMesh.scale.set(R2, L2, R2);
+      plumeMat.uniforms.uTime.value = t;
+      plumeMat.uniforms.uOpacity.value = 0.95 * bump(t, 3.72, 4.05, 5.60, 8.0);
+    } else {
+      plumeMesh.visible = false;
+    }
+  }
+
+  /* ---------------------------- particle update --------------------------- */
+  function updatePointCloud(sys, t) {
+    var list = sys.list;
+    var n = sys.n;
+    var g = sys.geo;
+    var pos = g.attributes.position.array;
+    var szA = g.attributes.aSize.array;
+    var alA = g.attributes.aAlpha.array;
+    for (var i = 0; i < n; i++) {
+      var P = list[i];
+      var tau = t - P.tb;
+      if (tau < 0 || tau > P.l) {
+        szA[i] = 0; alA[i] = 0;
+        pos[i * 3] = 0; pos[i * 3 + 1] = -50; pos[i * 3 + 2] = 0;
+        continue;
+      }
+      var e = Math.exp(-P.k * tau);
+      var f = (1 - e) / P.k;
+      var vt = -GRAV / P.k;
+      pos[i * 3] = P.p[0] + P.v[0] * f;
+      pos[i * 3 + 1] = P.p[1] + vt * tau + (P.v[1] - vt) * f;
+      pos[i * 3 + 2] = P.p[2] + P.v[2] * f;
+      var a = 1.0;
+      if (tau < 0.06) a = tau / 0.06;
+      var rem = P.l - tau;
+      if (rem < 0.5) a *= clamp(rem / 0.5, 0, 1);
+      alA[i] = a;
+      szA[i] = P.s * (1.0 + 0.22 * Math.min(tau, 3.0));
+    }
+    g.attributes.position.needsUpdate = true;
+    g.attributes.aSize.needsUpdate = true;
+    g.attributes.aAlpha.needsUpdate = true;
+  }
+
+  function updateParticles(t) {
+    updatePointCloud(dropPts, t);
+    updatePointCloud(mistPts, t);
+  }
+
+  /* ------------------------------- tether --------------------------------- */
+  function updateTether(t) {
+    var sway = 0.055 * Math.sin(t * 1.25) * smoothstep(0.9, 2.2, t);
+    tetherGroup.rotation.z = sway;
+    tetherGroup.rotation.x = 0.035 * Math.sin(t * 0.9 + 1.2) * smoothstep(1.0, 2.4, t);
+    knot.position.set(0, Y_TOP + 0.012, 0);
+    knot.rotation.z = sway * 0.6;
+  }
+
+  /* ------------------------------ render pass ----------------------------- */
+  var lastRenderedT = -1;
+  function renderAt(t) {
+    if (t !== lastRenderedT) {
+      updateSkin(t);
+      updateCore(t);
+      updateSheets(t);
+      updateParticles(t);
+      updateBullet(t);
+      updateTether(t);
+      lastRenderedT = t;
+    }
+    skinMat.uniforms.uCamPos.value.copy(camera.position);
+    coreMat.uniforms.uCamPos.value.copy(camera.position);
+    sheetMat.uniforms.uCamPos.value.copy(camera.position);
+    tunnelMat.uniforms.uCamPos.value.copy(camera.position);
+    wakeMat.uniforms.uCamPos.value.copy(camera.position);
+    plumeMat.uniforms.uCamPos.value.copy(camera.position);
+    sheetMat.uniforms.uTime.value = t;
+    renderer.render(scene, camera);
+  }
+
+  /* ------------------------------ viewport size ---------------------------- */
+  function updateSize() {
+    var w = window.innerWidth, h = window.innerHeight;
+    camera.aspect = w / h;
+    camera.updateProjectionMatrix();
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+    renderer.setSize(w, h, false);
+    var db = new THREE.Vector2();
+    renderer.getDrawingBufferSize(db);
+    var scale = db.y / (2 * Math.tan(camera.fov * Math.PI / 360));
+    dropPts.mat.uniforms.uScale.value = scale;
+    mistPts.mat.uniforms.uScale.value = scale;
+  }
+  window.addEventListener('resize', updateSize);
+  updateSize();
+
+  /* ============================ playback state ============================ */
+  var S = {
+    COUNTDOWN: 'COUNTDOWN', PLAYING: 'PLAYING', PAUSED: 'PAUSED',
+    REFIRE_HOLD: 'REFIRE_HOLD', ENDED: 'ENDED'
+  };
+
+  var elCountdown = document.getElementById('countdown');
+  var elScrubber = document.getElementById('scrubber');
+  var elToggle = document.getElementById('btn-toggle');
+  var elRefire = document.getElementById('btn-refire');
+  var elPlay = document.getElementById('icon-play');
+  var elPause = document.getElementById('icon-pause');
+  var pills = Array.prototype.slice.call(document.querySelectorAll('.speed-pill'));
+
+  var state = S.COUNTDOWN;
+  var simTime = 0.0;
+  var playbackSpeed = 1.0;
+  var countdownElapsed = 0.0;
+  var holdElapsed = 0.0;
+  var firstFrame = true;
+  var lastNow = 0;
+
+  function setState(next) {
+    state = next;
+    var active = (next === S.PLAYING || next === S.COUNTDOWN || next === S.REFIRE_HOLD);
+    elPause.style.display = active ? 'block' : 'none';
+    elPlay.style.display = active ? 'none' : 'block';
+    elToggle.setAttribute('aria-label', active ? 'Pause' : 'Play');
+  }
+
+  function hideCountdown() {
+    elCountdown.style.display = 'none';
+    elCountdown.textContent = '';
+  }
+
+  function startPlaybackFrom(t) {
+    simTime = clamp(t, 0, DURATION);
+    elScrubber.value = simTime.toFixed(3);
+  }
+
+  elToggle.addEventListener('click', function () {
+    if (state === S.PLAYING) {
+      setState(S.PAUSED);
+    } else if (state === S.COUNTDOWN || state === S.REFIRE_HOLD) {
+      hideCountdown();
+      simTime = 0.0;
+      elScrubber.value = '0';
+      setState(S.PAUSED);
+      renderAt(0.0);
+    } else if (state === S.PAUSED) {
+      setState(S.PLAYING);
+    } else if (state === S.ENDED) {
+      simTime = 0.0;
+      elScrubber.value = '0';
+      hideCountdown();
+      setState(S.PLAYING);
+      renderAt(0.0);
+    }
+  });
+
+  elRefire.addEventListener('click', function () {
+    hideCountdown();
+    simTime = 0.0;
+    elScrubber.value = '0';
+    holdElapsed = 0.0;
+    firstFrame = false;
+    setState(S.REFIRE_HOLD);
+    lastRenderedT = -1;
+    renderAt(0.0);
+  });
+
+  for (var pi = 0; pi < pills.length; pi++) {
+    (function (pill) {
+      pill.addEventListener('click', function () {
+        playbackSpeed = parseFloat(pill.getAttribute('data-speed')) || 1.0;
+        for (var j = 0; j < pills.length; j++) {
+          var on = (pills[j] === pill);
+          pills[j].classList.toggle('is-active', on);
+          pills[j].setAttribute('aria-checked', on ? 'true' : 'false');
+        }
+      });
+    })(pills[pi]);
+  }
+
+  elScrubber.addEventListener('input', function () {
+    if (state === S.COUNTDOWN || state === S.REFIRE_HOLD) hideCountdown();
+    var v = parseFloat(elScrubber.value);
+    if (!isFinite(v)) v = 0;
+    simTime = clamp(v, 0, DURATION);
+    setState(S.PAUSED);
+    renderAt(simTime);
+  });
+
+  /* -------------------------------- loop ---------------------------------- */
+  function tick() {
+    requestAnimationFrame(tick);
+    var now = performance.now();
+    var dt = (now - lastNow) / 1000;
+    lastNow = now;
+    if (!isFinite(dt) || dt < 0) dt = 0;
+    dt = Math.min(dt, 0.1);
+
+    if (state === S.COUNTDOWN) {
+      if (firstFrame) { firstFrame = false; countdownElapsed = 0; }
+      else { countdownElapsed += dt; }
+      if (countdownElapsed < 3.0) {
+        var n = 3 - Math.floor(countdownElapsed);
+        if (n < 1) n = 1; if (n > 3) n = 3;
+        elCountdown.style.display = 'block';
+        elCountdown.textContent = String(n);
+        simTime = 0.0;
+        elScrubber.value = '0';
+      } else {
+        hideCountdown();
+        setState(S.PLAYING);
+        simTime = Math.min(DURATION, simTime + dt * playbackSpeed);
+        elScrubber.value = simTime.toFixed(3);
+        if (simTime >= DURATION) { simTime = DURATION; elScrubber.value = DURATION.toFixed(3); setState(S.ENDED); }
+      }
+    } else if (state === S.REFIRE_HOLD) {
+      holdElapsed += dt;
+      simTime = 0.0;
+      elScrubber.value = '0';
+      if (holdElapsed >= 1.0) {
+        setState(S.PLAYING);
+        simTime = Math.min(DURATION, simTime + dt * playbackSpeed);
+        elScrubber.value = simTime.toFixed(3);
+        if (simTime >= DURATION) { simTime = DURATION; elScrubber.value = DURATION.toFixed(3); setState(S.ENDED); }
+      }
+    } else if (state === S.PLAYING) {
+      simTime = Math.min(DURATION, simTime + dt * playbackSpeed);
+      elScrubber.value = simTime.toFixed(3);
+      if (simTime >= DURATION) {
+        simTime = DURATION;
+        elScrubber.value = DURATION.toFixed(3);
+        setState(S.ENDED);
+      }
+    }
+
+    renderAt(simTime);
+  }
+
+  // resting scene first, then begin the countdown on the first rAF callback
+  renderAt(0.0);
+  lastNow = performance.now();
+  requestAnimationFrame(tick);
+})();
+</script>
+</body>
+</html>

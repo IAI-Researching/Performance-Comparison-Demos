@@ -57,8 +57,8 @@ Each benchmark test directory contains:
 
 | Model | Developer Harness | Verification | Wall-Clock | Deliverable |
 | :--- | :--- | :---: | :---: | :---: |
+| **MiniMax M3.1 Flash (Max)** | MiniMax Code | **PASS (100%)** | 4078.6s | [`ballistics/water-balloon/minimax-m3.1-flash/`](ballistics/water-balloon/minimax-m3.1-flash/) |
 | **Claude Opus 5.5 (Max)** | Claude Code | **PASS (100%)** | 3667.2s | [`ballistics/water-balloon/claude-opus-5.5/`](ballistics/water-balloon/claude-opus-5.5/) |
 | **Gemini 3.8 Flash (High)** | Antigravity CLI | **PASS (100%)** | 366.9s | [`ballistics/water-balloon/gemini-3.8-flash/`](ballistics/water-balloon/gemini-3.8-flash/) |
-| **Gemini 4 Hydrogen (XHigh)** | Antigravity CLI | **PASS (100%)** | 497.3s | [`ballistics/water-balloon/gemini-4-hydrogen/`](ballistics/water-balloon/gemini-4-hydrogen/) |
 
 *Showing the 3 most recent benchmark deliverables. See [`TELEMETRY.md`](ballistics/water-balloon/TELEMETRY.md) for the complete multi-model leaderboard, full token metrics, cache ratios, and runtime verification logs.*
