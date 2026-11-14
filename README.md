@@ -16,14 +16,17 @@ To measure real-world engineering utility without artificial constraints or huma
    - Every session starts completely stateless with zero previous conversation history, no memory persistence, and no carried-over project settings.
    - All agents receive the exact same byte-identical prompt.
 
-2. **Full Toolset Execution**:
-   - Rather than stripping or restricting tools from coding agents, each harness is invoked with its complete capabilities (file creation, multi-pass editing, inspection, and terminal execution).
-   - This measures how effectively each agent environment plans, implements, inspects, and refines code autonomously.
+2. **Full Coding Toolset, Level Playing Field**:
+   - Each harness runs with its standard coding tools: file creation, multi-pass editing, inspection, and terminal execution.
+   - Tools that only some harnesses offer are switched off for all of them: web search and web fetch, account-linked connectors, and cloud tool catalogues. Where a tool cannot be switched off, it is noted and audited (see [`PROTOCOL.md`](PROTOCOL.md)).
+   - This measures how effectively each agent plans, implements, inspects, and refines code on its own.
 
-3. **Strict Zero-Intervention (Pass@1)**:
-   - Exactly one initial prompt is sent.
+3. **Zero-Intervention Attempts**:
+   - Each attempt receives exactly one prompt.
    - No human in the loop: no follow-up corrections, no hints, and no relayed error messages.
-   - The agent works until it autonomously declares completion.
+   - The agent works until it declares completion on its own.
+   - **Current policy (protocol v1.x): first passing attempt.** The published result is the model's first attempt that passes verification. While the isolation setup was still being developed, some attempts failed for reasons that had nothing to do with the model, such as sandbox restrictions that blocked a harness. For that reason, failed attempts are re-run rather than published.
+   - **Planned (protocol v2.0): single attempt.** Once the setup is final, each model gets exactly one attempt, and that attempt is published whether it passes or fails.
 
 4. **Automated Post-Run Verification**:
    - Once an agent declares completion, the deliverable is audited via an automated 18-point CDP runtime verification suite checking for WebGL rendering, draw calls, countdown sequence, dock geometry, canvas freeze, determinism across scrubbing, and clean workdir.
@@ -61,8 +64,8 @@ Each benchmark test directory (e.g. [`ballistics/water-balloon/`](ballistics/wat
 
 | Model | Developer Harness | Verification | Wall-Clock | Deliverable |
 | :--- | :--- | :---: | :---: | :---: |
+| **Gemini 4 Carbon (High)** | Antigravity CLI | **PASS (100%)** | 2252.6s | [`vehicle-dynamics/f1-night-duel/gemini-4-carbon/`](vehicle-dynamics/f1-night-duel/gemini-4-carbon/) |
 | **Gemini 4 Argon (High)** | Antigravity CLI | **PASS (100%)** | 1483.4s | [`vehicle-dynamics/f1-night-duel/gemini-4-argon/`](vehicle-dynamics/f1-night-duel/gemini-4-argon/) |
 | **Kimi Code K3.1 Pro (Max)** | Kimi Code | **PASS (100%)** | 3999.3s | [`vehicle-dynamics/f1-night-duel/kimi-k3.1-pro/`](vehicle-dynamics/f1-night-duel/kimi-k3.1-pro/) |
-| **Codex GPT 6 Astra (Max)** | Codex CLI | **PASS (100%)** | 1700.9s | [`vehicle-dynamics/f1-night-duel/codex-gpt-6-astra/`](vehicle-dynamics/f1-night-duel/codex-gpt-6-astra/) |
 
 *Showing the 3 most recent benchmark deliverables. See [`TELEMETRY.md`](vehicle-dynamics/f1-night-duel/TELEMETRY.md) for the complete multi-model leaderboard, full token metrics, cache ratios, and runtime verification logs.*
