@@ -44,6 +44,8 @@ To measure real-world engineering utility without artificial constraints or huma
 
 ## 🛡️ Reproducibility Standard
 
+> **Protocol versions:** results are only directly comparable within one protocol version. See [`PROTOCOL.md`](PROTOCOL.md) for the version history and lessons learned from running benchmarks in parallel on a shared host.
+
 Each benchmark test directory (e.g. [`ballistics/water-balloon/`](ballistics/water-balloon/), [`materials/prince-ruperts-drop/`](materials/prince-ruperts-drop/)) contains:
 - `prompt.md`: Canonical, immutable prompt specification.
 - `parameters.txt`: Ground-truth CLI execution flags per harness.
