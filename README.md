@@ -65,8 +65,8 @@ Each benchmark test directory (e.g. [`ballistics/water-balloon/`](ballistics/wat
 
 | Model | Developer Harness | Verification | Wall-Clock | Deliverable |
 | :--- | :--- | :---: | :---: | :---: |
+| **Claude Fable 5.1 (Max)** | Claude Code | **PASS (100%)** | 3718.2s | [`vehicle-dynamics/f1-night-duel/claude-fable-5.1/`](vehicle-dynamics/f1-night-duel/claude-fable-5.1/) |
 | **Gemini 4 Carbon (High)** | Antigravity CLI | **PASS (100%)** | 2252.6s | [`vehicle-dynamics/f1-night-duel/gemini-4-carbon/`](vehicle-dynamics/f1-night-duel/gemini-4-carbon/) |
 | **Gemini 4 Argon (High)** | Antigravity CLI | **PASS (100%)** | 1483.4s | [`vehicle-dynamics/f1-night-duel/gemini-4-argon/`](vehicle-dynamics/f1-night-duel/gemini-4-argon/) |
-| **Kimi Code K3.1 Pro (Max)** | Kimi Code | **PASS (100%)** | 3999.3s | [`vehicle-dynamics/f1-night-duel/kimi-k3.1-pro/`](vehicle-dynamics/f1-night-duel/kimi-k3.1-pro/) |
 
 *Showing the 3 most recent benchmark deliverables. See [`TELEMETRY.md`](vehicle-dynamics/f1-night-duel/TELEMETRY.md) for the complete multi-model leaderboard, full token metrics, cache ratios, and runtime verification logs.*
