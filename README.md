@@ -39,6 +39,7 @@ To measure real-world engineering utility without artificial constraints or huma
 | :--- | :--- | :--- | :--- | :--- |
 | **Ballistics** | **[Water Balloon](ballistics/water-balloon/)** | 3D Ballistics Physics & High-Speed Fluid Dynamics | [`prompt.md`](ballistics/water-balloon/prompt.md) | Active Cohort Testing |
 | **Materials** | **[Prince Rupert's Drop](materials/prince-ruperts-drop/)** | Glass Fracture Mechanics & Supersonic Crack Propagation | [`prompt.md`](materials/prince-ruperts-drop/prompt.md) | Active Cohort Testing |
+| **Vehicle Dynamics** | **[F1 Night Duel](vehicle-dynamics/f1-night-duel/)** | Spline-Track Night Race, F1 Car Detail & Synthesized SFX | [`prompt.md`](vehicle-dynamics/f1-night-duel/prompt.md) | Active Cohort Testing (Protocol v1.1) |
 
 ---
 
@@ -60,8 +61,7 @@ Each benchmark test directory (e.g. [`ballistics/water-balloon/`](ballistics/wat
 
 | Model | Developer Harness | Verification | Wall-Clock | Deliverable |
 | :--- | :--- | :---: | :---: | :---: |
-| **Gemini 4 Hydrogen (XHigh)** | Antigravity CLI | **PASS (100%)** | 644.4s | [`materials/prince-ruperts-drop/gemini-4-hydrogen/`](materials/prince-ruperts-drop/gemini-4-hydrogen/) |
-| **Gemini 4 Carbon (High)** | Antigravity CLI | **PASS (100%)** | 1999.5s | [`materials/prince-ruperts-drop/gemini-4-carbon/`](materials/prince-ruperts-drop/gemini-4-carbon/) |
-| **Gemini 4 Argon (High)** | Antigravity CLI | **PASS (100%)** | 997.9s | [`materials/prince-ruperts-drop/gemini-4-argon/`](materials/prince-ruperts-drop/gemini-4-argon/) |
+| **DeepSeek v4.1 Flash (Max)** | DeepSeek CLI | **PASS (100%)** | 3055.7s | [`vehicle-dynamics/f1-night-duel/deepseek-v4.1-flash/`](vehicle-dynamics/f1-night-duel/deepseek-v4.1-flash/) |
+| **Codex GPT 6.1 Terra (Max)** | Codex CLI | **PASS (100%)** | 1578.3s | [`vehicle-dynamics/f1-night-duel/codex-gpt-6.1-terra/`](vehicle-dynamics/f1-night-duel/codex-gpt-6.1-terra/) |
 
-*Showing the 3 most recent benchmark deliverables. See [`TELEMETRY.md`](materials/prince-ruperts-drop/TELEMETRY.md) for the complete multi-model leaderboard, full token metrics, cache ratios, and runtime verification logs.*
+*Showing the 3 most recent benchmark deliverables. See [`TELEMETRY.md`](vehicle-dynamics/f1-night-duel/TELEMETRY.md) for the complete multi-model leaderboard, full token metrics, cache ratios, and runtime verification logs.*
