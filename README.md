@@ -26,6 +26,7 @@ To measure real-world engineering utility without artificial constraints or huma
    - No human in the loop: no follow-up corrections, no hints, and no relayed error messages.
    - The agent works until it declares completion on its own.
    - **Current policy (protocol v1.x): first passing attempt.** The published result is the model's first attempt that passes verification. While the isolation setup was still being developed, some attempts failed for reasons that had nothing to do with the model, such as sandbox restrictions that blocked a harness. For that reason, failed attempts are re-run rather than published.
+   - **Attempts are recorded from protocol v1.1 on.** [`PROTOCOL.md`](PROTOCOL.md) lists how many attempts each published v1.1 result took. Protocol v1.0, used for the first two benchmarks, did not record failed attempts.
    - **Planned (protocol v2.0): single attempt.** Once the setup is final, each model gets exactly one attempt, and that attempt is published whether it passes or fails.
 
 4. **Automated Post-Run Verification**:

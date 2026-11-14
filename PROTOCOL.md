@@ -14,7 +14,8 @@ This file records which version of the execution protocol produced each set of r
 
 **How runs were executed**
 
-- Every run started stateless, received a byte-identical prompt, and had exactly one attempt with no human intervention (Pass@1).
+- Every run started stateless and received a byte-identical prompt, with no human intervention during the run.
+- **Attempt policy: first passing attempt.** Attempts that failed were re-run, and only a passing attempt was published. Some failures came from the isolation setup itself while it was being adjusted, not from the model.
 - Each harness ran under a macOS Seatbelt (`sandbox-exec`) profile. The profile blocked file reads and writes to the repository, other runs' scratch folders and personal folders, and confined writes to the run's own scratch folder.
 - All runs shared one physical Mac and one user account. To save time, several runs were often executed **in parallel**.
 
@@ -54,20 +55,25 @@ v1.1 was introduced during the first F1 Night Duel round on 2026-11-14. Its chan
 - **No extra tool catalogues.** Account-level connectors (Claude Code) and cloud connector tools (MiniMax Code) are disabled, because other harnesses have no equivalent.
 - **Same stop rule.** A run ends when the agent exits or after the 2-hour timeout. An Antigravity-only rule that stopped runs after 6 minutes without file changes was removed; it had never triggered.
 - **Same version per round.** Within a round, every model on the same harness uses the identical harness version, which is checked before each run (for example, Codex CLI 0.169.0 for all Codex models in F1 Night Duel). Auto-update is disabled during runs where the harness supports it.
+- **Attempt policy: first passing attempt (unchanged).** Failed attempts are archived outside the repository and the model is re-run; only the first passing attempt is published.
 - **One run at a time.** Benchmark runs never overlap. Short sandboxed setup tests (under two minutes each) ran alongside some runs while these changes were being made.
 
 **Known exception: Antigravity web search.** Antigravity CLI's `search_web` tool runs on Google's side and could not be disabled by any available setting. Gemini runs therefore have search available. To keep this auditable, each Gemini run's full step-by-step transcript is appended to its `raw_output.json`, and every `search_web` call is counted and noted in the run's commit message.
 
-**F1 Night Duel round, conditions per run**
+**Attempts are recorded from v1.1 on.** Every attempt on a benchmark's final prompt is counted, including ones that failed or were discarded because of the setup, and the table below lists how many attempts each published result took. v1.0 did not record failed attempts, so v1.0 results have no attempt count.
 
-| Run | Started (UTC) | Conditions |
-| :--- | :--- | :--- |
-| Codex GPT 6.1 Terra | 06:31 | Stage A. Codex isolation unchanged from v1.0 (fresh login-only home, web search off). The shared Claude temp area was still reachable. |
-| DeepSeek v4.1 Flash | 12:52 | Stage A. First sandboxed DeepSeek run with a fresh home. Its web tools were still available; the log shows no web calls. |
-| Codex GPT 6.1 Sol, Codex GPT 6 Astra | 13:50, 14:32 | Stage A, as Terra. |
-| Kimi Code K3.1 Pro | 15:30 | Stage B. Clean homes and web tools off for Kimi, DeepSeek and Antigravity. The shared Claude temp area was still reachable. |
-| Gemini 4 Hydrogen, Gemini 4 Argon | 16:38, 16:53 | Stage B. Transcript appended; `search_web` calls: 0 and 0. |
-| All later runs | from 17:03 | Stage C. Full v1.1 as described above. |
+**F1 Night Duel round, conditions and attempts per published run**
+
+| Run | Started (UTC) | Attempts | Conditions |
+| :--- | :--- | :---: | :--- |
+| Codex GPT 6.1 Terra | 06:31 | 1 | Stage A. Codex isolation unchanged from v1.0 (fresh login-only home, web search off). The shared Claude temp area was still reachable. An earlier run used a draft of the prompt and is not counted. |
+| DeepSeek v4.1 Flash | 12:52 | 2 | Stage A. First sandboxed DeepSeek run with a fresh home. Its web tools were still available; the log shows no web calls. Attempt 1 was discarded because the orchestrator had run DeepSeek without the sandbox. |
+| Codex GPT 6.1 Sol, Codex GPT 6 Astra | 13:50, 14:32 | 1, 1 | Stage A, as Terra. |
+| Kimi Code K3.1 Pro | 15:30 | 2 | Stage B. Clean homes and web tools off for Kimi, DeepSeek and Antigravity. The shared Claude temp area was still reachable. Attempt 1 was cut off when the orchestrating session ended. |
+| Gemini 4 Argon | 16:53 | 1 | Stage B. Transcript appended; `search_web` calls: 0. |
+| Gemini 4 Carbon | 17:18 | 1 | Stage C, full v1.1. `search_web` calls: 0. |
+| Gemini 4 Hydrogen | pending | — | Attempt 1 (16:38, Stage B) failed verification: a page error stopped playback. To be re-run. |
+| MiniMax M3.1 Flash, Claude Fable 5.1 | pending | — | Stage C. |
 
 Still shared with v1.0: one machine and one user account. Agents can still list and stop other processes on the machine. That is addressed in v2.0.
 
@@ -82,4 +88,5 @@ Goal: every run is physically or virtually separated, so no run can observe or a
 - Each run gets a **private temporary folder**; nothing temporary is shared between runs.
 - Agents **cannot list, signal or stop processes** outside their own run.
 - Published raw logs are checked for **host-specific details**, such as installed apps and user paths, before release.
+- **Attempt policy: single attempt.** Each model gets exactly one attempt per round, and that attempt is published whether it passes or fails.
 - Each `metrics.json` records the **protocol version** it was produced under.
