@@ -42,7 +42,7 @@ The Seatbelt profile controlled *files*, but not *processes* or some *shared tem
 
 ## v1.1: Shared-Host Seatbelt, all harnesses enforced (current)
 
-v1.1 was introduced during the first F1 Night Duel round on 2026-11-14. Its changes were made in three stages as each gap was found, so the table at the end of this section lists the conditions each run actually had.
+v1.1 was introduced during the first F1 Night Duel round on 2026-11-14. Its changes were made in three stages as each gap was found, so the table at the end of this section lists the conditions each run actually had. Runs from the earlier stages were kept rather than re-run: the remaining differences (a reachable shared temporary folder, and web tools available to one harness) were not used by any run, as the logs show. Every later round starts on the full v1.1 setup from its first run.
 
 **Every harness**
 
