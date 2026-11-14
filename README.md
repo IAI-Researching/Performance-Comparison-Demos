@@ -61,6 +61,7 @@ Each benchmark test directory (e.g. [`ballistics/water-balloon/`](ballistics/wat
 
 | Model | Developer Harness | Verification | Wall-Clock | Deliverable |
 | :--- | :--- | :---: | :---: | :---: |
+| **Codex GPT 6.1 Sol (Max)** | Codex CLI | **PASS (100%)** | 2515.6s | [`vehicle-dynamics/f1-night-duel/codex-gpt-6.1-sol/`](vehicle-dynamics/f1-night-duel/codex-gpt-6.1-sol/) |
 | **DeepSeek v4.1 Flash (Max)** | DeepSeek CLI | **PASS (100%)** | 3055.7s | [`vehicle-dynamics/f1-night-duel/deepseek-v4.1-flash/`](vehicle-dynamics/f1-night-duel/deepseek-v4.1-flash/) |
 | **Codex GPT 6.1 Terra (Max)** | Codex CLI | **PASS (100%)** | 1578.3s | [`vehicle-dynamics/f1-night-duel/codex-gpt-6.1-terra/`](vehicle-dynamics/f1-night-duel/codex-gpt-6.1-terra/) |
 
