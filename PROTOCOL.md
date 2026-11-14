@@ -53,7 +53,7 @@ v1.1 was introduced during the first F1 Night Duel round on 2026-11-14. Its chan
 - **No web tools.** Web search and web fetch tools are disabled for every harness, by flag or configuration, and checked with a test call. The one exception is below.
 - **Private temporary folder.** Each run has its own temporary folder. The shared `/private/tmp/claude-*` area is no longer reachable from any run.
 - **No extra tool catalogues.** Account-level connectors (Claude Code) and cloud connector tools (MiniMax Code) are disabled, because other harnesses have no equivalent.
-- **Same stop rule.** A run ends when the agent exits or after the 2-hour timeout. An Antigravity-only rule that stopped runs after 6 minutes without file changes was removed; it had never triggered.
+- **Same stop rule, no time limit.** A run ends only when the agent exits. Runs up to and including Claude Fable 5.2 had a 2-hour timeout; it never triggered (the longest run took 96 minutes), and it was removed for all later runs. An Antigravity-only rule that stopped runs after 6 minutes without file changes was also removed; it had never triggered.
 - **Same version per round.** Within a round, every model on the same harness uses the identical harness version, which is checked before each run (for example, Codex CLI 0.169.0 for all Codex models in F1 Night Duel). Auto-update is disabled during runs where the harness supports it.
 - **Attempt policy: first passing attempt (unchanged).** Failed attempts are archived outside the repository and the model is re-run; only the first passing attempt is published.
 - **One run at a time.** Benchmark runs never overlap. Short sandboxed setup tests (under two minutes each) ran alongside some runs while these changes were being made.
