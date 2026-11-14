@@ -1,0 +1,1409 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Prince Rupert's Drop — Bullet Impact vs. Tail Snip</title>
+<style>
+*, *::before, *::after {
+  box-sizing: border-box;
+}
+html, body {
+  margin: 0;
+  padding: 0;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  background: radial-gradient(circle at center, #161922 0%, #090a0f 100%);
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -webkit-user-select: none;
+  user-select: none;
+}
+#stage {
+  display: block;
+  width: 100vw;
+  height: 100vh;
+}
+
+#countdown {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 50;
+  pointer-events: none;
+  font-size: 96px;
+  font-weight: 700;
+  line-height: 1;
+  color: rgba(255, 255, 255, 0.35);
+  font-variant-numeric: tabular-nums;
+}
+
+#dock {
+  position: fixed;
+  bottom: 24px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 100;
+  width: 536px;
+  height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 0 14px;
+  background: rgba(15, 17, 23, 0.78);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 9999px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.35);
+}
+
+#dock button {
+  font-family: inherit;
+  line-height: 1;
+  margin: 0;
+  flex-shrink: 0;
+  white-space: nowrap;
+  appearance: none;
+  -webkit-appearance: none;
+}
+
+.dock-sep {
+  width: 1px;
+  height: 18px;
+  flex-shrink: 0;
+  background: rgba(255, 255, 255, 0.12);
+}
+
+#btn-refire {
+  width: 78px;
+  height: 28px;
+  padding: 0 10px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 9999px;
+  color: #ffffff;
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+}
+#btn-refire:hover {
+  background: rgba(255, 255, 255, 0.16);
+}
+
+#btn-toggle {
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 9999px;
+  color: #ffffff;
+  cursor: pointer;
+}
+#btn-toggle:hover {
+  background: rgba(255, 255, 255, 0.16);
+}
+
+#speed-group {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  flex-shrink: 0;
+}
+.speed-pill {
+  width: 42px;
+  height: 24px;
+  padding: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 9999px;
+  color: rgba(255, 255, 255, 0.6);
+  font-size: 11px;
+  font-weight: 500;
+  font-variant-numeric: tabular-nums;
+  cursor: pointer;
+}
+.speed-pill:hover {
+  color: #ffffff;
+  background: rgba(255, 255, 255, 0.06);
+}
+.speed-pill.is-active {
+  color: #ffffff;
+  background: rgba(255, 255, 255, 0.18);
+  border-color: rgba(255, 255, 255, 0.2);
+}
+
+#scrubber {
+  width: 157px;
+  height: 4px;
+  margin: 0;
+  padding: 0;
+  flex-shrink: 0;
+  appearance: none;
+  -webkit-appearance: none;
+  background: rgba(255, 255, 255, 0.22);
+  border-radius: 9999px;
+  outline: none;
+  cursor: pointer;
+}
+#scrubber::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: #ffffff;
+  border: none;
+  cursor: pointer;
+}
+#scrubber::-moz-range-thumb {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: #ffffff;
+  border: none;
+  cursor: pointer;
+}
+</style>
+</head>
+<body>
+<canvas id="stage"></canvas>
+<div id="countdown" aria-hidden="true">3</div>
+
+<div id="dock" role="toolbar" aria-label="Simulation Controls">
+  <button id="btn-refire" type="button" aria-label="Re-fire" title="Re-fire">
+    <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+      <path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.19"/>
+    </svg>
+    <span>Re-fire</span>
+  </button>
+  <span class="dock-sep" aria-hidden="true"></span>
+  <button id="btn-toggle" type="button" aria-label="Pause" title="Play / Pause">
+    <svg id="icon-pause" viewBox="0 0 24 24" width="14" height="14" fill="currentColor" aria-hidden="true">
+      <rect x="6" y="4" width="4" height="16" rx="1"/>
+      <rect x="14" y="4" width="4" height="16" rx="1"/>
+    </svg>
+    <svg id="icon-play" viewBox="0 0 24 24" width="14" height="14" fill="currentColor" aria-hidden="true" style="display:none;">
+      <path d="M8 5v14l11-7z"/>
+    </svg>
+  </button>
+  <span class="dock-sep" aria-hidden="true"></span>
+  <div id="speed-group" role="radiogroup" aria-label="Playback Speed">
+    <button class="speed-pill" type="button" role="radio" aria-checked="false" data-speed="0.25">0.25×</button>
+    <button class="speed-pill" type="button" role="radio" aria-checked="false" data-speed="0.5">0.5×</button>
+    <button class="speed-pill is-active" type="button" role="radio" aria-checked="true" data-speed="1.0">1.0×</button>
+    <button class="speed-pill" type="button" role="radio" aria-checked="false" data-speed="2.0">2.0×</button>
+  </div>
+  <span class="dock-sep" aria-hidden="true"></span>
+  <input id="scrubber" type="range" min="0" max="8" step="0.001" value="0" aria-label="Timeline Scrubber">
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+(function () {
+'use strict';
+
+// ---------------------------------------------------------------------------
+// Deterministic PRNG (Mulberry32, seed 42). The built-in random generator is never used.
+// ---------------------------------------------------------------------------
+function Mulberry32(seed) {
+  let a = seed >>> 0;
+  return function () {
+    a = (a + 0x6D2B79F5) >>> 0;
+    let t = a;
+    t = Math.imul(t ^ (t >>> 15), t | 1);
+    t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+const SEED = 42;
+const rng = Mulberry32(SEED);
+const rand = () => rng();
+const randRange = (a, b) => a + (b - a) * rng();
+const randSign = () => (rng() < 0.5 ? -1 : 1);
+
+// ---------------------------------------------------------------------------
+// Timeline constants (seconds of simulation time)
+// ---------------------------------------------------------------------------
+const DURATION = 8;
+const T_IMPACT = 1.2;      // bullet strikes bulb
+const T_MUSH_END = 1.75;   // mushrooming complete
+const T_DEBRIS_END = 2.6;  // debris clears, stress pulse phase begins
+const T_SNIP = 3.8;        // nippers sever tail
+const T_FRONT_START = 4.4; // fracture wave launches at the cut
+const T_FRONT_END = 5.8;   // wave reaches bulb pole (s = 0)
+const S_CUT = 0.93;        // spine parameter of the snip (S_IMPACT is derived from the spine below)
+
+const clamp01 = (x) => Math.max(0, Math.min(1, x));
+const smoothstep = (a, b, x) => { const t = clamp01((x - a) / (b - a)); return t * t * (3 - 2 * t); };
+const lerp = (a, b, t) => a + (b - a) * t;
+
+// ---------------------------------------------------------------------------
+// DOM references
+// ---------------------------------------------------------------------------
+const canvas = document.getElementById('stage');
+const elCountdown = document.getElementById('countdown');
+const btnToggle = document.getElementById('btn-toggle');
+const btnRefire = document.getElementById('btn-refire');
+const iconPlay = document.getElementById('icon-play');
+const iconPause = document.getElementById('icon-pause');
+const scrubber = document.getElementById('scrubber');
+const speedPills = Array.from(document.querySelectorAll('.speed-pill'));
+
+// ---------------------------------------------------------------------------
+// Renderer, scene, lights
+// ---------------------------------------------------------------------------
+const renderer = new THREE.WebGLRenderer({ canvas: document.getElementById('stage'), antialias: true, alpha: true });
+renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+renderer.setSize(window.innerWidth, window.innerHeight, false);
+renderer.setClearColor(0x000000, 0);
+renderer.outputEncoding = THREE.sRGBEncoding;
+renderer.toneMapping = THREE.ACESFilmicToneMapping;
+renderer.toneMappingExposure = 1.05;
+
+const scene = new THREE.Scene();
+const camera = new THREE.PerspectiveCamera(35, window.innerWidth / window.innerHeight, 0.1, 100);
+
+const keyLight = new THREE.DirectionalLight(0xf3f6ff, 1.55);
+keyLight.position.set(-3.5, 4.5, 5.0);
+const fillLight = new THREE.DirectionalLight(0xdbe4ff, 0.45);
+fillLight.position.set(4.5, 0.8, 3.5);
+const rimCyan = new THREE.PointLight(0x3fd6ff, 1.7, 0, 2);
+rimCyan.position.set(-3.2, 1.4, -3.2);
+const rimMagenta = new THREE.PointLight(0xff4cc2, 1.5, 0, 2);
+rimMagenta.position.set(3.4, 2.4, -3.0);
+const hemiLight = new THREE.HemisphereLight(0x3a4150, 0x0b0c10, 0.35);
+const flashLight = new THREE.PointLight(0xbfe0ff, 0, 7, 2);   // triboluminescence at the snip
+const frontLight = new THREE.PointLight(0xd8ecff, 0, 5, 2);   // running fracture front glow
+scene.add(keyLight, fillLight, rimCyan, rimMagenta, hemiLight, flashLight, frontLight);
+
+// Shared light uniforms for the custom glass shader
+const LIGHT_UNIFORMS = {
+  uKeyDir: { value: keyLight.position.clone().normalize() },
+  uKeyCol: { value: new THREE.Color(0xf3f6ff).multiplyScalar(1.55) },
+  uFillDir: { value: fillLight.position.clone().normalize() },
+  uFillCol: { value: new THREE.Color(0xdbe4ff).multiplyScalar(0.45) },
+  uRimPosA: { value: rimCyan.position.clone() },
+  uRimColA: { value: new THREE.Color(0x3fd6ff).multiplyScalar(1.7) },
+  uRimPosB: { value: rimMagenta.position.clone() },
+  uRimColB: { value: new THREE.Color(0xff4cc2).multiplyScalar(1.5) }
+};
+
+// ---------------------------------------------------------------------------
+// Procedural studio environment: in-memory lightbox -> PMREM (no external files)
+// ---------------------------------------------------------------------------
+function buildEnvironment() {
+  const box = new THREE.Scene();
+  const room = new THREE.Mesh(
+    new THREE.SphereGeometry(30, 32, 16),
+    new THREE.MeshBasicMaterial({ color: new THREE.Color(0.012, 0.013, 0.02), side: THREE.BackSide })
+  );
+  box.add(room);
+  const disposables = [room];
+  function panel(w, h, pos, col, intensity) {
+    const m = new THREE.Mesh(
+      new THREE.PlaneGeometry(w, h),
+      new THREE.MeshBasicMaterial({ color: new THREE.Color(col[0] * intensity, col[1] * intensity, col[2] * intensity), side: THREE.DoubleSide })
+    );
+    m.position.set(pos[0], pos[1], pos[2]);
+    m.lookAt(0, 0, 0);
+    box.add(m);
+    disposables.push(m);
+  }
+  panel(4.5, 3.2, [-4.2, 4.6, 4.6], [1.0, 0.985, 0.96], 6.0);  // key softbox (upper left front)
+  panel(1.2, 4.5, [5.2, 0.6, 2.6], [0.86, 0.92, 1.0], 2.4);    // right fill strip
+  panel(0.8, 5.0, [-3.6, 0.9, -4.4], [0.25, 0.86, 1.0], 3.4);  // cyan rim strip (back left)
+  panel(0.8, 5.0, [4.0, 1.8, -4.2], [1.0, 0.32, 0.78], 3.0);   // magenta rim strip (back right)
+  panel(5.0, 0.6, [0.4, 5.5, -1.0], [1.0, 1.0, 1.0], 1.8);     // overhead strip
+  panel(6.0, 6.0, [0.0, -5.0, 0.0], [0.09, 0.1, 0.13], 1.0);   // dark floor bounce
+  panel(0.5, 2.0, [1.5, -0.6, 4.8], [1.0, 1.0, 1.0], 1.2);     // thin front catch-light
+  const pmrem = new THREE.PMREMGenerator(renderer);
+  const rt = pmrem.fromScene(box, 0.03);
+  pmrem.dispose();
+  disposables.forEach((m) => { m.geometry.dispose(); m.material.dispose(); });
+  return rt.texture;
+}
+const envTex = buildEnvironment();
+scene.environment = envTex;
+
+// ---------------------------------------------------------------------------
+// Procedural 2D textures (detached canvases, never appended to the DOM)
+// ---------------------------------------------------------------------------
+function makeGlowTexture(size) {
+  const c = document.createElement('canvas');
+  c.width = size; c.height = size;
+  const ctx = c.getContext('2d');
+  const g = ctx.createRadialGradient(size / 2, size / 2, 0, size / 2, size / 2, size / 2);
+  g.addColorStop(0.0, 'rgba(255,255,255,1)');
+  g.addColorStop(0.16, 'rgba(255,255,255,0.85)');
+  g.addColorStop(0.42, 'rgba(255,255,255,0.22)');
+  g.addColorStop(1.0, 'rgba(255,255,255,0)');
+  ctx.fillStyle = g;
+  ctx.fillRect(0, 0, size, size);
+  const tex = new THREE.CanvasTexture(c);
+  tex.encoding = THREE.sRGBEncoding;
+  return tex;
+}
+function makeBrushedTexture(size) {
+  const c = document.createElement('canvas');
+  c.width = size; c.height = size;
+  const ctx = c.getContext('2d');
+  ctx.fillStyle = '#8c8c8c';
+  ctx.fillRect(0, 0, size, size);
+  for (let i = 0; i < 2600; i++) {
+    const y = rand() * size;
+    const x = rand() * size;
+    const len = 10 + rand() * 90;
+    const v = Math.floor(80 + rand() * 130);
+    ctx.strokeStyle = 'rgba(' + v + ',' + v + ',' + v + ',' + (0.12 + rand() * 0.35).toFixed(3) + ')';
+    ctx.lineWidth = 0.5 + rand() * 1.2;
+    ctx.beginPath();
+    ctx.moveTo(x, y);
+    ctx.lineTo(x + len, y + (rand() - 0.5) * 0.6);
+    ctx.stroke();
+  }
+  const tex = new THREE.CanvasTexture(c);
+  tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
+  tex.repeat.set(2, 2);
+  return tex;
+}
+const glowTex = makeGlowTexture(128);
+const brushedTex = makeBrushedTexture(256);
+
+// ---------------------------------------------------------------------------
+// Prince Rupert's Drop spine, parameterised by normalised arc length s in [0,1]
+// (s = 0 bulb pole at the bottom, s = 1 helical tail tip at the top)
+// ---------------------------------------------------------------------------
+function spineRaw(t, out) {
+  const y0 = -1.72, y1 = 1.52;
+  const y = y0 + (y1 - y0) * t;
+  const lean = 0.46 * t * t;                 // gentle diagonal lean to the right
+  const u = smoothstep(0.64, 1.0, t);        // helical tail region
+  const hr = 0.2 * u;
+  const ang = u * Math.PI * 2.2;
+  out.set(lean + hr * (Math.cos(ang) - 1.0), y, hr * Math.sin(ang));
+  return out;
+}
+const spineTable = (() => {
+  const N = 2400;
+  const pts = new Array(N + 1);
+  const cum = new Float64Array(N + 1);
+  for (let i = 0; i <= N; i++) {
+    pts[i] = spineRaw(i / N, new THREE.Vector3());
+    if (i > 0) cum[i] = cum[i - 1] + pts[i].distanceTo(pts[i - 1]);
+  }
+  return { pts, cum, length: cum[N], N };
+})();
+const SPINE_LEN = spineTable.length;
+const BULB_R = 0.5;
+const S_IMPACT = BULB_R / SPINE_LEN;        // bulb centre (impact site) as spine parameter
+
+function spinePoint(s, out) {
+  const d = clamp01(s) * SPINE_LEN;
+  const cum = spineTable.cum;
+  let lo = 0, hi = spineTable.N;
+  while (hi - lo > 1) { const mid = (lo + hi) >> 1; if (cum[mid] <= d) lo = mid; else hi = mid; }
+  const seg = cum[hi] - cum[lo];
+  const f = seg > 1e-9 ? (d - cum[lo]) / seg : 0;
+  return out.copy(spineTable.pts[lo]).lerp(spineTable.pts[hi], f);
+}
+const _ta = new THREE.Vector3(), _tb = new THREE.Vector3();
+function spineTangent(s, out) {
+  const e = 0.002;
+  spinePoint(Math.max(0, s - e), _ta);
+  spinePoint(Math.min(1, s + e), _tb);
+  return out.subVectors(_tb, _ta).normalize();
+}
+function smax(a, b, k) { const h = clamp01(0.5 + 0.5 * (a - b) / k); return lerp(b, a, h) + k * h * (1 - h); }
+function dropRadius(s) {
+  const d = clamp01(s) * SPINE_LEN;
+  const R = BULB_R;
+  const sph = d < 2 * R ? Math.sqrt(Math.max(0, R * R - (d - R) * (d - R))) : 0;
+  const neck = (0.535 * Math.exp(-d * 1.035) + 0.03) * smoothstep(0.2, 0.7, d);   // long teardrop taper
+  let r = smax(sph, neck, 0.18);
+  r *= 0.08 + 0.92 * smoothstep(1.0, 0.985, s);   // needle point at the very tip
+  return Math.max(r, 0.002);
+}
+
+// Camera framing: fixed, looking along -Z, drop within the central 70% for 16:9 and 1280x1340
+const dropBounds = (() => {
+  const b = new THREE.Box3();
+  const p = new THREE.Vector3();
+  for (let i = 0; i <= 400; i++) {
+    const s = i / 400;
+    spinePoint(s, p);
+    const r = dropRadius(s);
+    b.expandByPoint(new THREE.Vector3(p.x - r, p.y - r, p.z - r));
+    b.expandByPoint(new THREE.Vector3(p.x + r, p.y + r, p.z + r));
+  }
+  return b;
+})();
+const CAM_TARGET = dropBounds.getCenter(new THREE.Vector3());
+CAM_TARGET.z = 0;
+const CAM_DIST = (() => {
+  const size = dropBounds.getSize(new THREE.Vector3());
+  const tanHalf = Math.tan(THREE.MathUtils.degToRad(35) * 0.5);
+  const needH = size.y / (0.69 * 2 * tanHalf);
+  const needW = size.x / (0.69 * 2 * tanHalf * (1280 / 1340));
+  return Math.max(needH, needW) + 0.15;
+})();
+camera.position.set(CAM_TARGET.x, CAM_TARGET.y, CAM_DIST);
+camera.lookAt(CAM_TARGET);
+camera.updateMatrixWorld();
+
+// ---------------------------------------------------------------------------
+// Tube geometry along the spine with per-vertex spine attributes
+// ---------------------------------------------------------------------------
+const SEGS = 48;
+function buildTubeGeometry(s0, s1, rings) {
+  const nv = (rings + 1) * (SEGS + 1);
+  const pos = new Float32Array(nv * 3), nor = new Float32Array(nv * 3);
+  const aS = new Float32Array(nv), aR = new Float32Array(nv);
+  const aC = new Float32Array(nv * 3), aT = new Float32Array(nv * 3), aN1 = new Float32Array(nv * 3);
+  const C = new THREE.Vector3(), T = new THREE.Vector3(), prevT = new THREE.Vector3();
+  const N1 = new THREE.Vector3(), N2 = new THREE.Vector3(), tmp = new THREE.Vector3(), axis = new THREE.Vector3();
+  let vi = 0;
+  for (let i = 0; i <= rings; i++) {
+    const s = s0 + (s1 - s0) * (i / rings);
+    spinePoint(s, C);
+    spineTangent(s, T);
+    if (i === 0) {
+      tmp.set(1, 0, 0);
+      if (Math.abs(T.dot(tmp)) > 0.9) tmp.set(0, 0, 1);
+      N1.crossVectors(tmp, T).normalize();
+    } else {
+      axis.crossVectors(prevT, T);
+      const sinA = axis.length();
+      if (sinA > 1e-7) {
+        axis.multiplyScalar(1 / sinA);
+        const ang = Math.atan2(sinA, clamp01(prevT.dot(T)));
+        N1.applyAxisAngle(axis, ang);
+      }
+      N1.addScaledVector(T, -N1.dot(T)).normalize();
+    }
+    N2.crossVectors(T, N1).normalize();
+    prevT.copy(T);
+    const r = dropRadius(s);
+    const e = 0.5 * (s1 - s0) / rings;
+    const sa = Math.max(0, s - e), sb = Math.min(1, s + e);
+    const drdL = (dropRadius(sb) - dropRadius(sa)) / Math.max(1e-6, (sb - sa) * SPINE_LEN);
+    for (let j = 0; j <= SEGS; j++) {
+      const phi = (j / SEGS) * Math.PI * 2;
+      const cphi = Math.cos(phi), sphi = Math.sin(phi);
+      const rx = N1.x * cphi + N2.x * sphi, ry = N1.y * cphi + N2.y * sphi, rz = N1.z * cphi + N2.z * sphi;
+      pos[vi * 3] = C.x + rx * r; pos[vi * 3 + 1] = C.y + ry * r; pos[vi * 3 + 2] = C.z + rz * r;
+      let nx = rx - T.x * drdL, ny = ry - T.y * drdL, nz = rz - T.z * drdL;
+      const nl = Math.hypot(nx, ny, nz) || 1;
+      nor[vi * 3] = nx / nl; nor[vi * 3 + 1] = ny / nl; nor[vi * 3 + 2] = nz / nl;
+      aS[vi] = s; aR[vi] = r;
+      aC[vi * 3] = C.x; aC[vi * 3 + 1] = C.y; aC[vi * 3 + 2] = C.z;
+      aT[vi * 3] = T.x; aT[vi * 3 + 1] = T.y; aT[vi * 3 + 2] = T.z;
+      aN1[vi * 3] = N1.x; aN1[vi * 3 + 1] = N1.y; aN1[vi * 3 + 2] = N1.z;
+      vi++;
+    }
+  }
+  const idx = new Uint32Array(rings * SEGS * 6);
+  let k = 0;
+  for (let i = 0; i < rings; i++) {
+    for (let j = 0; j < SEGS; j++) {
+      const a = i * (SEGS + 1) + j, b = a + SEGS + 1;
+      idx[k++] = a; idx[k++] = a + 1; idx[k++] = b;
+      idx[k++] = a + 1; idx[k++] = b + 1; idx[k++] = b;
+    }
+  }
+  const g = new THREE.BufferGeometry();
+  g.setAttribute('position', new THREE.BufferAttribute(pos, 3));
+  g.setAttribute('normal', new THREE.BufferAttribute(nor, 3));
+  g.setAttribute('aS', new THREE.BufferAttribute(aS, 1));
+  g.setAttribute('aRadius', new THREE.BufferAttribute(aR, 1));
+  g.setAttribute('aCenter', new THREE.BufferAttribute(aC, 3));
+  g.setAttribute('aTangent', new THREE.BufferAttribute(aT, 3));
+  g.setAttribute('aN1', new THREE.BufferAttribute(aN1, 3));
+  g.setIndex(new THREE.BufferAttribute(idx, 1));
+  return g;
+}
+
+// ---------------------------------------------------------------------------
+// Quenched glass shader: PMREM studio reflections, Fresnel, cross-polarised
+// photoelastic isochromatic fringes, elastic ringing, fracture-front clipping
+// ---------------------------------------------------------------------------
+const GLASS_VERT = `
+attribute float aS; attribute float aRadius;
+attribute vec3 aCenter; attribute vec3 aTangent; attribute vec3 aN1;
+uniform float uRing; uniform float uRingPhase; uniform float uSImpact; uniform float uSpineLen;
+varying vec3 vWorldPos; varying vec3 vNormal; varying float vS; varying float vRadius;
+varying vec3 vCenter; varying vec3 vTangent; varying vec3 vN1;
+void main() {
+  vec3 p = position;
+  vec3 radial = p - aCenter;
+  float rl = length(radial);
+  vec3 radN = rl > 1e-5 ? radial / rl : normal;
+  float d = abs(aS - uSImpact) * uSpineLen;
+  float wave = uRing * exp(-d * 1.1) * sin(uRingPhase - d * 7.0);
+  p += radN * wave * (0.35 + 1.2 * aRadius);
+  vec4 wp = modelMatrix * vec4(p, 1.0);
+  vWorldPos = wp.xyz;
+  vNormal = normalize(mat3(modelMatrix) * normal);
+  vS = aS; vRadius = aRadius;
+  vCenter = (modelMatrix * vec4(aCenter, 1.0)).xyz;
+  vTangent = mat3(modelMatrix) * aTangent;
+  vN1 = mat3(modelMatrix) * aN1;
+  gl_Position = projectionMatrix * viewMatrix * wp;
+}`;
+
+const GLASS_FRAG = `
+uniform sampler2D envMap;
+uniform float uTime, uSFront, uSClip, uFrontGlow, uFringeAmt, uPulse, uPreTension, uSCut;
+uniform float uRing, uRingPhase, uSImpact, uSpineLen, uOpacity, uBackPass, uFlashInt;
+uniform vec3 uKeyDir, uKeyCol, uFillDir, uFillCol, uRimPosA, uRimColA, uRimPosB, uRimColB;
+uniform vec3 uFlashPos, uFrontPos, uBulbCenter;
+varying vec3 vWorldPos; varying vec3 vNormal; varying float vS; varying float vRadius;
+varying vec3 vCenter; varying vec3 vTangent; varying vec3 vN1;
+#include <cube_uv_reflection_fragment>
+vec2 hash2(vec2 p) { p = vec2(dot(p, vec2(127.1, 311.7)), dot(p, vec2(269.5, 183.3))); return fract(sin(p) * 43758.5453); }
+float voronoiEdge(vec2 x) {
+  vec2 n = floor(x); vec2 f = fract(x); float f1 = 8.0; float f2 = 8.0;
+  for (int j = -1; j <= 1; j++) {
+    for (int i = -1; i <= 1; i++) {
+      vec2 g = vec2(float(i), float(j)); vec2 o = hash2(n + g); vec2 r = g + o - f; float d = dot(r, r);
+      if (d < f1) { f2 = f1; f1 = d; } else if (d < f2) { f2 = d; }
+    }
+  }
+  return sqrt(f2) - sqrt(f1);
+}
+vec3 fringeColor(float o) {
+  vec3 ph = o * 0.55 / vec3(0.66, 0.55, 0.45);
+  vec3 c = sin(3.14159265 * ph);
+  return c * c;
+}
+void main() {
+  if (vS > uSClip) discard;
+  vec3 N = normalize(vNormal);
+  if (uBackPass > 0.5) N = -N;
+  vec3 V = normalize(cameraPosition - vWorldPos);
+  float NdV = clamp(dot(N, V), 0.0, 1.0);
+  float F = 0.04 + 0.96 * pow(1.0 - NdV, 5.0);
+  vec3 R = reflect(-V, N);
+  vec3 envR = textureCubeUV(envMap, R, 0.03).rgb;
+  vec3 Tdir = refract(-V, N, 1.0 / 1.52);
+  if (dot(Tdir, Tdir) < 0.5) Tdir = R;
+  vec3 envT = textureCubeUV(envMap, Tdir, 0.25).rgb;
+
+  vec3 T = normalize(vTangent);
+  vec3 side = normalize(cross(V, T) + vec3(1e-5, 0.0, 0.0));
+  vec3 rad = normalize(vWorldPos - vCenter + vec3(1e-6, 0.0, 0.0));
+  float latTube = abs(clamp(dot(rad, side), -1.0, 1.0));
+  vec3 rb = vWorldPos - uBulbCenter;
+  float latBulb = clamp(length(cross(rb, V)) / ${BULB_R.toFixed(4)}, 0.0, 1.0);
+  float lat = mix(latTube, latBulb, smoothstep(0.28, 0.42, vRadius));   // concentric rings in the bulb, bands along the tail
+  float chord = sqrt(max(0.0, 1.0 - lat * lat));
+
+  // retardation along the viewing chord: surface compression vs. core tension
+  float d = abs(vS - uSImpact) * uSpineLen;
+  float ringMod = uRing * 40.0 * exp(-d * 1.1) * sin(uRingPhase - d * 7.0);
+  float pulse = uPulse * 0.28 * sin(uTime * 9.0 - vS * uSpineLen * 2.6);
+  float pre = uPreTension * 1.6 * smoothstep(0.35, 0.0, abs(vS - uSCut));
+  float frontActive = step(uSFront, 1.5);
+  float frontDist = uSFront - vS;
+  float concentrate = frontActive * 1.2 * smoothstep(0.22, 0.0, frontDist);
+  float order = vRadius * (1.25 * chord - chord * chord * chord) * 7.0 * (1.0 + ringMod + pulse + pre + concentrate);
+  vec3 iso = fringeColor(order);
+  iso = mix(iso, vec3(dot(iso, vec3(0.3333))), 0.25);
+
+  vec3 col = envT * 0.22 * (1.0 - F);
+  col += vec3(0.5, 0.62, 0.8) * 0.045 * chord * (1.0 - F) * (0.4 + 1.5 * vRadius);   // faint internal scatter in thick glass
+  col += iso * uFringeAmt * (1.0 - F) * (0.35 + 0.65 * chord) * (1.0 + 0.6 * uPulse + 0.4 * concentrate);
+  col += envR * (F * 1.5 + 0.02);
+  vec3 Hk = normalize(uKeyDir + V); float ndhk = max(dot(N, Hk), 0.0); col += uKeyCol * (pow(ndhk, 260.0) * 1.8 + pow(ndhk, 36.0) * 0.05);
+  vec3 Hf = normalize(uFillDir + V); col += uFillCol * pow(max(dot(N, Hf), 0.0), 90.0) * 0.8;
+  vec3 La = normalize(uRimPosA - vWorldPos); col += uRimColA * pow(max(dot(N, La), 0.0), 2.5) * (F * 2.0 + 0.015);
+  vec3 Lb = normalize(uRimPosB - vWorldPos); col += uRimColB * pow(max(dot(N, Lb), 0.0), 2.5) * (F * 2.0 + 0.015);
+  vec3 Lf = uFlashPos - vWorldPos; float df2 = dot(Lf, Lf); Lf *= inversesqrt(df2 + 1e-4);
+  col += vec3(0.72, 0.86, 1.0) * uFlashInt * (0.25 + 0.75 * max(dot(N, Lf), 0.0)) / (1.0 + 2.5 * df2) * (0.4 + F);
+  vec3 Lg = uFrontPos - vWorldPos; float dg2 = dot(Lg, Lg); Lg *= inversesqrt(dg2 + 1e-4);
+  col += vec3(0.8, 0.9, 1.0) * uFrontGlow * 0.35 * (0.3 + 0.7 * max(dot(N, Lg), 0.0)) / (1.0 + 4.0 * dg2);
+
+  float alpha = clamp(0.08 + 0.8 * F + 0.06 * chord, 0.0, 1.0);
+
+  // opaque white bifurcation crack band immediately behind the running front
+  float band = frontActive * smoothstep(0.085, 0.0, frontDist);
+  if (band > 0.001) {
+    vec3 N1 = normalize(vN1);
+    vec3 N2 = cross(T, N1);
+    float ang = atan(dot(rad, N2), dot(rad, N1));
+    vec2 cc = vec2(vS * uSpineLen * 26.0, ang * max(vRadius, 0.03) * 26.0);
+    float e = voronoiEdge(cc);
+    float lines = smoothstep(0.14, 0.02, e);
+    vec3 crack = vec3(0.84, 0.88, 0.95) * (0.5 + 0.7 * lines);
+    crack += vec3(0.7, 0.85, 1.0) * uFrontGlow * 1.6 * smoothstep(0.03, 0.0, abs(frontDist));
+    col = mix(col, crack, band);
+    alpha = max(alpha, band * 0.96);
+  }
+  if (uBackPass > 0.5) { col *= 0.45; alpha *= 0.5; }
+  col *= uOpacity; alpha *= uOpacity;
+  gl_FragColor = vec4(col, alpha);
+  #include <tonemapping_fragment>
+  #include <encodings_fragment>
+}`;
+
+const glassMaterials = [];
+function makeGlassMaterial(backPass) {
+  const mat = new THREE.ShaderMaterial({
+    uniforms: Object.assign({
+      envMap: { value: envTex },
+      uTime: { value: 0 }, uSFront: { value: 2.0 }, uSClip: { value: 2.0 }, uFrontGlow: { value: 0 },
+      uFringeAmt: { value: 0.17 }, uPulse: { value: 0 }, uPreTension: { value: 0 }, uSCut: { value: S_CUT },
+      uRing: { value: 0 }, uRingPhase: { value: 0 }, uSImpact: { value: S_IMPACT }, uSpineLen: { value: SPINE_LEN },
+      uOpacity: { value: 1 }, uBackPass: { value: backPass ? 1 : 0 },
+      uFlashPos: { value: new THREE.Vector3() }, uFlashInt: { value: 0 }, uFrontPos: { value: new THREE.Vector3() },
+      uBulbCenter: { value: new THREE.Vector3() }
+    }, LIGHT_UNIFORMS),
+    vertexShader: GLASS_VERT,
+    fragmentShader: GLASS_FRAG,
+    transparent: true,
+    depthWrite: !backPass,
+    side: backPass ? THREE.BackSide : THREE.FrontSide,
+    blending: THREE.CustomBlending,
+    blendEquation: THREE.AddEquation,
+    blendSrc: THREE.OneFactor,
+    blendDst: THREE.OneMinusSrcAlphaFactor,
+    blendSrcAlpha: THREE.OneFactor,
+    blendDstAlpha: THREE.OneMinusSrcAlphaFactor
+  });
+  mat.envMap = envTex;   // makes three.js emit ENVMAP_TYPE_CUBE_UV + envMapTexelToLinear for textureCubeUV
+  glassMaterials.push(mat);
+  return mat;
+}
+
+// Main body (s in [0, S_CUT]) and the tail tip that gets snipped off (s in [S_CUT, 1])
+const bodyGeom = buildTubeGeometry(0, S_CUT, 340);
+const bodyBack = new THREE.Mesh(bodyGeom, makeGlassMaterial(true));
+const bodyFront = new THREE.Mesh(bodyGeom, makeGlassMaterial(false));
+bodyBack.renderOrder = 1; bodyFront.renderOrder = 2;
+scene.add(bodyBack, bodyFront);
+
+const tipGeom = buildTubeGeometry(S_CUT, 1, 40);
+const TIP_CENTROID = (() => {
+  const c = new THREE.Vector3(), p = new THREE.Vector3();
+  for (let i = 0; i <= 10; i++) c.add(spinePoint(S_CUT + (1 - S_CUT) * i / 10, p));
+  return c.multiplyScalar(1 / 11);
+})();
+(function recenterTip() {
+  const pa = tipGeom.getAttribute('position'), ca = tipGeom.getAttribute('aCenter');
+  for (let i = 0; i < pa.count; i++) {
+    pa.setXYZ(i, pa.getX(i) - TIP_CENTROID.x, pa.getY(i) - TIP_CENTROID.y, pa.getZ(i) - TIP_CENTROID.z);
+    ca.setXYZ(i, ca.getX(i) - TIP_CENTROID.x, ca.getY(i) - TIP_CENTROID.y, ca.getZ(i) - TIP_CENTROID.z);
+  }
+})();
+const tipGroup = new THREE.Group();
+const tipBack = new THREE.Mesh(tipGeom, makeGlassMaterial(true));
+const tipFront = new THREE.Mesh(tipGeom, makeGlassMaterial(false));
+tipBack.renderOrder = 1; tipFront.renderOrder = 2;
+tipGroup.add(tipBack, tipFront);
+tipGroup.position.copy(TIP_CENTROID);
+scene.add(tipGroup);
+
+// Key world anchors
+const P_CUT = spinePoint(S_CUT, new THREE.Vector3());
+const T_CUT = spineTangent(S_CUT, new THREE.Vector3());
+const P_IMPACT_CENTER = spinePoint(S_IMPACT, new THREE.Vector3());
+const IMPACT_X = P_IMPACT_CENTER.x + BULB_R;   // bullet nose tip touches here (travelling +X -> -X)
+glassMaterials.forEach((m) => m.uniforms.uBulbCenter.value.copy(P_IMPACT_CENTER));
+
+// ---------------------------------------------------------------------------
+// Analytic kinetic particle systems. Every particle carries a pre-seeded initial
+// state; its pose at any simTime is evaluated on the GPU from that state alone
+// (no per-frame CPU integration), so scrubbing is exact and instantaneous.
+// ---------------------------------------------------------------------------
+const KINETIC_GLSL = `
+attribute vec3 aP0; attribute vec3 aVel; attribute vec4 aRot; attribute vec4 aMisc;
+uniform float uTime; uniform vec3 uGravity; uniform float uDrag; uniform float uRotDrag;
+mat3 kineticAxisRot(vec3 ax, float a) {
+  float c = cos(a), s = sin(a), oc = 1.0 - c;
+  return mat3(oc * ax.x * ax.x + c, oc * ax.x * ax.y + ax.z * s, oc * ax.z * ax.x - ax.y * s,
+              oc * ax.x * ax.y - ax.z * s, oc * ax.y * ax.y + c, oc * ax.y * ax.z + ax.x * s,
+              oc * ax.z * ax.x + ax.y * s, oc * ax.y * ax.z - ax.x * s, oc * ax.z * ax.z + c);
+}
+mat3 kineticRot; vec3 kineticPos; float kineticScale;
+void kinetic() {
+  float tau = uTime - aMisc.x;
+  float alive = step(0.0, tau);
+  tau = max(tau, 0.0);
+  float ek = exp(-uDrag * tau);
+  vec3 disp = aVel * (1.0 - ek) / uDrag + uGravity * (tau - (1.0 - ek) / uDrag) / uDrag;
+  kineticPos = aP0 + disp;
+  float ang = aRot.w * (1.0 - exp(-uRotDrag * tau)) / uRotDrag;
+  kineticRot = kineticAxisRot(normalize(aRot.xyz), ang);
+  kineticScale = alive * smoothstep(0.0, 0.05, tau);
+}
+`;
+const kineticUniformSets = [];
+function makeKineticMaterial(mat, opts) {
+  const u = {
+    uTime: { value: 0 },
+    uGravity: { value: new THREE.Vector3(0, -opts.gravity, 0) },
+    uDrag: { value: opts.drag },
+    uRotDrag: { value: opts.rotDrag }
+  };
+  mat.onBeforeCompile = function (shader) {
+    Object.assign(shader.uniforms, u);
+    shader.vertexShader = KINETIC_GLSL + shader.vertexShader
+      .replace('#include <beginnormal_vertex>', 'kinetic();\nvec3 objectNormal = kineticRot * normal;')
+      .replace('#include <begin_vertex>', 'vec3 transformed = kineticRot * (position * aMisc.yzw * kineticScale) + kineticPos;');
+  };
+  mat.customProgramCacheKey = function () { return 'kinetic-' + mat.type; };
+  kineticUniformSets.push(u);
+  return mat;
+}
+function addInstanceAttributes(geometry, count) {
+  const p0 = new Float32Array(count * 3), vel = new Float32Array(count * 3);
+  const rot = new Float32Array(count * 4), misc = new Float32Array(count * 4);
+  geometry.setAttribute('aP0', new THREE.InstancedBufferAttribute(p0, 3));
+  geometry.setAttribute('aVel', new THREE.InstancedBufferAttribute(vel, 3));
+  geometry.setAttribute('aRot', new THREE.InstancedBufferAttribute(rot, 4));
+  geometry.setAttribute('aMisc', new THREE.InstancedBufferAttribute(misc, 4));
+  return { p0, vel, rot, misc };
+}
+function makeInstanced(geometry, material, count) {
+  const mesh = new THREE.InstancedMesh(geometry, material, count);
+  const I = new THREE.Matrix4();
+  for (let i = 0; i < count; i++) mesh.setMatrixAt(i, I);
+  mesh.instanceMatrix.needsUpdate = true;
+  mesh.frustumCulled = false;
+  return mesh;
+}
+
+// Spine sampling weighted by local glass volume (more fragments in the bulb)
+const spineCDF = (() => {
+  const n = 600;
+  const cdf = new Float64Array(n + 1);
+  for (let i = 1; i <= n; i++) {
+    const r = dropRadius(((i - 0.5) / n) * S_CUT);
+    cdf[i] = cdf[i - 1] + Math.pow(r, 1.3) + 0.002;
+  }
+  for (let i = 1; i <= n; i++) cdf[i] /= cdf[n];
+  return { cdf, n };
+})();
+function sampleBodyS() {
+  const u = rand();
+  const cdf = spineCDF.cdf, n = spineCDF.n;
+  let lo = 0, hi = n;
+  while (hi - lo > 1) { const mid = (lo + hi) >> 1; if (cdf[mid] <= u) lo = mid; else hi = mid; }
+  const f = (u - cdf[lo]) / Math.max(1e-12, cdf[hi] - cdf[lo]);
+  return ((lo + f) / n) * S_CUT;
+}
+// Time at which the fracture front passes spine parameter s (inverse of sFrontAt)
+function tFrontAt(s) { return T_FRONT_START + (T_FRONT_END - T_FRONT_START) * (1 - clamp01(s / S_CUT)); }
+function sFrontAt(t) {
+  if (t < T_FRONT_START) return 2.0;
+  return S_CUT * (1 - (t - T_FRONT_START) / (T_FRONT_END - T_FRONT_START));
+}
+const _fT = new THREE.Vector3(), _fN1 = new THREE.Vector3(), _fN2 = new THREE.Vector3();
+const _fC = new THREE.Vector3(), _fR = new THREE.Vector3();
+function radialAt(s, phi, out) {
+  spineTangent(s, _fT);
+  _fN1.set(1, 0, 0);
+  if (Math.abs(_fT.dot(_fN1)) > 0.9) _fN1.set(0, 0, 1);
+  _fN1.crossVectors(_fN1, _fT).normalize();
+  _fN2.crossVectors(_fT, _fN1);
+  return out.copy(_fN1).multiplyScalar(Math.cos(phi)).addScaledVector(_fN2, Math.sin(phi));
+}
+
+// --- Glass needle shards (InstancedMesh, physically based, env-lit) ---------
+const SHARD_COUNT = 7000;
+const shardGeom = new THREE.CylinderGeometry(0.16, 0.5, 1.0, 5, 1, false).toNonIndexed();
+shardGeom.computeVertexNormals();
+const shardAttr = addInstanceAttributes(shardGeom, SHARD_COUNT);
+for (let i = 0; i < SHARD_COUNT; i++) {
+  const s = sampleBodyS();
+  const r = dropRadius(s);
+  spinePoint(s, _fC);
+  radialAt(s, rand() * Math.PI * 2, _fR);
+  const rfrac = Math.sqrt(rand());
+  const rel = r / BULB_R;
+  const speed = (0.75 + 2.1 * rel) * (0.55 + 0.45 * rfrac) * randRange(0.75, 1.25);
+  const along = randRange(-0.6, 0.6) * (0.4 + rel);
+  shardAttr.p0[i * 3] = _fC.x + _fR.x * r * rfrac * 0.96;
+  shardAttr.p0[i * 3 + 1] = _fC.y + _fR.y * r * rfrac * 0.96;
+  shardAttr.p0[i * 3 + 2] = _fC.z + _fR.z * r * rfrac * 0.96;
+  shardAttr.vel[i * 3] = _fR.x * speed + _fT.x * along + randRange(-0.3, 0.3);
+  shardAttr.vel[i * 3 + 1] = _fR.y * speed + _fT.y * along + randRange(-0.3, 0.3);
+  shardAttr.vel[i * 3 + 2] = _fR.z * speed + _fT.z * along + randRange(-0.3, 0.3);
+  const ax = randRange(-1, 1), ay = randRange(-1, 1), az = randRange(-1, 1);
+  const al = Math.hypot(ax, ay, az) || 1;
+  shardAttr.rot[i * 4] = ax / al; shardAttr.rot[i * 4 + 1] = ay / al; shardAttr.rot[i * 4 + 2] = az / al;
+  shardAttr.rot[i * 4 + 3] = randRange(5, 24) * randSign();
+  const len = randRange(0.015, 0.095) * (0.5 + 0.9 * rel) * (rand() < 0.2 ? 1.7 : 1.0);
+  const wid = len * randRange(0.08, 0.2);
+  shardAttr.misc[i * 4] = tFrontAt(s) + rand() * 0.04;
+  shardAttr.misc[i * 4 + 1] = wid; shardAttr.misc[i * 4 + 2] = len; shardAttr.misc[i * 4 + 3] = wid;
+}
+const shardMat = makeKineticMaterial(new THREE.MeshPhysicalMaterial({
+  color: 0x9fb4c8, emissive: 0x0b1118, metalness: 0.0, roughness: 0.12,
+  clearcoat: 1.0, clearcoatRoughness: 0.06, reflectivity: 0.9, envMapIntensity: 1.3,
+  transparent: true, opacity: 0.6, depthWrite: false, side: THREE.DoubleSide
+}), { gravity: 0.9, drag: 1.0, rotDrag: 0.6 });
+const shards = makeInstanced(shardGeom, shardMat, SHARD_COUNT);
+shards.renderOrder = 3;
+scene.add(shards);
+
+// --- Lead spall droplets from the mushrooming bullet ------------------------
+const DROP_COUNT = 420;
+const dropGeom = new THREE.IcosahedronGeometry(1, 1);
+const dropAttr = addInstanceAttributes(dropGeom, DROP_COUNT);
+let P_IMPACT_Y = 0; // filled after the bullet anchors are known (same value as P_IMPACT_CENTER.y)
+function fillDroplets(impactX, impactY) {
+  P_IMPACT_Y = impactY;
+  for (let i = 0; i < DROP_COUNT; i++) {
+    const tSpawn = T_IMPACT + 0.02 + Math.pow(rand(), 1.5) * 0.55;
+    const m = smoothstep(T_IMPACT, T_MUSH_END, tSpawn);
+    const rho = 0.15 * (1 + 2.4 * m) * randRange(0.85, 1.05);
+    const th = rand() * Math.PI * 2;
+    const ct = Math.cos(th), st = Math.sin(th);
+    dropAttr.p0[i * 3] = impactX + 0.01 + rand() * 0.05;
+    dropAttr.p0[i * 3 + 1] = impactY + rho * ct;
+    dropAttr.p0[i * 3 + 2] = rho * st;
+    const speed = randRange(1.2, 3.6);
+    dropAttr.vel[i * 3] = randRange(0.3, 1.6);
+    dropAttr.vel[i * 3 + 1] = ct * speed + randRange(-0.2, 0.2);
+    dropAttr.vel[i * 3 + 2] = st * speed + randRange(-0.2, 0.2);
+    const ax = randRange(-1, 1), ay = randRange(-1, 1), az = randRange(-1, 1);
+    const al = Math.hypot(ax, ay, az) || 1;
+    dropAttr.rot[i * 4] = ax / al; dropAttr.rot[i * 4 + 1] = ay / al; dropAttr.rot[i * 4 + 2] = az / al;
+    dropAttr.rot[i * 4 + 3] = randRange(5, 25) * randSign();
+    const d = randRange(0.008, 0.032);
+    dropAttr.misc[i * 4] = tSpawn;
+    dropAttr.misc[i * 4 + 1] = d; dropAttr.misc[i * 4 + 2] = d * 0.7; dropAttr.misc[i * 4 + 3] = d;
+  }
+}
+const dropMat = makeKineticMaterial(new THREE.MeshStandardMaterial({
+  color: 0x5c6066, metalness: 0.9, roughness: 0.5, envMapIntensity: 0.8
+}), { gravity: 2.6, drag: 0.9, rotDrag: 0.5 });
+const droplets = makeInstanced(dropGeom, dropMat, DROP_COUNT);
+scene.add(droplets);
+
+// --- Additive point sprites: silica dust, snip sparks, impact spray --------
+const POINTS_VERT = `
+attribute vec3 aVel; attribute vec4 aMisc;
+uniform float uTime; uniform vec3 uGravity; uniform float uDrag; uniform float uPixelRatio; uniform float uSizeScale;
+varying float vAlpha; varying float vSeed;
+void main() {
+  float tau = uTime - aMisc.x;
+  float alive = step(0.0, tau) * step(tau, aMisc.z);
+  tau = max(tau, 0.0);
+  float ek = exp(-uDrag * tau);
+  vec3 p = position + aVel * (1.0 - ek) / uDrag + uGravity * (tau - (1.0 - ek) / uDrag) / uDrag;
+  vec4 mv = modelViewMatrix * vec4(p, 1.0);
+  float life = tau / aMisc.z;
+  float fade = smoothstep(0.0, 0.04, life) * (1.0 - smoothstep(0.55, 1.0, life));
+  vAlpha = alive * fade;
+  vSeed = aMisc.w;
+  gl_PointSize = aMisc.y * uSizeScale * uPixelRatio * (9.0 / max(1.0, -mv.z)) * alive;
+  gl_Position = projectionMatrix * mv;
+}`;
+const POINTS_FRAG = `
+uniform vec3 uColor; uniform float uIntensity;
+varying float vAlpha; varying float vSeed;
+void main() {
+  vec2 q = gl_PointCoord - 0.5;
+  float r2 = dot(q, q);
+  if (r2 > 0.25) discard;
+  float a = smoothstep(0.25, 0.0, r2);
+  float glint = 0.6 + 0.9 * step(0.85, vSeed);
+  gl_FragColor = vec4(uColor * uIntensity * glint * a * vAlpha, 0.0);
+  #include <tonemapping_fragment>
+  #include <encodings_fragment>
+}`;
+const pointSystems = [];
+function makePointsSystem(count, opts) {
+  const geo = new THREE.BufferGeometry();
+  const p0 = new Float32Array(count * 3), vel = new Float32Array(count * 3), misc = new Float32Array(count * 4);
+  geo.setAttribute('position', new THREE.BufferAttribute(p0, 3));
+  geo.setAttribute('aVel', new THREE.BufferAttribute(vel, 3));
+  geo.setAttribute('aMisc', new THREE.BufferAttribute(misc, 4));
+  const uniforms = {
+    uTime: { value: 0 },
+    uGravity: { value: new THREE.Vector3(0, -opts.gravity, 0) },
+    uDrag: { value: opts.drag },
+    uPixelRatio: { value: renderer.getPixelRatio() },
+    uSizeScale: { value: 1 },
+    uColor: { value: new THREE.Color(opts.color[0], opts.color[1], opts.color[2]) },
+    uIntensity: { value: opts.intensity }
+  };
+  const mat = new THREE.ShaderMaterial({
+    uniforms, vertexShader: POINTS_VERT, fragmentShader: POINTS_FRAG,
+    transparent: true, depthWrite: false, blending: THREE.AdditiveBlending
+  });
+  const pts = new THREE.Points(geo, mat);
+  pts.frustumCulled = false;
+  pts.renderOrder = 4;
+  scene.add(pts);
+  const sys = { points: pts, uniforms, p0, vel, misc, count };
+  pointSystems.push(sys);
+  return sys;
+}
+function setPoint(sys, i, px, py, pz, vx, vy, vz, tSpawn, size, life) {
+  sys.p0[i * 3] = px; sys.p0[i * 3 + 1] = py; sys.p0[i * 3 + 2] = pz;
+  sys.vel[i * 3] = vx; sys.vel[i * 3 + 1] = vy; sys.vel[i * 3 + 2] = vz;
+  sys.misc[i * 4] = tSpawn; sys.misc[i * 4 + 1] = size; sys.misc[i * 4 + 2] = life; sys.misc[i * 4 + 3] = rand();
+}
+
+// Fine silica dust released behind the fracture front
+const dust = makePointsSystem(24000, { gravity: 0.5, drag: 1.3, color: [0.78, 0.87, 1.0], intensity: 2.0 });
+for (let i = 0; i < dust.count; i++) {
+  const s = sampleBodyS();
+  const r = dropRadius(s);
+  spinePoint(s, _fC);
+  radialAt(s, rand() * Math.PI * 2, _fR);
+  const rfrac = Math.sqrt(rand());
+  const rel = r / BULB_R;
+  const speed = (0.5 + 2.2 * rel) * randRange(0.3, 1.3);
+  const along = randRange(-0.5, 0.5);
+  setPoint(dust, i,
+    _fC.x + _fR.x * r * rfrac, _fC.y + _fR.y * r * rfrac, _fC.z + _fR.z * r * rfrac,
+    _fR.x * speed + _fT.x * along + randRange(-0.25, 0.25),
+    _fR.y * speed + _fT.y * along + randRange(-0.25, 0.25),
+    _fR.z * speed + _fT.z * along + randRange(-0.25, 0.25),
+    tFrontAt(s) + rand() * 0.12, randRange(1.5, 4.0), randRange(1.5, 3.0));
+}
+// Triboluminescent sparks at the snip point
+const sparks = makePointsSystem(160, { gravity: 3.0, drag: 2.0, color: [0.78, 0.88, 1.0], intensity: 3.0 });
+for (let i = 0; i < sparks.count; i++) {
+  const dx = randRange(-1, 1), dy = randRange(-0.6, 1), dz = randRange(-1, 1);
+  const dl = Math.hypot(dx, dy, dz) || 1;
+  const sp = randRange(1.5, 5.0);
+  setPoint(sparks, i,
+    P_CUT.x + randRange(-0.01, 0.01), P_CUT.y + randRange(-0.01, 0.01), P_CUT.z + randRange(-0.01, 0.01),
+    dx / dl * sp, dy / dl * sp, dz / dl * sp,
+    T_SNIP + rand() * 0.05, randRange(2.0, 3.5), randRange(0.2, 0.5));
+}
+// Lead spray mist at the bullet impact
+const impactSpray = makePointsSystem(260, { gravity: 2.0, drag: 1.5, color: [0.9, 0.85, 0.75], intensity: 1.6 });
+function fillImpactSpray(impactX, impactY) {
+  for (let i = 0; i < impactSpray.count; i++) {
+    const th = rand() * Math.PI * 2;
+    const sp = randRange(1.0, 4.0);
+    setPoint(impactSpray, i,
+      impactX + rand() * 0.03, impactY + randRange(-0.05, 0.05), randRange(-0.05, 0.05),
+      randRange(0.5, 2.0), Math.cos(th) * sp, Math.sin(th) * sp,
+      T_IMPACT + rand() * 0.25, randRange(1.5, 3.0), randRange(0.3, 0.8));
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Lead/copper bullet with plastic mushrooming (vertex-shader deformation)
+// ---------------------------------------------------------------------------
+const BULLET_R = 0.15, BULLET_LEN = 0.78;
+const bulletGeom = (() => {
+  const pts = [];
+  const n = 40;
+  for (let i = 0; i <= n; i++) {
+    const y = (i / n) * BULLET_LEN;
+    let r;
+    if (y < 0.34) r = BULLET_R * Math.pow(Math.sin(0.5 * Math.PI * y / 0.34), 0.72);
+    else if (y < 0.70) r = BULLET_R;
+    else r = BULLET_R * (1 - 0.22 * (y - 0.70) / (BULLET_LEN - 0.70));
+    pts.push(new THREE.Vector2(i === 0 ? 0 : Math.max(0.0005, r), y));
+  }
+  const g = new THREE.LatheGeometry(pts, 48);
+  g.rotateZ(-Math.PI / 2);   // nose at the origin, base at +X, flying toward -X
+  const pos = g.getAttribute('position');
+  const col = new Float32Array(pos.count * 3);
+  for (let i = 0; i < pos.count; i++) {
+    const lead = (pos.getX(i) / BULLET_LEN) < 0.42;   // dull lead nose, copper jacket behind
+    col[i * 3] = lead ? 0.50 : 0.78;
+    col[i * 3 + 1] = lead ? 0.52 : 0.47;
+    col[i * 3 + 2] = lead ? 0.56 : 0.25;
+  }
+  g.setAttribute('color', new THREE.BufferAttribute(col, 3));
+  return g;
+})();
+const bulletUniforms = { uMush: { value: 0 } };
+const bulletMat = new THREE.MeshStandardMaterial({ color: 0xffffff, vertexColors: true, metalness: 0.95, roughness: 0.38, envMapIntensity: 1.2 });
+bulletMat.onBeforeCompile = function (shader) {
+  shader.uniforms.uMush = bulletUniforms.uMush;
+  shader.vertexShader = 'uniform float uMush;\n' + shader.vertexShader
+    .replace('#include <beginnormal_vertex>', [
+      'float bAx = clamp(position.x / ' + BULLET_LEN.toFixed(4) + ', 0.0, 1.0);',
+      'float bFront = pow(1.0 - bAx, 1.6);',
+      'vec3 objectNormal = normalize(mix(normal, normalize(vec3(normal.x - 1.6 * bFront, normal.yz)), uMush));'
+    ].join('\n'))
+    .replace('#include <begin_vertex>', [
+      'float bAxNew = mix(bAx, pow(bAx, 1.5) * 0.42, uMush);',
+      'float bExpand = 1.0 + uMush * 2.4 * bFront;',
+      'vec3 transformed = vec3(bAxNew * ' + BULLET_LEN.toFixed(4) + ', position.yz * bExpand);'
+    ].join('\n'));
+};
+bulletMat.customProgramCacheKey = function () { return 'bullet'; };
+const bullet = new THREE.Mesh(bulletGeom, bulletMat);
+scene.add(bullet);
+fillDroplets(IMPACT_X, P_IMPACT_CENTER.y);
+fillImpactSpray(IMPACT_X, P_IMPACT_CENTER.y);
+
+// ---------------------------------------------------------------------------
+// Articulated brushed-steel nippers at the upper tail tip
+// Local frame: origin at the cut point, +X toward the pivot, +Y closing axis,
+// +Z along the tail tangent (parallel to the cutting edges).
+// ---------------------------------------------------------------------------
+const steelMat = new THREE.MeshStandardMaterial({
+  color: 0xb4bac3, metalness: 1.0, roughness: 0.42, roughnessMap: brushedTex,
+  bumpMap: brushedTex, bumpScale: 0.003, envMapIntensity: 1.25
+});
+const gripMat = new THREE.MeshStandardMaterial({ color: 0x15171c, metalness: 0.1, roughness: 0.85 });
+const HINGE = 0.82;
+function jawShape(mirror) {
+  const pts = [[0.0, 0.07], [-0.12, 0.19], [-0.5, 0.21], [-0.78, 0.17], [-0.98, 0.06], [-0.99, 0.0], [-0.62, 0.0], [-0.3, 0.035]];
+  const shape = new THREE.Shape();
+  pts.forEach((pt, i) => {
+    const yy = mirror ? -pt[1] : pt[1];
+    if (i === 0) shape.moveTo(pt[0], yy); else shape.lineTo(pt[0], yy);
+  });
+  shape.closePath();
+  return shape;
+}
+function bar(x0, y0, x1, y1, rad, mat) {
+  const len = Math.hypot(x1 - x0, y1 - y0);
+  const m = new THREE.Mesh(new THREE.CylinderGeometry(rad, rad * 0.9, len, 18, 1), mat);
+  m.position.set((x0 + x1) / 2, (y0 + y1) / 2, 0);
+  m.rotation.z = Math.atan2(y1 - y0, x1 - x0) - Math.PI / 2;
+  return m;
+}
+function makeJawPiece(mirror) {
+  const piece = new THREE.Group();
+  const jawGeo = new THREE.ExtrudeGeometry(jawShape(mirror), { depth: 0.15, bevelEnabled: true, bevelThickness: 0.012, bevelSize: 0.01, bevelSegments: 2 });
+  jawGeo.translate(0, 0, -0.075);
+  piece.add(new THREE.Mesh(jawGeo, steelMat));
+  const sgn = mirror ? 1 : -1;   // handle sits on the far side of the pivot from its blade
+  piece.add(bar(0.02, sgn * 0.05, 1.55, sgn * 0.14, 0.055, steelMat));
+  piece.add(bar(1.5, sgn * 0.135, 7.2, sgn * 0.5, 0.075, gripMat));   // long enough to exit the frame
+  return piece;
+}
+const nipperGroup = new THREE.Group();
+const jawA = makeJawPiece(false);
+const jawB = makeJawPiece(true);
+jawA.position.set(HINGE, 0, 0);
+jawB.position.set(HINGE, 0, 0);
+const bolt = new THREE.Mesh(new THREE.CylinderGeometry(0.085, 0.085, 0.2, 24), steelMat);
+bolt.rotation.x = Math.PI / 2;
+bolt.position.set(HINGE, 0, 0);
+nipperGroup.add(jawA, jawB, bolt);
+const NIP_D = new THREE.Vector3(0.85, 0.12, -0.5);
+NIP_D.addScaledVector(T_CUT, -NIP_D.dot(T_CUT)).normalize();
+const NIP_C = new THREE.Vector3().crossVectors(T_CUT, NIP_D).normalize();
+nipperGroup.quaternion.setFromRotationMatrix(new THREE.Matrix4().makeBasis(NIP_D, NIP_C, T_CUT));
+nipperGroup.position.copy(P_CUT);
+nipperGroup.scale.setScalar(0.8);
+scene.add(nipperGroup);
+
+// ---------------------------------------------------------------------------
+// Fine dark-anodized suspension: wire loop around the neck, rising off-frame
+// ---------------------------------------------------------------------------
+const S_LOOP = 0.46;
+const loopPos = spinePoint(S_LOOP, new THREE.Vector3());
+const loopT = spineTangent(S_LOOP, new THREE.Vector3());
+const loopR = dropRadius(S_LOOP) + 0.012;
+const wireMat = new THREE.MeshStandardMaterial({ color: 0x1b1d22, metalness: 0.85, roughness: 0.4, envMapIntensity: 0.9 });
+const loop = new THREE.Mesh(new THREE.TorusGeometry(loopR, 0.007, 10, 48), wireMat);
+loop.position.copy(loopPos);
+loop.quaternion.setFromUnitVectors(new THREE.Vector3(0, 0, 1), loopT);
+scene.add(loop);
+const wireAnchor = new THREE.Vector3(loopPos.x - 0.42, 4.4, loopPos.z - 0.1);
+const loopTop = loopPos.clone().add(new THREE.Vector3(0, loopR, 0));
+const wireDir = new THREE.Vector3().subVectors(wireAnchor, loopTop);
+const wire = new THREE.Mesh(new THREE.CylinderGeometry(0.0045, 0.0045, wireDir.length(), 8, 1), wireMat);
+wire.position.lerpVectors(loopTop, wireAnchor, 0.5);
+wire.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), wireDir.clone().normalize());
+scene.add(wire);
+
+// ---------------------------------------------------------------------------
+// Additive glow sprites (procedural radial texture)
+// ---------------------------------------------------------------------------
+function makeGlowSprite(color) {
+  const m = new THREE.SpriteMaterial({ map: glowTex, color: color, transparent: true, blending: THREE.AdditiveBlending, depthWrite: false, depthTest: false });
+  const s = new THREE.Sprite(m);
+  s.renderOrder = 5;
+  s.visible = false;
+  scene.add(s);
+  return s;
+}
+const flashSprite = makeGlowSprite(0xcfe4ff);
+const flashCore = makeGlowSprite(0xffffff);
+const frontSprite = makeGlowSprite(0xd0e6ff);
+const impactSprite = makeGlowSprite(0xfff1dc);
+
+// ---------------------------------------------------------------------------
+// renderAt(simTime): a pure function of simulation time -> rendered frame.
+// Every object pose and shader uniform is evaluated analytically from t, so
+// forward playback, scrubbing, resets and any display rate yield identical frames.
+// ---------------------------------------------------------------------------
+const BULLET_V = 5.2;
+const _pos = new THREE.Vector3();
+const _frontPos = new THREE.Vector3();
+const _tipAxis = new THREE.Vector3(0.3, 0.25, 1.0).normalize();
+function setSprite(sprite, pos, scale, intensity) {
+  if (intensity <= 0.002) { sprite.visible = false; return; }
+  sprite.visible = true;
+  sprite.position.copy(pos);
+  sprite.scale.set(scale, scale, 1);
+  sprite.material.opacity = Math.min(1, intensity);
+}
+function dragDisp(v, k, tau) { return v * (1 - Math.exp(-k * tau)) / k; }
+function gravDisp(g, k, tau) { return (g / k) * (tau - (1 - Math.exp(-k * tau)) / k); }
+
+function renderAt(tIn) {
+  const t = Math.max(0, Math.min(DURATION, tIn));
+  const py = P_IMPACT_CENTER.y;
+
+  // --- Phase 1-2: bullet approach, impact, mushrooming, rebound -----------
+  if (t < T_IMPACT) {
+    bullet.visible = true;
+    bullet.scale.setScalar(1);
+    bullet.position.set(IMPACT_X + BULLET_V * (T_IMPACT - t), py, 0);
+    bullet.rotation.set(-t * 38.0, 0, 0);
+    bulletUniforms.uMush.value = 0;
+  } else if (t < T_MUSH_END) {
+    const m = smoothstep(T_IMPACT, T_MUSH_END, t);
+    bullet.visible = true;
+    bullet.scale.setScalar(1 - 0.12 * m);
+    bullet.position.set(IMPACT_X, py, 0);
+    bullet.rotation.set(-T_IMPACT * 38.0 - (t - T_IMPACT) * 12.0 * (1 - m), 0, 0);
+    bulletUniforms.uMush.value = m;
+  } else {
+    const tau = t - T_MUSH_END;
+    const k = 0.5;
+    bullet.position.set(IMPACT_X + dragDisp(0.65, k, tau), py - gravDisp(1.6, k, tau), dragDisp(0.18, k, tau));
+    bullet.rotation.set(-T_IMPACT * 38.0, 0.7 * tau, -1.4 * tau);
+    bullet.scale.setScalar(0.88);
+    bulletUniforms.uMush.value = 1;
+    bullet.visible = bullet.position.y > -6;
+  }
+
+  // --- Glass: ringing, stress pulse, pre-fracture tension, running front ---
+  const ring = t > T_IMPACT ? 0.016 * Math.exp(-(t - T_IMPACT) * 2.4) : 0;
+  const ringPhase = 2 * Math.PI * 6.5 * (t - T_IMPACT);
+  const pulse = smoothstep(T_DEBRIS_END, T_DEBRIS_END + 0.3, t) * (1 - smoothstep(3.7, 4.0, t));
+  const pre = smoothstep(T_SNIP, T_SNIP + 0.3, t) * (1 - smoothstep(T_FRONT_START, T_FRONT_START + 0.25, t));
+  const sFront = sFrontAt(t);
+  const frontS = clamp01(sFront);
+  const frontGlow = t >= T_FRONT_START ? (1 - smoothstep(T_FRONT_END, T_FRONT_END + 0.2, t)) : 0;
+  spinePoint(frontS, _frontPos);
+  const flash = smoothstep(T_SNIP, T_SNIP + 0.06, t) * Math.exp(-Math.max(0, t - T_SNIP - 0.06) * 6.5);
+  for (let i = 0; i < glassMaterials.length; i++) {
+    const u = glassMaterials[i].uniforms;
+    u.uTime.value = t;
+    u.uRing.value = ring;
+    u.uRingPhase.value = ringPhase;
+    u.uPulse.value = pulse;
+    u.uPreTension.value = pre;
+    u.uFlashInt.value = 4 * flash;
+    u.uFlashPos.value.copy(P_CUT);
+    u.uFrontGlow.value = frontGlow;
+    u.uFrontPos.value.copy(_frontPos);
+  }
+  const bodyClip = t >= T_FRONT_START ? sFront : 2.0;
+  bodyBack.material.uniforms.uSFront.value = sFront;
+  bodyFront.material.uniforms.uSFront.value = sFront;
+  bodyBack.material.uniforms.uSClip.value = bodyClip;
+  bodyFront.material.uniforms.uSClip.value = bodyClip;
+  bodyBack.visible = bodyFront.visible = t < T_FRONT_END;
+
+  // --- Severed tail tip: at rest until the snip, then flung and tumbling ---
+  let tipOpacity = 1;
+  if (t < T_SNIP) {
+    tipGroup.position.copy(TIP_CENTROID);
+    tipGroup.quaternion.identity();
+  } else {
+    const tau = t - T_SNIP;
+    const k = 0.6;
+    tipGroup.position.set(
+      TIP_CENTROID.x + dragDisp(0.35, k, tau),
+      TIP_CENTROID.y + dragDisp(0.8, k, tau) - gravDisp(0.9, k, tau),
+      TIP_CENTROID.z + dragDisp(0.25, k, tau));
+    tipGroup.quaternion.setFromAxisAngle(_tipAxis, dragDisp(7.0, 0.8, tau));
+    tipOpacity = 1 - smoothstep(0.9, 1.6, tau);
+  }
+  tipGroup.visible = tipOpacity > 0.002;
+  tipBack.material.uniforms.uOpacity.value = tipOpacity;
+  tipFront.material.uniforms.uOpacity.value = tipOpacity;
+
+  // --- Nippers: approach, close onto the tail, snip, withdraw -------------
+  let theta, retract;
+  if (t < T_DEBRIS_END) { theta = 0.22; retract = 0.38; }
+  else if (t < 3.3) { theta = 0.22; retract = 0.38 * (1 - smoothstep(T_DEBRIS_END, 3.3, t)); }
+  else if (t < T_SNIP) { theta = 0.22 * (1 - smoothstep(3.3, T_SNIP, t)); retract = 0; }
+  else if (t < T_FRONT_START) { theta = 0; retract = 0; }
+  else { const u = smoothstep(T_FRONT_START, 5.6, t); theta = 0.15 * u; retract = 0.9 * u; }
+  jawA.rotation.z = -theta;
+  jawB.rotation.z = theta;
+  nipperGroup.position.copy(P_CUT).addScaledVector(NIP_D, retract);
+
+  // --- Kinetic particle systems (shards, spall, dust, sparks) -------------
+  for (let i = 0; i < kineticUniformSets.length; i++) kineticUniformSets[i].uTime.value = t;
+  for (let i = 0; i < pointSystems.length; i++) pointSystems[i].uniforms.uTime.value = t;
+
+  // --- Lights and glow sprites ---------------------------------------------
+  flashLight.position.copy(P_CUT);
+  flashLight.intensity = 10 * flash;
+  setSprite(flashSprite, P_CUT, 0.25 + 0.8 * flash, flash * 0.9);
+  setSprite(flashCore, P_CUT, 0.12 + 0.35 * flash, flash);
+  frontLight.position.copy(_frontPos);
+  frontLight.intensity = frontGlow * (1.2 + 2.0 * smoothstep(0.35, 0.0, frontS));
+  setSprite(frontSprite, _frontPos, 0.22 + 0.5 * (dropRadius(frontS) / BULB_R), frontGlow * 0.55);
+  const impactGlow = smoothstep(T_IMPACT, T_IMPACT + 0.04, t) * Math.exp(-Math.max(0, t - T_IMPACT - 0.04) * 9);
+  setSprite(impactSprite, _pos.set(IMPACT_X, py, 0), 0.25 + 0.6 * impactGlow, impactGlow * 0.9);
+
+  renderer.render(scene, camera);
+}
+
+// ---------------------------------------------------------------------------
+// Playback state machine: COUNTDOWN -> PLAYING -> ENDED, PAUSED, REFIRE_HOLD
+// ---------------------------------------------------------------------------
+const State = { COUNTDOWN: 'COUNTDOWN', PLAYING: 'PLAYING', PAUSED: 'PAUSED', REFIRE_HOLD: 'REFIRE_HOLD', ENDED: 'ENDED' };
+let state = State.COUNTDOWN;
+let simTime = 0;
+let playbackSpeed = 1.0;
+let countdownElapsed = 0;
+let holdElapsed = 0;
+let lastNow = null;
+let needsRender = false;
+
+function showPauseIcon(playing) {
+  iconPause.style.display = playing ? '' : 'none';
+  iconPlay.style.display = playing ? 'none' : '';
+  btnToggle.setAttribute('aria-label', playing ? 'Pause' : 'Play');
+}
+function hideCountdown() { elCountdown.style.display = 'none'; elCountdown.textContent = ''; }
+function showCountdown(text) { elCountdown.style.display = 'block'; if (elCountdown.textContent !== text) elCountdown.textContent = text; }
+
+function frame(nowMs) {
+  requestAnimationFrame(frame);
+  const now = nowMs / 1000;
+  const dt = lastNow === null ? 0 : Math.min(0.1, Math.max(0, now - lastNow));
+  lastNow = now;
+  switch (state) {
+    case State.COUNTDOWN:
+      countdownElapsed += dt;
+      if (countdownElapsed >= 3.0) {
+        hideCountdown();
+        state = State.PLAYING;
+        showPauseIcon(true);
+      } else {
+        showCountdown(countdownElapsed < 1.0 ? '3' : countdownElapsed < 2.0 ? '2' : '1');
+      }
+      break;
+    case State.REFIRE_HOLD:
+      holdElapsed += dt;
+      if (holdElapsed >= 1.0) state = State.PLAYING;
+      break;
+    case State.PLAYING:
+      simTime = Math.min(DURATION, simTime + dt * playbackSpeed);
+      scrubber.value = simTime.toFixed(3);
+      needsRender = true;
+      if (simTime >= DURATION) {
+        simTime = DURATION;
+        scrubber.value = DURATION.toFixed(3);
+        state = State.ENDED;
+        showPauseIcon(false);
+      }
+      break;
+    default:
+      break;
+  }
+  if (needsRender) { needsRender = false; renderAt(simTime); }
+}
+
+btnToggle.addEventListener('click', function () {
+  switch (state) {
+    case State.PLAYING:
+      state = State.PAUSED;
+      showPauseIcon(false);
+      break;
+    case State.COUNTDOWN:
+    case State.REFIRE_HOLD:
+      hideCountdown();
+      simTime = 0;
+      state = State.PAUSED;
+      showPauseIcon(false);
+      renderAt(0);
+      break;
+    case State.PAUSED:
+      state = State.PLAYING;
+      showPauseIcon(true);
+      break;
+    case State.ENDED:
+      simTime = 0;
+      scrubber.value = '0';
+      hideCountdown();
+      state = State.PLAYING;
+      showPauseIcon(true);
+      renderAt(0);
+      break;
+    default:
+      break;
+  }
+});
+
+btnRefire.addEventListener('click', function () {
+  hideCountdown();
+  countdownElapsed = 0;
+  simTime = 0;
+  scrubber.value = '0';
+  renderAt(0);
+  showPauseIcon(true);
+  state = State.REFIRE_HOLD;
+  holdElapsed = 0;
+});
+
+speedPills.forEach(function (pill) {
+  pill.addEventListener('click', function () {
+    playbackSpeed = parseFloat(pill.getAttribute('data-speed'));
+    speedPills.forEach(function (q) {
+      const on = q === pill;
+      q.classList.toggle('is-active', on);
+      q.setAttribute('aria-checked', on ? 'true' : 'false');
+    });
+  });
+});
+
+scrubber.addEventListener('input', function () {
+  if (state === State.COUNTDOWN || state === State.REFIRE_HOLD) hideCountdown();
+  const v = parseFloat(scrubber.value);
+  simTime = Math.max(0, Math.min(DURATION, isNaN(v) ? 0 : v));
+  state = State.PAUSED;
+  showPauseIcon(false);
+  renderAt(simTime);
+});
+
+window.addEventListener('resize', function () {
+  const w = window.innerWidth, h = window.innerHeight;
+  renderer.setSize(w, h, false);
+  camera.aspect = w / h;
+  camera.updateProjectionMatrix();
+  for (let i = 0; i < pointSystems.length; i++) pointSystems[i].uniforms.uPixelRatio.value = renderer.getPixelRatio();
+  renderAt(simTime);
+});
+
+// Initial resting scene, then the countdown starts on the first animation frame
+showCountdown('3');
+scrubber.value = '0';
+renderAt(0); // INIT-RENDER
+requestAnimationFrame(frame);
+
+})();
+</script>
+</body>
+</html>

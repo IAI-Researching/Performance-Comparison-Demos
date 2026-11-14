@@ -57,8 +57,4 @@ Each benchmark test directory contains:
 
 | Model | Developer Harness | Verification | Wall-Clock | Deliverable |
 | :--- | :--- | :---: | :---: | :---: |
-| **Claude Fable 5.2 (Max)** | Claude Code | **PASS (100%)** | 5467.3s | [`materials/prince-ruperts-drop/claude-fable-5.2/`](materials/prince-ruperts-drop/claude-fable-5.2/) |
-| **Codex GPT 6 Astra (Max)** | Codex CLI | **PASS (100%)** | 1167.0s | [`materials/prince-ruperts-drop/codex-gpt-6-astra/`](materials/prince-ruperts-drop/codex-gpt-6-astra/) |
-| **Codex GPT 6.1 Sol (Max)** | Codex CLI | **PASS (100%)** | 1361.0s | [`materials/prince-ruperts-drop/codex-gpt-6.1-sol/`](materials/prince-ruperts-drop/codex-gpt-6.1-sol/) |
 
-*Showing the 3 most recent benchmark deliverables. See [`TELEMETRY.md`](materials/prince-ruperts-drop/TELEMETRY.md) for the complete multi-model leaderboard, full token metrics, cache ratios, and runtime verification logs.*

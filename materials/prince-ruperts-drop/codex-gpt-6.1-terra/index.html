@@ -1,0 +1,918 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>
+*, *::before, *::after {
+  box-sizing: border-box;
+}
+html, body {
+  margin: 0;
+  padding: 0;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  background: radial-gradient(circle at center, #161922 0%, #090a0f 100%);
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -webkit-user-select: none;
+  user-select: none;
+}
+#stage {
+  display: block;
+  width: 100vw;
+  height: 100vh;
+}
+
+#countdown {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 50;
+  pointer-events: none;
+  font-size: 96px;
+  font-weight: 700;
+  line-height: 1;
+  color: rgba(255, 255, 255, 0.35);
+  font-variant-numeric: tabular-nums;
+}
+
+#dock {
+  position: fixed;
+  bottom: 24px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 100;
+  width: 536px;
+  height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 0 14px;
+  background: rgba(15, 17, 23, 0.78);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 9999px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.35);
+}
+
+#dock button {
+  font-family: inherit;
+  line-height: 1;
+  margin: 0;
+  flex-shrink: 0;
+  white-space: nowrap;
+  appearance: none;
+  -webkit-appearance: none;
+}
+
+.dock-sep {
+  width: 1px;
+  height: 18px;
+  flex-shrink: 0;
+  background: rgba(255, 255, 255, 0.12);
+}
+
+#btn-refire {
+  width: 78px;
+  height: 28px;
+  padding: 0 10px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 9999px;
+  color: #ffffff;
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+}
+#btn-refire:hover {
+  background: rgba(255, 255, 255, 0.16);
+}
+
+#btn-toggle {
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 9999px;
+  color: #ffffff;
+  cursor: pointer;
+}
+#btn-toggle:hover {
+  background: rgba(255, 255, 255, 0.16);
+}
+
+#speed-group {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  flex-shrink: 0;
+}
+.speed-pill {
+  width: 42px;
+  height: 24px;
+  padding: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 9999px;
+  color: rgba(255, 255, 255, 0.6);
+  font-size: 11px;
+  font-weight: 500;
+  font-variant-numeric: tabular-nums;
+  cursor: pointer;
+}
+.speed-pill:hover {
+  color: #ffffff;
+  background: rgba(255, 255, 255, 0.06);
+}
+.speed-pill.is-active {
+  color: #ffffff;
+  background: rgba(255, 255, 255, 0.18);
+  border-color: rgba(255, 255, 255, 0.2);
+}
+
+#scrubber {
+  width: 157px;
+  height: 4px;
+  margin: 0;
+  padding: 0;
+  flex-shrink: 0;
+  appearance: none;
+  -webkit-appearance: none;
+  background: rgba(255, 255, 255, 0.22);
+  border-radius: 9999px;
+  outline: none;
+  cursor: pointer;
+}
+#scrubber::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: #ffffff;
+  border: none;
+  cursor: pointer;
+}
+#scrubber::-moz-range-thumb {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: #ffffff;
+  border: none;
+  cursor: pointer;
+}
+</style>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+window.addEventListener('DOMContentLoaded', function () {
+  'use strict';
+
+  const DURATION = 8;
+  const COUNTDOWN = 'COUNTDOWN';
+  const PLAYING = 'PLAYING';
+  const PAUSED = 'PAUSED';
+  const REFIRE_HOLD = 'REFIRE_HOLD';
+  const ENDED = 'ENDED';
+  const PHYSICAL_DROP_LENGTH_M = 0.12;
+  const FRACTURE_SPEED_M_S = 1600;
+  const FRACTURE_REAL_SECONDS = PHYSICAL_DROP_LENGTH_M / FRACTURE_SPEED_M_S;
+  const FRACTURE_SCREEN_SECONDS = 1.4;
+
+  const countdown = document.getElementById('countdown');
+  const scrubber = document.getElementById('scrubber');
+  const toggle = document.getElementById('btn-toggle');
+  const refire = document.getElementById('btn-refire');
+  const iconPause = document.getElementById('icon-pause');
+  const iconPlay = document.getElementById('icon-play');
+  const speedPills = Array.from(document.querySelectorAll('.speed-pill'));
+  countdown.style.display = 'none';
+  countdown.textContent = '';
+
+  // All random choices are made once, from the same fixed seed.
+  function mulberry32(seed) {
+    return function () {
+      let n = seed += 0x6D2B79F5;
+      n = Math.imul(n ^ n >>> 15, n | 1);
+      n ^= n + Math.imul(n ^ n >>> 7, n | 61);
+      return ((n ^ n >>> 14) >>> 0) / 4294967296;
+    };
+  }
+  const random = mulberry32(42);
+  const rand = (a, b) => a + (b - a) * random();
+  const clamp = THREE.MathUtils.clamp;
+  const smooth = (a, b, v) => {
+    const x = clamp((v - a) / (b - a), 0, 1);
+    return x * x * (3 - 2 * x);
+  };
+
+  const renderer = new THREE.WebGLRenderer({ canvas: document.getElementById('stage'), antialias: true, alpha: true });
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+  renderer.setSize(window.innerWidth, window.innerHeight, false);
+  renderer.outputEncoding = THREE.sRGBEncoding;
+  renderer.toneMapping = THREE.ACESFilmicToneMapping;
+  renderer.toneMappingExposure = 0.85;
+  renderer.setClearColor(0x000000, 0);
+
+  const scene = new THREE.Scene();
+  const camera = new THREE.PerspectiveCamera(35, window.innerWidth / window.innerHeight, 0.1, 100);
+  function resize() {
+    const aspect = window.innerWidth / window.innerHeight;
+    const visibleHeight = Math.max(8.0, 7.2 / aspect);
+    camera.aspect = aspect;
+    camera.position.set(0.35, 0.16, visibleHeight / (2 * Math.tan(THREE.MathUtils.degToRad(35 / 2))));
+    camera.lookAt(0.35, 0.16, 0);
+    camera.updateProjectionMatrix();
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+    renderer.setSize(window.innerWidth, window.innerHeight, false);
+    dustUniforms.uPointScale.value = window.innerHeight * Math.min(window.devicePixelRatio || 1, 2) / (2 * Math.tan(THREE.MathUtils.degToRad(35 / 2)));
+    renderer.render(scene, camera);
+  }
+
+  // An in-memory lightbox is baked into a filtered environment for specular glass and metal.
+  const studio = new THREE.Scene();
+  studio.background = new THREE.Color(0x111820);
+  function panel(color, intensity, x, y, z, width, height) {
+    const mat = new THREE.MeshBasicMaterial({ color: new THREE.Color(color).multiplyScalar(intensity), side: THREE.DoubleSide });
+    const m = new THREE.Mesh(new THREE.PlaneGeometry(width, height), mat);
+    m.position.set(x, y, z);
+    m.lookAt(0, 0, 0);
+    studio.add(m);
+  }
+  panel(0xf3fbff, 1.6, -4, 3, 4, 2.0, 6.5);
+  panel(0xd5f5ff, 1.2, 4, 1, 2.5, 1.0, 6.5);
+  panel(0x74dff2, 1.1, -4, 0, -2.0, 0.7, 6.0);
+  panel(0xe891dc, 0.8, 4, -0.2, -3, 1.1, 5.0);
+  panel(0xffffff, 1.3, 0, 5, 1, 4.0, 1.3);
+  const pmrem = new THREE.PMREMGenerator(renderer);
+  pmrem.compileCubemapShader();
+  const environment = pmrem.fromScene(studio, 0.04).texture;
+  scene.environment = environment;
+  pmrem.dispose();
+
+  scene.add(new THREE.HemisphereLight(0xcce8f3, 0x15212b, 0.42));
+  const key = new THREE.DirectionalLight(0xf5fbff, 1.1);
+  key.position.set(-3.5, 5, 6);
+  scene.add(key);
+  const cyan = new THREE.DirectionalLight(0x7ad8f4, 0.75);
+  cyan.position.set(-4, 1, -3);
+  scene.add(cyan);
+  const magenta = new THREE.DirectionalLight(0xf49be7, 0.55);
+  magenta.position.set(4, 2, -2);
+  scene.add(magenta);
+  const fill = new THREE.DirectionalLight(0xb0d6e9, 0.45);
+  fill.position.set(3, -3, 5);
+  scene.add(fill);
+
+  // The profile is a quenched bulb, a long taper and a small helical curl.
+  const profile = [
+    [0, 0.018], [0.018, 0.26], [0.05, 0.48], [0.09, 0.65],
+    [0.14, 0.735], [0.19, 0.73], [0.24, 0.65], [0.30, 0.51],
+    [0.38, 0.33], [0.48, 0.17], [0.58, 0.105], [0.72, 0.065],
+    [0.86, 0.043], [1, 0.021]
+  ];
+  function radiusAt(s) {
+    s = clamp(s, 0, 1);
+    let i = 0;
+    while (i < profile.length - 2 && s > profile[i + 1][0]) i++;
+    const p0 = profile[Math.max(0, i - 1)];
+    const p1 = profile[i];
+    const p2 = profile[i + 1];
+    const p3 = profile[Math.min(profile.length - 1, i + 2)];
+    const d = p2[0] - p1[0];
+    const u = (s - p1[0]) / d;
+    const m1 = (p2[1] - p0[1]) / (p2[0] - p0[0]);
+    const m2 = (p3[1] - p1[1]) / (p3[0] - p1[0]);
+    const u2 = u * u, u3 = u2 * u;
+    return Math.max(0.014, (2*u3-3*u2+1)*p1[1] + (u3-2*u2+u)*d*m1 + (-2*u3+3*u2)*p2[1] + (u3-u2)*d*m2);
+  }
+  function spine(s) {
+    const v = clamp((s - 0.76) / 0.24, 0, 1);
+    return new THREE.Vector3(-0.3 + 0.6*s + 0.10*Math.sin(s*5) + 0.15*Math.sin(v*Math.PI*2),
+      -2.2 + 4.65*s, 0.12*(Math.cos(v*Math.PI*2)-1));
+  }
+  function frameAt(s) {
+    const p = spine(s);
+    const tangent = spine(Math.min(1, s + 0.0005)).sub(spine(Math.max(0, s - 0.0005))).normalize();
+    const normal = new THREE.Vector3(tangent.y, -tangent.x, 0).normalize();
+    const binormal = new THREE.Vector3().crossVectors(tangent, normal).normalize();
+    return { p, tangent, normal, binormal };
+  }
+  function pointInDrop(s, angle, r) {
+    const f = frameAt(s);
+    return f.p.addScaledVector(f.normal, Math.cos(angle) * r).addScaledVector(f.binormal, Math.sin(angle) * r);
+  }
+  function makeDropGeometry() {
+    const lengthSegments = 180, radialSegments = 48;
+    const positions = [], spineValues = [], angles = [], indices = [];
+    for (let i = 0; i <= lengthSegments; i++) {
+      const s = i / lengthSegments;
+      const f = frameAt(s), radius = radiusAt(s);
+      for (let j = 0; j <= radialSegments; j++) {
+        const a = j / radialSegments * Math.PI * 2;
+        const p = f.p.clone().addScaledVector(f.normal, Math.cos(a)*radius).addScaledVector(f.binormal, Math.sin(a)*radius);
+        positions.push(p.x, p.y, p.z);
+        spineValues.push(s);
+        angles.push(a);
+      }
+    }
+    for (let i = 0; i < lengthSegments; i++) {
+      for (let j = 0; j < radialSegments; j++) {
+        const a = i*(radialSegments+1)+j, b = a+1, c = a+radialSegments+1, d = c+1;
+        indices.push(a, b, c, b, d, c);
+      }
+    }
+    const g = new THREE.BufferGeometry();
+    g.setIndex(indices);
+    g.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
+    g.setAttribute('aSpine', new THREE.Float32BufferAttribute(spineValues, 1));
+    g.setAttribute('aAngle', new THREE.Float32BufferAttribute(angles, 1));
+    g.computeVertexNormals();
+    return g;
+  }
+  const dropGeometry = makeDropGeometry();
+  const timeUniform = { value: 0 };
+  const frontUniform = { value: 1.01 };
+  const cutUniform = { value: 0 };
+  const glass = new THREE.MeshPhysicalMaterial({
+    color: 0xb6e3ea, metalness: 0.02, roughness: 0.065,
+    transmission: 0.94, ior: 1.48, transparent: true, opacity: 0.52,
+    clearcoat: 1, clearcoatRoughness: 0.045, envMapIntensity: 0.85
+  });
+  glass.onBeforeCompile = shader => {
+    shader.uniforms.uFront = frontUniform;
+    shader.uniforms.uCut = cutUniform;
+    shader.vertexShader = shader.vertexShader
+      .replace('#include <common>', '#include <common>\nattribute float aSpine; varying float vSpine;')
+      .replace('#include <begin_vertex>', '#include <begin_vertex>\nvSpine = aSpine;');
+    shader.fragmentShader = shader.fragmentShader
+      .replace('#include <common>', '#include <common>\nuniform float uFront; uniform float uCut; varying float vSpine;')
+      .replace('#include <clipping_planes_fragment>', '#include <clipping_planes_fragment>\nif (vSpine > uFront || (uCut > 0.5 && vSpine > 0.988)) discard;');
+  };
+  const dropGroup = new THREE.Group();
+  scene.add(dropGroup);
+  dropGroup.add(new THREE.Mesh(dropGeometry, glass));
+
+  // A second, thin optical layer adds Fresnel edges and cross-polarized stress fringes.
+  const stress = new THREE.ShaderMaterial({
+    uniforms: { uTime: timeUniform, uFront: frontUniform, uCut: cutUniform },
+    transparent: true, depthWrite: false, side: THREE.FrontSide,
+    vertexShader: `
+      attribute float aSpine;
+      attribute float aAngle;
+      varying float vSpine;
+      varying float vAngle;
+      varying vec3 vNormalView;
+      varying vec3 vToEye;
+      void main() {
+        vSpine = aSpine;
+        vAngle = aAngle;
+        vNormalView = normalize(normalMatrix * normal);
+        vec4 mv = modelViewMatrix * vec4(position + normal * 0.004, 1.0);
+        vToEye = -mv.xyz;
+        gl_Position = projectionMatrix * mv;
+      }
+    `,
+    fragmentShader: `
+      uniform float uTime;
+      uniform float uFront;
+      uniform float uCut;
+      varying float vSpine;
+      varying float vAngle;
+      varying vec3 vNormalView;
+      varying vec3 vToEye;
+      void main() {
+        if (vSpine > uFront || (uCut > 0.5 && vSpine > 0.988)) discard;
+        float facing = abs(dot(normalize(vNormalView), normalize(vToEye)));
+        float rim = pow(1.0 - facing, 2.2);
+        float body = 1.0 - smoothstep(0.36, 0.58, vSpine);
+        float pulse = exp(-abs(uTime - 3.15)*2.2) * 0.45;
+        float phase = vSpine * 44.0 + 4.0*cos(vAngle) + pulse * sin(vSpine*18.0);
+        float bands = pow(0.5 + 0.5*cos(phase), 3.0) * body;
+        vec3 spectral = 0.5 + 0.5*cos(vec3(0.0, 2.1, 4.2) + phase*0.30 + 0.8);
+        vec3 c = vec3(0.23, 0.57, 0.64) * (0.38 + 1.5*rim) + spectral * bands * (0.65 + pulse*0.18);
+        float alpha = clamp(0.045 + 0.40*rim + bands*0.22, 0.0, 0.68);
+        gl_FragColor = vec4(c, alpha);
+      }
+    `
+  });
+  const opticalShell = new THREE.Mesh(dropGeometry, stress);
+  opticalShell.renderOrder = 3;
+  dropGroup.add(opticalShell);
+
+  // A fine hanging wire is deliberately kept behind the glass and tools.
+  const tip = spine(1);
+  const wireCurve = new THREE.CatmullRomCurve3([
+    new THREE.Vector3(tip.x, tip.y, -0.20),
+    new THREE.Vector3(tip.x-0.05, 3.20, -0.22),
+    new THREE.Vector3(tip.x-0.08, 4.7, -0.24)
+  ]);
+  const wire = new THREE.Mesh(new THREE.TubeGeometry(wireCurve, 32, 0.007, 5, false),
+    new THREE.MeshStandardMaterial({color:0x788d98, metalness:0.9, roughness:0.33}));
+  scene.add(wire);
+
+  // Projectile: the local X axis points from the rear toward the impact face.
+  const bulletProfile = [
+    new THREE.Vector2(0, -0.47), new THREE.Vector2(0.215, -0.47),
+    new THREE.Vector2(0.235, -0.42), new THREE.Vector2(0.235, 0.12),
+    new THREE.Vector2(0.225, 0.23), new THREE.Vector2(0.19, 0.34),
+    new THREE.Vector2(0.12, 0.43), new THREE.Vector2(0, 0.49)
+  ];
+  const bulletGeometry = new THREE.LatheGeometry(bulletProfile, 48);
+  bulletGeometry.rotateZ(Math.PI / 2);
+  const bulletMaterial = new THREE.MeshPhysicalMaterial({color:0x939ca0, metalness:0.97, roughness:0.22, clearcoat:0.35, transparent:true});
+  const copperMaterial = new THREE.MeshStandardMaterial({color:0x9c6c55, metalness:0.92, roughness:0.26, transparent:true});
+  const bullet = new THREE.Group();
+  bullet.add(new THREE.Mesh(bulletGeometry, bulletMaterial));
+  for (const x of [0.31, 0.39]) {
+    const ring = new THREE.Mesh(new THREE.TorusGeometry(0.237, 0.012, 8, 40), copperMaterial);
+    ring.rotation.y = Math.PI / 2;
+    ring.position.x = x;
+    bullet.add(ring);
+  }
+  const mushroomLip = new THREE.Mesh(new THREE.TorusGeometry(0.24, 0.045, 10, 48), bulletMaterial);
+  mushroomLip.rotation.y = Math.PI / 2;
+  mushroomLip.position.x = -0.24;
+  bullet.add(mushroomLip);
+  scene.add(bullet);
+  const impactX = 0.60, impactY = -1.50;
+
+  // Compact, articulated steel nippers. Both arms rotate about the same rivet.
+  const steel = new THREE.MeshPhysicalMaterial({color:0x62737e, metalness:0.92, roughness:0.24, clearcoat:0.32});
+  const darkSteel = new THREE.MeshStandardMaterial({color:0x26343c, metalness:0.82, roughness:0.3});
+  const gripMaterial = new THREE.MeshStandardMaterial({color:0x27343b, metalness:0.7, roughness:0.35});
+  const jawShape = new THREE.Shape();
+  jawShape.moveTo(-1.03, -0.035);
+  jawShape.lineTo(-0.97, 0.035);
+  jawShape.lineTo(-0.60, 0.105);
+  jawShape.lineTo(-0.15, 0.15);
+  jawShape.lineTo(0.25, 0.13);
+  jawShape.lineTo(1.14, 0.11);
+  jawShape.lineTo(1.25, 0.065);
+  jawShape.lineTo(1.25, -0.065);
+  jawShape.lineTo(1.14, -0.11);
+  jawShape.lineTo(0.25, -0.10);
+  jawShape.lineTo(-0.15, -0.12);
+  jawShape.lineTo(-0.60, -0.065);
+  jawShape.closePath();
+  const jawGeometry = new THREE.ExtrudeGeometry(jawShape, {depth:0.10, bevelEnabled:true, bevelSize:0.035, bevelThickness:0.025, bevelSegments:2, steps:1});
+  jawGeometry.translate(0, 0, -0.05);
+  const nippers = new THREE.Group();
+  nippers.position.set(1.25, tip.y, 0.18);
+  scene.add(nippers);
+  function makeArm(z) {
+    const arm = new THREE.Group();
+    arm.position.z = z;
+    arm.add(new THREE.Mesh(jawGeometry, steel));
+    const grip = new THREE.Mesh(new THREE.BoxGeometry(0.64, 0.205, 0.15), gripMaterial);
+    grip.position.set(0.82, 0, 0);
+    arm.add(grip);
+    const inlay = new THREE.Mesh(new THREE.BoxGeometry(0.49, 0.018, 0.015), steel);
+    inlay.position.set(0.82, 0.04, 0.081);
+    arm.add(inlay);
+    nippers.add(arm);
+    return arm;
+  }
+  const upperArm = makeArm(0.08), lowerArm = makeArm(-0.08);
+  const rivet = new THREE.Mesh(new THREE.CylinderGeometry(0.145, 0.145, 0.25, 32), steel);
+  rivet.rotation.x = Math.PI / 2;
+  rivet.position.z = 0.04;
+  nippers.add(rivet);
+  const rivetCap = new THREE.Mesh(new THREE.CylinderGeometry(0.073, 0.073, 0.012, 32), darkSteel);
+  rivetCap.rotation.x = Math.PI / 2;
+  rivetCap.position.z = 0.174;
+  nippers.add(rivetCap);
+
+  // A detached canvas supplies the glow texture, with no network or DOM attachment.
+  const glowCanvas = document.createElement('canvas');
+  glowCanvas.width = glowCanvas.height = 128;
+  const glowContext = glowCanvas.getContext('2d');
+  const glowGradient = glowContext.createRadialGradient(64, 64, 0, 64, 64, 64);
+  glowGradient.addColorStop(0, 'rgba(255,255,255,1)');
+  glowGradient.addColorStop(0.12, 'rgba(220,248,255,0.9)');
+  glowGradient.addColorStop(0.38, 'rgba(100,203,255,0.22)');
+  glowGradient.addColorStop(1, 'rgba(70,160,255,0)');
+  glowContext.fillStyle = glowGradient;
+  glowContext.fillRect(0, 0, 128, 128);
+  const glowTexture = new THREE.CanvasTexture(glowCanvas);
+  function makeGlow() {
+    const sprite = new THREE.Sprite(new THREE.SpriteMaterial({map:glowTexture, color:0xc6f3ff, transparent:true, depthWrite:false, blending:THREE.AdditiveBlending}));
+    scene.add(sprite);
+    return sprite;
+  }
+  const snipGlow = makeGlow();
+  const frontGlow = makeGlow();
+  const shockRing = new THREE.Mesh(new THREE.RingGeometry(0.19, 0.205, 64),
+    new THREE.MeshBasicMaterial({color:0xc9f2ff, transparent:true, opacity:0, depthWrite:false, side:THREE.DoubleSide, blending:THREE.AdditiveBlending}));
+  shockRing.position.set(impactX-0.12, impactY, 0.77);
+  scene.add(shockRing);
+  const frontCap = new THREE.Mesh(new THREE.SphereGeometry(1, 28, 14),
+    new THREE.MeshBasicMaterial({color:0xe9fbff, transparent:true, opacity:0.9, depthWrite:false}));
+  scene.add(frontCap);
+
+  // Each fragment follows a fixed, seeded ballistic trajectory in the vertex shader.
+  function particleMaterial(color, fade) {
+    const material = new THREE.MeshStandardMaterial({color, metalness:0.63, roughness:0.19, flatShading:true, envMapIntensity:1.6});
+    material.onBeforeCompile = shader => {
+      shader.uniforms.uTime = timeUniform;
+      shader.vertexShader = shader.vertexShader.replace('#include <common>', `
+        #include <common>
+        attribute vec3 aVelocity;
+        attribute float aBirth;
+        attribute vec4 aSpin;
+        uniform float uTime;
+        vec3 particleRotate(vec3 p, vec3 axis, float angle) {
+          float c = cos(angle), s = sin(angle);
+          return p*c + cross(axis, p)*s + axis*dot(axis,p)*(1.0-c);
+        }
+      `).replace('#include <beginnormal_vertex>', `
+        float particleAge = max(0.0, uTime - aBirth);
+        vec3 objectNormal = particleRotate(normal, aSpin.xyz, particleAge*aSpin.w);
+        #ifdef USE_TANGENT
+          vec3 objectTangent = particleRotate(tangent.xyz, aSpin.xyz, particleAge*aSpin.w);
+        #endif
+      `).replace('#include <begin_vertex>', `
+        float particleLive = step(aBirth, uTime) * smoothstep(0.0, 0.085, particleAge);
+        ${fade ? 'particleLive *= 1.0 - smoothstep(1.0, 1.75, particleAge);' : ''}
+        vec3 transformed = particleRotate(position, aSpin.xyz, particleAge*aSpin.w) * particleLive;
+      `).replace('#include <project_vertex>', `
+        vec4 mvPosition = vec4(transformed, 1.0);
+        #ifdef USE_INSTANCING
+          mvPosition = instanceMatrix * mvPosition;
+        #endif
+        mvPosition.xyz += aVelocity * particleAge;
+        mvPosition.y -= ${fade ? '0.40' : '0.25'} * particleAge * particleAge;
+        mvPosition = modelViewMatrix * mvPosition;
+        gl_Position = projectionMatrix * mvPosition;
+      `);
+    };
+    material.customProgramCacheKey = () => fade ? 'metal-fragments' : 'glass-fragments';
+    return material;
+  }
+  function sampledSpine() {
+    return random() < 0.70 ? random()*0.40 : 0.40 + random()*0.60;
+  }
+  const unitQuaternion = new THREE.Quaternion();
+  const unitScale = new THREE.Vector3();
+  const tempMatrix = new THREE.Matrix4();
+  const tempColor = new THREE.Color();
+  function makeFragments(count, isMetal) {
+    const g = isMetal ? new THREE.IcosahedronGeometry(1, 1) : new THREE.OctahedronGeometry(1, 0);
+    const velocities = new Float32Array(count*3), births = new Float32Array(count), spins = new Float32Array(count*4);
+    const mesh = new THREE.InstancedMesh(g, particleMaterial(isMetal ? 0xa8adb0 : 0xa7d5dc, isMetal), count);
+    mesh.frustumCulled = false;
+    for (let i = 0; i < count; i++) {
+      let p, velocity, birth, size;
+      if (isMetal) {
+        birth = rand(1.22, 1.60);
+        p = new THREE.Vector3(impactX+rand(-0.08,0.09), impactY+rand(-0.12,0.12), rand(0.18,0.58));
+        velocity = new THREE.Vector3(rand(0.05,1.5), rand(-1.4,1.4), rand(-0.7,0.7));
+        size = rand(0.018, 0.065);
+      } else {
+        const s = sampledSpine(), a = rand(0,Math.PI*2), r = radiusAt(s)*Math.sqrt(random());
+        p = pointInDrop(s,a,r);
+        const outward = new THREE.Vector3(Math.cos(a)*rand(0.45,1.1), rand(-0.50,0.65), Math.sin(a)*rand(0.35,0.95)).normalize();
+        velocity = outward.multiplyScalar(rand(0.32,1.45));
+        birth = 4.4 + (1-s)*FRACTURE_SCREEN_SECONDS;
+        size = rand(0.012, 0.036) * (s < 0.4 ? 1.2 : 0.8);
+      }
+      velocities.set([velocity.x, velocity.y, velocity.z], i*3);
+      births[i] = birth;
+      const axis = new THREE.Vector3(rand(-1,1),rand(-1,1),rand(-1,1)).normalize();
+      spins.set([axis.x,axis.y,axis.z,rand(-5,5)],i*4);
+      unitQuaternion.setFromEuler(new THREE.Euler(rand(0,6.283),rand(0,6.283),rand(0,6.283)));
+      if (isMetal) unitScale.set(size*rand(0.65,1.1), size*rand(0.65,1.5), size*rand(0.65,1.1));
+      else unitScale.set(size*rand(0.25,0.65), size*rand(1.4,4.0), size*rand(0.25,0.65));
+      tempMatrix.compose(p, unitQuaternion, unitScale);
+      mesh.setMatrixAt(i, tempMatrix);
+      if (isMetal) tempColor.setHSL(rand(0.04,0.10),rand(0.03,0.28),rand(0.48,0.80));
+      else tempColor.setHSL(rand(0.49,0.57),rand(0.12,0.38),rand(0.52,0.92));
+      mesh.setColorAt(i,tempColor);
+    }
+    g.setAttribute('aVelocity',new THREE.InstancedBufferAttribute(velocities,3));
+    g.setAttribute('aBirth',new THREE.InstancedBufferAttribute(births,1));
+    g.setAttribute('aSpin',new THREE.InstancedBufferAttribute(spins,4));
+    mesh.instanceMatrix.needsUpdate = true;
+    if (mesh.instanceColor) mesh.instanceColor.needsUpdate = true;
+    scene.add(mesh);
+    return mesh;
+  }
+  makeFragments(3000, false);
+  makeFragments(130, true);
+
+  const dustUniforms = {
+    uTime: timeUniform,
+    uPointScale: {value: window.innerHeight * Math.min(window.devicePixelRatio || 1,2) / (2 * Math.tan(THREE.MathUtils.degToRad(35/2)))}
+  };
+  const dustCount = 2400;
+  const dustPositions = new Float32Array(dustCount*3), dustVelocities = new Float32Array(dustCount*3);
+  const dustBirths = new Float32Array(dustCount), dustSizes = new Float32Array(dustCount), dustLights = new Float32Array(dustCount);
+  for (let i = 0; i < dustCount; i++) {
+    const s = sampledSpine(), a = rand(0,Math.PI*2), p = pointInDrop(s,a,radiusAt(s)*Math.sqrt(random()));
+    dustPositions.set([p.x,p.y,p.z],i*3);
+    const speed = rand(0.25,1.7);
+    dustVelocities.set([Math.cos(a)*speed,rand(-0.65,0.9)*speed,Math.sin(a)*speed],i*3);
+    dustBirths[i] = 4.4+(1-s)*FRACTURE_SCREEN_SECONDS;
+    dustSizes[i] = rand(0.012,0.047);
+    dustLights[i] = rand(0.35,1.0);
+  }
+  const dustGeometry = new THREE.BufferGeometry();
+  dustGeometry.setAttribute('position',new THREE.BufferAttribute(dustPositions,3));
+  dustGeometry.setAttribute('aVelocity',new THREE.BufferAttribute(dustVelocities,3));
+  dustGeometry.setAttribute('aBirth',new THREE.BufferAttribute(dustBirths,1));
+  dustGeometry.setAttribute('aSize',new THREE.BufferAttribute(dustSizes,1));
+  dustGeometry.setAttribute('aLight',new THREE.BufferAttribute(dustLights,1));
+  const dust = new THREE.Points(dustGeometry, new THREE.ShaderMaterial({
+    uniforms:dustUniforms, transparent:true, depthWrite:false, blending:THREE.AdditiveBlending,
+    vertexShader:`
+      uniform float uTime;
+      uniform float uPointScale;
+      attribute vec3 aVelocity;
+      attribute float aBirth;
+      attribute float aSize;
+      attribute float aLight;
+      varying float vAlpha;
+      void main() {
+        float age = max(0.0, uTime-aBirth);
+        vec3 p = position + aVelocity*age;
+        p.y -= 0.25*age*age;
+        vec4 mv = modelViewMatrix*vec4(p,1.0);
+        vAlpha = step(aBirth,uTime)*smoothstep(0.0,0.12,age)*aLight;
+        gl_PointSize = max(1.0, aSize*uPointScale/-mv.z);
+        gl_Position = projectionMatrix*mv;
+      }
+    `,
+    fragmentShader:`
+      varying float vAlpha;
+      void main() {
+        float d = length(gl_PointCoord-vec2(0.5));
+        float glow = 1.0-smoothstep(0.05,0.5,d);
+        gl_FragColor = vec4(0.65,0.90,1.0,glow*vAlpha*0.78);
+      }
+    `
+  }));
+  dust.frustumCulled = false;
+  scene.add(dust);
+
+  // Surface cracks bifurcate as a bright, narrow band around the moving front.
+  const crackPositions = [], crackSpines = [];
+  for (let k = 0; k < 28; k++) {
+    const baseAngle = rand(0, Math.PI*2), phase = rand(0,Math.PI*2), amp = rand(0.1,0.55);
+    const from = rand(0,0.15), to = rand(0.65,1);
+    const segments = 90;
+    for (let j = 0; j < segments; j++) {
+      const s1=from+(to-from)*j/segments, s2=from+(to-from)*(j+1)/segments;
+      const a1=baseAngle+amp*Math.sin(s1*34+phase), a2=baseAngle+amp*Math.sin(s2*34+phase);
+      const p1=pointInDrop(s1,a1,radiusAt(s1)*1.012+0.006), p2=pointInDrop(s2,a2,radiusAt(s2)*1.012+0.006);
+      crackPositions.push(p1.x,p1.y,p1.z,p2.x,p2.y,p2.z);
+      crackSpines.push(s1,s2);
+    }
+  }
+  const crackGeometry = new THREE.BufferGeometry();
+  crackGeometry.setAttribute('position',new THREE.Float32BufferAttribute(crackPositions,3));
+  crackGeometry.setAttribute('aSpine',new THREE.Float32BufferAttribute(crackSpines,1));
+  const cracks = new THREE.LineSegments(crackGeometry,new THREE.ShaderMaterial({
+    uniforms:{uTime:timeUniform,uFront:frontUniform},transparent:true,depthWrite:false,blending:THREE.AdditiveBlending,
+    vertexShader:`attribute float aSpine; varying float vSpine; void main(){vSpine=aSpine; gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.0);}`,
+    fragmentShader:`uniform float uFront; uniform float uTime; varying float vSpine; void main(){float d=vSpine-uFront; float a=step(4.4,uTime)*smoothstep(-0.025,0.005,d)*(1.0-smoothstep(0.035,0.13,d)); gl_FragColor=vec4(0.8,0.96,1.0,a*0.9);}`
+  }));
+  scene.add(cracks);
+
+  function renderAt(t) {
+    t = clamp(t,0,DURATION);
+    timeUniform.value = t;
+    const physicalWaveTime = clamp((t-4.4)/FRACTURE_SCREEN_SECONDS,0,1) * FRACTURE_REAL_SECONDS;
+    const front = t < 4.4 ? 1.01 : Math.max(-0.01,1 - FRACTURE_SPEED_M_S * physicalWaveTime / PHYSICAL_DROP_LENGTH_M);
+    frontUniform.value = front;
+    cutUniform.value = t >= 3.8 ? 1 : 0;
+
+    const ringAge = Math.max(0,t-1.2);
+    const ringing = t >= 1.2 ? Math.sin(ringAge*42)*Math.exp(-ringAge*5.5)*0.032 : 0;
+    dropGroup.scale.set(1+ringing,1-ringing*0.30,1+ringing);
+
+    if (t < 1.2) {
+      bullet.visible = true;
+      bullet.position.set(9.0 + (impactX+0.49-9.0)*(t/1.2),impactY,0.14);
+      bullet.scale.set(1,1,1);
+      mushroomLip.visible = false;
+      bullet.rotation.set(0,0,0);
+    } else {
+      const squish = smooth(1.2,1.65,t);
+      const rebound = smooth(1.72,2.9,t);
+      mushroomLip.visible = squish > 0.001;
+      mushroomLip.scale.setScalar(squish);
+      bullet.visible = t < 3.1;
+      bullet.scale.set(1-0.79*squish,1+0.60*squish,1+0.60*squish);
+      bullet.position.set(impactX+0.49*bullet.scale.x+0.60*rebound,impactY-0.38*rebound*rebound,0.14+0.18*rebound);
+      bullet.rotation.z = -0.25*rebound;
+    }
+    bulletMaterial.opacity = copperMaterial.opacity = 1-smooth(2.4,3.1,t);
+
+    const closure = smooth(2.6,3.8,t);
+    const release = smooth(4.1,4.7,t);
+    const angle = 0.24*(1-closure) + 0.035 + 0.07*release;
+    upperArm.rotation.z = -angle;
+    lowerArm.rotation.z = angle;
+    nippers.position.x = 1.25 + 0.50*release;
+    nippers.position.y = tip.y + 0.18*release;
+
+    const impactGlow = t >= 1.2 ? Math.exp(-(t-1.2)*5.5) : 0;
+    shockRing.visible = impactGlow > 0.005;
+    shockRing.material.opacity = impactGlow*0.58;
+    shockRing.scale.setScalar(1+ringAge*2.8);
+
+    const flash = t >= 3.8 ? Math.exp(-(t-3.8)*6.5) : 0;
+    snipGlow.visible = flash > 0.006;
+    snipGlow.position.set(tip.x,tip.y,0.35);
+    snipGlow.scale.setScalar(0.32+flash*1.25);
+    snipGlow.material.opacity = flash;
+
+    const waveVisible = t >= 4.4 && t < 5.8;
+    frontGlow.visible = waveVisible;
+    frontCap.visible = waveVisible;
+    if (waveVisible) {
+      const s = clamp(front,0,1), f=frameAt(s), r=radiusAt(s);
+      frontCap.position.copy(f.p);
+      frontCap.quaternion.setFromUnitVectors(new THREE.Vector3(0,1,0),f.tangent);
+      frontCap.scale.set(r*1.01,0.025+r*0.07,r*1.01);
+      frontGlow.position.copy(f.p).add(new THREE.Vector3(0,0,0.2));
+      frontGlow.scale.setScalar(0.24+r*1.0);
+      frontGlow.material.opacity = 0.35;
+    }
+    renderer.render(scene,camera);
+  }
+
+  let state = COUNTDOWN;
+  let simTime = 0;
+  let playbackSpeed = 1;
+  let countdownElapsed = 0;
+  let holdElapsed = 0;
+  let lastWall = null;
+  let firstFrame = true;
+  function hideCountdown() {
+    countdown.style.display = 'none';
+    countdown.textContent = '';
+  }
+  function updateToggle() {
+    const running = state === PLAYING || state === COUNTDOWN || state === REFIRE_HOLD;
+    iconPause.style.display = running ? '' : 'none';
+    iconPlay.style.display = running ? 'none' : '';
+    toggle.setAttribute('aria-label',running ? 'Pause' : 'Play');
+  }
+  function setSlider() {
+    scrubber.value = simTime.toFixed(3);
+  }
+  toggle.addEventListener('click', () => {
+    if (state === PLAYING) {
+      state = PAUSED;
+    } else if (state === COUNTDOWN || state === REFIRE_HOLD) {
+      hideCountdown();
+      simTime = 0;
+      scrubber.value = '0';
+      state = PAUSED;
+      renderAt(simTime);
+    } else if (state === ENDED) {
+      simTime = 0;
+      scrubber.value = '0';
+      hideCountdown();
+      state = PLAYING;
+      renderAt(simTime);
+    } else {
+      state = PLAYING;
+    }
+    lastWall = performance.now();
+    updateToggle();
+  });
+  refire.addEventListener('click', () => {
+    hideCountdown();
+    simTime = 0;
+    scrubber.value = '0';
+    countdownElapsed = 0;
+    holdElapsed = 0;
+    state = REFIRE_HOLD;
+    lastWall = performance.now();
+    updateToggle();
+    renderAt(0);
+  });
+  scrubber.addEventListener('input', () => {
+    hideCountdown();
+    simTime = clamp(parseFloat(scrubber.value) || 0,0,DURATION);
+    state = PAUSED;
+    lastWall = performance.now();
+    updateToggle();
+    renderAt(simTime);
+  });
+  speedPills.forEach(pill => pill.addEventListener('click', () => {
+    playbackSpeed = parseFloat(pill.dataset.speed);
+    speedPills.forEach(item => {
+      const selected = item === pill;
+      item.classList.toggle('is-active',selected);
+      item.setAttribute('aria-checked',selected ? 'true' : 'false');
+    });
+  }));
+  window.addEventListener('resize',resize);
+
+  // The resting frame is submitted before the first countdown animation frame.
+  resize();
+  renderAt(0);
+  function tick(now) {
+    if (firstFrame) {
+      firstFrame = false;
+      lastWall = now;
+      if (state === COUNTDOWN) {
+        countdownElapsed = 0;
+        countdown.textContent = '3';
+        countdown.style.display = 'block';
+      }
+      requestAnimationFrame(tick);
+      return;
+    }
+    const dt = lastWall === null ? 0 : Math.min(Math.max(0,(now-lastWall)/1000),0.1);
+    lastWall = now;
+    if (state === COUNTDOWN) {
+      countdownElapsed += dt;
+      if (countdownElapsed < 3) {
+        countdown.textContent = String(3-Math.floor(countdownElapsed));
+        countdown.style.display = 'block';
+      } else {
+        hideCountdown();
+        state = PLAYING;
+        simTime = Math.min(DURATION,(countdownElapsed-3)*playbackSpeed);
+        setSlider();
+        renderAt(simTime);
+        updateToggle();
+      }
+    } else if (state === REFIRE_HOLD) {
+      holdElapsed += dt;
+      if (holdElapsed >= 1) {
+        state = PLAYING;
+        simTime = Math.min(DURATION,(holdElapsed-1)*playbackSpeed);
+        setSlider();
+        renderAt(simTime);
+        updateToggle();
+      }
+    } else if (state === PLAYING) {
+      simTime = Math.min(DURATION,simTime+dt*playbackSpeed);
+      setSlider();
+      renderAt(simTime);
+      if (simTime >= DURATION) {
+        simTime = DURATION;
+        scrubber.value = DURATION.toFixed(3);
+        state = ENDED;
+        updateToggle();
+      }
+    }
+    requestAnimationFrame(tick);
+  }
+  requestAnimationFrame(tick);
+});
+</script>
+</head>
+<body>
+<canvas id="stage"></canvas>
+<div id="countdown" aria-hidden="true">3</div>
+
+<div id="dock" role="toolbar" aria-label="Simulation Controls">
+  <button id="btn-refire" type="button" aria-label="Re-fire" title="Re-fire">
+    <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+      <path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.19"/>
+    </svg>
+    <span>Re-fire</span>
+  </button>
+  <span class="dock-sep" aria-hidden="true"></span>
+  <button id="btn-toggle" type="button" aria-label="Pause" title="Play / Pause">
+    <svg id="icon-pause" viewBox="0 0 24 24" width="14" height="14" fill="currentColor" aria-hidden="true">
+      <rect x="6" y="4" width="4" height="16" rx="1"/>
+      <rect x="14" y="4" width="4" height="16" rx="1"/>
+    </svg>
+    <svg id="icon-play" viewBox="0 0 24 24" width="14" height="14" fill="currentColor" aria-hidden="true" style="display:none;">
+      <path d="M8 5v14l11-7z"/>
+    </svg>
+  </button>
+  <span class="dock-sep" aria-hidden="true"></span>
+  <div id="speed-group" role="radiogroup" aria-label="Playback Speed">
+    <button class="speed-pill" type="button" role="radio" aria-checked="false" data-speed="0.25">0.25×</button>
+    <button class="speed-pill" type="button" role="radio" aria-checked="false" data-speed="0.5">0.5×</button>
+    <button class="speed-pill is-active" type="button" role="radio" aria-checked="true" data-speed="1.0">1.0×</button>
+    <button class="speed-pill" type="button" role="radio" aria-checked="false" data-speed="2.0">2.0×</button>
+  </div>
+  <span class="dock-sep" aria-hidden="true"></span>
+  <input id="scrubber" type="range" min="0" max="8" step="0.001" value="0" aria-label="Timeline Scrubber">
+</div>
+</body>
+</html>

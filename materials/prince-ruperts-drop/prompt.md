@@ -42,7 +42,7 @@ Simulate the sequential physical phases across the exact active simulation timel
 Define total active duration `const DURATION = 8;` (in seconds) and implement the following exact 5-state playback state machine (`COUNTDOWN`, `PLAYING`, `PAUSED`, `REFIRE_HOLD`, `ENDED`):
 
 1. **Initial Launch (`COUNTDOWN` State — Exactly 3.000s Wall-Clock):**
-   - Start `COUNTDOWN` on the first `requestAnimationFrame` callback after the initial resting scene (`simTime = 0.000`) has rendered (`countdownElapsed = 0`).
+   - Start `COUNTDOWN` on the first `requestAnimationFrame` callback after the initial resting scene (`simTime = 0.000`) has rendered (`countdownElapsed = 0`), advancing `countdownElapsed` by clamped wall `dt = Math.min(rawDt, 0.1)` each frame so cold-start shader compilation never skips `"3"`.
    - While `0.000 <= countdownElapsed < 3.000` (measured in real wall-clock seconds, **unaffected** by the speed selector):
      - `0.000 <= countdownElapsed < 1.000`: `#countdown` is visible (`display: block`) with text `"3"`.
      - `1.000 <= countdownElapsed < 2.000`: `#countdown` is visible with text `"2"`.

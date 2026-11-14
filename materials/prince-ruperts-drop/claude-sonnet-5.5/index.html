@@ -1,0 +1,1726 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Prince Rupert's Drop: Bullet Impact vs. Tail Snip</title>
+<style>
+*, *::before, *::after {
+  box-sizing: border-box;
+}
+html, body {
+  margin: 0;
+  padding: 0;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  background: radial-gradient(circle at center, #161922 0%, #090a0f 100%);
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -webkit-user-select: none;
+  user-select: none;
+}
+#stage {
+  display: block;
+  width: 100vw;
+  height: 100vh;
+}
+
+#countdown {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 50;
+  pointer-events: none;
+  font-size: 96px;
+  font-weight: 700;
+  line-height: 1;
+  color: rgba(255, 255, 255, 0.35);
+  font-variant-numeric: tabular-nums;
+}
+
+#dock {
+  position: fixed;
+  bottom: 24px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 100;
+  width: 536px;
+  height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 0 14px;
+  background: rgba(15, 17, 23, 0.78);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 9999px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.35);
+}
+
+#dock button {
+  font-family: inherit;
+  line-height: 1;
+  margin: 0;
+  flex-shrink: 0;
+  white-space: nowrap;
+  appearance: none;
+  -webkit-appearance: none;
+}
+
+.dock-sep {
+  width: 1px;
+  height: 18px;
+  flex-shrink: 0;
+  background: rgba(255, 255, 255, 0.12);
+}
+
+#btn-refire {
+  width: 78px;
+  height: 28px;
+  padding: 0 10px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 9999px;
+  color: #ffffff;
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+}
+#btn-refire:hover {
+  background: rgba(255, 255, 255, 0.16);
+}
+
+#btn-toggle {
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 9999px;
+  color: #ffffff;
+  cursor: pointer;
+}
+#btn-toggle:hover {
+  background: rgba(255, 255, 255, 0.16);
+}
+
+#speed-group {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  flex-shrink: 0;
+}
+.speed-pill {
+  width: 42px;
+  height: 24px;
+  padding: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 9999px;
+  color: rgba(255, 255, 255, 0.6);
+  font-size: 11px;
+  font-weight: 500;
+  font-variant-numeric: tabular-nums;
+  cursor: pointer;
+}
+.speed-pill:hover {
+  color: #ffffff;
+  background: rgba(255, 255, 255, 0.06);
+}
+.speed-pill.is-active {
+  color: #ffffff;
+  background: rgba(255, 255, 255, 0.18);
+  border-color: rgba(255, 255, 255, 0.2);
+}
+
+#scrubber {
+  width: 157px;
+  height: 4px;
+  margin: 0;
+  padding: 0;
+  flex-shrink: 0;
+  appearance: none;
+  -webkit-appearance: none;
+  background: rgba(255, 255, 255, 0.22);
+  border-radius: 9999px;
+  outline: none;
+  cursor: pointer;
+}
+#scrubber::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: #ffffff;
+  border: none;
+  cursor: pointer;
+}
+#scrubber::-moz-range-thumb {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: #ffffff;
+  border: none;
+  cursor: pointer;
+}
+</style>
+</head>
+<body>
+<canvas id="stage"></canvas>
+<div id="countdown" aria-hidden="true">3</div>
+
+<div id="dock" role="toolbar" aria-label="Simulation Controls">
+  <button id="btn-refire" type="button" aria-label="Re-fire" title="Re-fire">
+    <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+      <path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.19"/>
+    </svg>
+    <span>Re-fire</span>
+  </button>
+  <span class="dock-sep" aria-hidden="true"></span>
+  <button id="btn-toggle" type="button" aria-label="Pause" title="Play / Pause">
+    <svg id="icon-pause" viewBox="0 0 24 24" width="14" height="14" fill="currentColor" aria-hidden="true">
+      <rect x="6" y="4" width="4" height="16" rx="1"/>
+      <rect x="14" y="4" width="4" height="16" rx="1"/>
+    </svg>
+    <svg id="icon-play" viewBox="0 0 24 24" width="14" height="14" fill="currentColor" aria-hidden="true" style="display:none;">
+      <path d="M8 5v14l11-7z"/>
+    </svg>
+  </button>
+  <span class="dock-sep" aria-hidden="true"></span>
+  <div id="speed-group" role="radiogroup" aria-label="Playback Speed">
+    <button class="speed-pill" type="button" role="radio" aria-checked="false" data-speed="0.25">0.25×</button>
+    <button class="speed-pill" type="button" role="radio" aria-checked="false" data-speed="0.5">0.5×</button>
+    <button class="speed-pill is-active" type="button" role="radio" aria-checked="true" data-speed="1.0">1.0×</button>
+    <button class="speed-pill" type="button" role="radio" aria-checked="false" data-speed="2.0">2.0×</button>
+  </div>
+  <span class="dock-sep" aria-hidden="true"></span>
+  <input id="scrubber" type="range" min="0" max="8" step="0.001" value="0" aria-label="Timeline Scrubber">
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+'use strict';
+/* =====================================================================
+   PRINCE RUPERT'S DROP — BULLET IMPACT vs. TAIL SNIP
+   Everything visible is a pure function of simTime (renderAt), driven by
+   analytic particle motion in the vertex shaders and a seed-42 PRNG that
+   is only consumed while the procedural data is generated at start-up.
+   ===================================================================== */
+
+/* ------------------------------------------------------------------ *
+ * 1. Constants, timeline anchors, tiny helpers
+ * ------------------------------------------------------------------ */
+const DURATION = 8;
+const FOV_DEG = 35;           // 85 mm-equivalent narrow lens
+const SEED = 42;
+
+const T_IMPACT  = 1.2;        // lead nose touches the bulb
+const T_PULSE_A = 2.6;        // photoelastic pulse window
+const T_PULSE_B = 3.8;
+const T_TOUCH   = 3.8;        // jaws reach the tail
+const T_SNIP    = 4.06;       // tail tip severed
+const T_FRONT_A = 4.4;        // fracture front leaves the tail  (s = 1)
+const T_FRONT_B = 5.8;        // ... and arrives at the bulb      (s = 0)
+const T_BURST   = 5.8;        // catastrophic radial disintegration
+const BAND_W    = 0.08;       // opaque white crack band width (in s)
+
+const BULB_R = 0.62;          // bulb radius (world units)
+const V_BULLET = 5.0;         // bullet speed (units / s) before contact: the nose starts 6 units right of the bulb, just off-screen
+
+function mulberry32(a) {
+  return function () {
+    a |= 0; a = (a + 0x6D2B79F5) | 0;
+    let t = Math.imul(a ^ (a >>> 15), 1 | a);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+let rng = mulberry32(SEED);
+function resetRng() { rng = mulberry32(SEED); }
+const rand = () => rng();
+
+const clamp = (x, a, b) => Math.min(b, Math.max(a, x));
+const lerp = (a, b, t) => a + (b - a) * t;
+const sstep = (a, b, x) => { const t = clamp((x - a) / (b - a), 0, 1); return t * t * (3 - 2 * t); };
+const deg = (d) => d * Math.PI / 180;
+/* r128 materials are linear: decode the sRGB hex so "dark grey" really is dark */
+const srgb = (hex) => new THREE.Color(hex).convertSRGBToLinear();
+
+/* ------------------------------------------------------------------ *
+ * 2. DOM handles and playback state
+ * ------------------------------------------------------------------ */
+const elCountdown = document.getElementById('countdown');
+const elToggle = document.getElementById('btn-toggle');
+const elRefire = document.getElementById('btn-refire');
+const elIconPause = document.getElementById('icon-pause');
+const elIconPlay = document.getElementById('icon-play');
+const elScrubber = document.getElementById('scrubber');
+const elPills = Array.prototype.slice.call(document.querySelectorAll('.speed-pill'));
+
+let state = 'COUNTDOWN';      // COUNTDOWN | PLAYING | PAUSED | REFIRE_HOLD | ENDED
+let simTime = 0;
+let playbackSpeed = 1;
+let countdownElapsed = 0;
+let holdElapsed = 0;
+let lastTs = null;
+let needsRender = true;
+
+/* three.js objects (assigned in initGraphics) */
+let renderer = null, scene = null, camera = null, envTex = null, SP = null;
+let gfxOK = false;
+const G = {};                 // scene references used by renderAt
+
+/* ------------------------------------------------------------------ *
+ * 3. GLSL building blocks
+ * ------------------------------------------------------------------ */
+const GLSL_NOISE = `
+float h11( float p ) { p = fract( p * .1031 ); p *= p + 33.33; p *= p + p; return fract( p ); }
+float h21( vec2 p ) { vec3 p3 = fract( vec3( p.xyx ) * .1031 ); p3 += dot( p3, p3.yzx + 33.33 ); return fract( ( p3.x + p3.y ) * p3.z ); }
+vec2 h22( vec2 p ) { vec3 p3 = fract( vec3( p.xyx ) * vec3( .1031, .1030, .0973 ) ); p3 += dot( p3, p3.yzx + 33.33 ); return fract( ( p3.xx + p3.yz ) * p3.zy ); }
+float h31( vec3 p ) { p = fract( p * .1031 ); p += dot( p, p.zyx + 31.32 ); return fract( ( p.x + p.y ) * p.z ); }
+float vn2( vec2 p ) {
+  vec2 i = floor( p ), f = fract( p ); f = f * f * ( 3. - 2. * f );
+  return mix( mix( h21( i ), h21( i + vec2( 1., 0. ) ), f.x ), mix( h21( i + vec2( 0., 1. ) ), h21( i + vec2( 1., 1. ) ), f.x ), f.y );
+}
+float vn3( vec3 p ) {
+  vec3 i = floor( p ), f = fract( p ); f = f * f * ( 3. - 2. * f );
+  return mix( mix( mix( h31( i ), h31( i + vec3( 1., 0., 0. ) ), f.x ), mix( h31( i + vec3( 0., 1., 0. ) ), h31( i + vec3( 1., 1., 0. ) ), f.x ), f.y ),
+              mix( mix( h31( i + vec3( 0., 0., 1. ) ), h31( i + vec3( 1., 0., 1. ) ), f.x ), mix( h31( i + vec3( 0., 1., 1. ) ), h31( i + vec3( 1., 1., 1. ) ), f.x ), f.y ), f.z );
+}
+vec3 rotAxis( vec3 v, vec3 k, float a ) { float c = cos( a ), s = sin( a ); return v * c + cross( k, v ) * s + k * dot( k, v ) * ( 1. - c ); }
+`;
+
+/* analytic particle motion shared by needles and dust:
+   slow swelling while the front passes, then a drag-limited radial burst
+   at T_BURST, with a drag-limited downward drift (gravity). */
+const GLSL_MOTION = `
+vec3 particleOffset( float tAct, vec3 dir, float vSlow, float vBurst, float vTerm, float tBurst, float t ) {
+  float age = max( t - tAct, 0.0 );
+  float a1 = max( min( t, tBurst ) - tAct, 0.0 );
+  float a2 = max( t - max( tBurst, tAct ), 0.0 );
+  float disp = vSlow * a1 + vBurst * ( 1.0 - exp( -1.6 * a2 ) ) / 1.6;
+  vec3 off = dir * disp;
+  off.y -= vTerm * ( age - ( 1.0 - exp( -1.1 * age ) ) / 1.1 );
+  return off;
+}
+`;
+
+function patch(src, token, repl, label) {
+  if (src.indexOf(token) < 0) { console.error('[patch] token missing: ' + token + ' (' + label + ')'); return src; }
+  return src.replace(token, function () { return repl; });
+}
+
+/* ---------------- glass: vertex ---------------- */
+const GLASS_VERT_PARS = `
+attribute float aS;
+attribute float aPhi;
+attribute float aRad;
+uniform float uPush;
+uniform float uClampS;
+varying float vS;
+varying float vPhi;
+varying float vRad;
+varying vec3 vWPos;
+`;
+const GLASS_VERT_BEGIN = `
+vec3 transformed = vec3( position );
+{
+  float wb = 1.0 - smoothstep( 0.0, uClampS, aS );
+  wb *= wb;
+  transformed.x -= uPush * wb;            /* elastic ringing: the bulb is pushed back and rings */
+  transformed.y += uPush * 0.10 * wb;
+}
+vS = aS; vPhi = aPhi; vRad = aRad;
+`;
+const GLASS_VERT_PROJ = `
+#include <project_vertex>
+vWPos = ( modelMatrix * vec4( transformed, 1.0 ) ).xyz;
+`;
+
+/* ---------------- glass: fragment ---------------- */
+const GLASS_FRAG_PARS = GLSL_NOISE + `
+uniform float uTime;
+uniform float uFront;       /* fracture-front position in s (>= 2 : inactive) */
+uniform float uCutS;
+uniform float uSnip;
+uniform float uNuc;
+uniform float uStress;
+uniform float uPulse;
+uniform float uRing;
+uniform float uImpactT;
+uniform vec3 uImpactPos;
+uniform float uTransGain;
+varying float vS;
+varying float vPhi;
+varying float vRad;
+varying vec3 vWPos;
+
+/* cellular crack network: x = F1, y = F2, z = cell id; periodic in the angular direction */
+vec3 vor( vec2 p, float nth ) {
+  vec2 ip = floor( p ), fp = fract( p );
+  float F1 = 9.0, F2 = 9.0, id = 0.0;
+  for ( int j = -1; j <= 1; j ++ ) {
+    for ( int i = -1; i <= 1; i ++ ) {
+      vec2 g = vec2( float( i ), float( j ) );
+      vec2 cell = ip + g;
+      cell.x = mod( cell.x, nth );
+      vec2 o = h22( cell );
+      vec2 r = g + o - fp;
+      float d = dot( r, r );
+      if ( d < F1 ) { F2 = F1; F1 = d; id = h21( cell + 7.3 ); }
+      else if ( d < F2 ) { F2 = d; }
+    }
+  }
+  return vec3( sqrt( F1 ), sqrt( F2 ), id );
+}
+
+/* cross-polarised photoelastic colour for a retardation Rnm (nm) */
+vec3 isochromatic( float Rnm ) {
+  vec3 lam = vec3( 640.0, 540.0, 455.0 );
+  vec3 s = sin( 3.14159265 * Rnm / lam );
+  return s * s;
+}
+`;
+
+const GLASS_FRAG_PROLOGUE = `
+float dF = -9.0;
+float milk = 0.0, hotLine = 0.0, leadLine = 0.0, glowA = 0.0, crackA = 0.0, crackB = 0.0, spark = 0.0, frostN = 0.5;
+if ( uSnip > 0.5 && vS > uCutS ) discard;                       /* the severed tip is gone */
+if ( uFront < 2.0 ) {
+  float ca = cos( vPhi ), sa = sin( vPhi );
+  float jag = ( vn3( vec3( ca * 1.6, sa * 1.6, vS * 34.0 ) ) - 0.5 ) * 0.052
+            + ( vn3( vec3( ca * 3.7 + 4.0, sa * 3.7, vS * 88.0 ) ) - 0.5 ) * 0.026;
+  dF = vS + jag - uFront;                                       /* > 0 : fractured side (toward the tail) */
+  float dissolve = ${BAND_W.toFixed(3)} * ( 0.62 + 1.10 * vn3( vec3( ca * 2.2, sa * 2.2 + 7.0, vS * 52.0 ) ) );
+  if ( dF > dissolve ) discard;
+  if ( dF > -0.46 ) {
+    vec2 pc = vec2( vPhi / 6.2831853 * 28.0, vS * 34.0 );
+    vec3 vorA = vor( pc, 28.0 );
+    vec3 vorB = vor( vec2( pc.x * 2.0, pc.y * 2.1 ) + 11.0, 56.0 );
+    crackA = 1.0 - smoothstep( 0.0, 0.065, vorA.y - vorA.x );
+    crackB = 1.0 - smoothstep( 0.0, 0.085, vorB.y - vorB.x );
+    float reach = mix( 0.05, 0.17, step( 0.78, vorA.z ) );      /* some cracks race far ahead: bifurcation */
+    leadLine = ( crackA * 0.80 + crackB * 0.40 ) * ( 1.0 - smoothstep( 0.0, reach, - dF ) ) * step( dF, 0.0 ) * uNuc;
+    milk = smoothstep( -0.008, 0.012, dF );
+    frostN = vn3( vec3( ca * 7.0, sa * 7.0, vS * 170.0 ) );
+    float hq = ( dF - 0.004 ) / 0.011;
+    hotLine = exp( - hq * hq ) * uNuc;
+    glowA = exp( min( dF, 0.0 ) / 0.06 ) * uNuc;
+    spark = step( 0.965, h21( floor( pc * 3.0 ) + 0.5 ) ) * ( 0.5 + 0.5 * sin( uTime * 40.0 + h21( floor( pc * 3.0 ) ) * 30.0 ) );
+  }
+}
+`;
+
+function glassFragTail(back) {
+  return `
+{
+  vec3 Nw = normalize( inverseTransformDirection( normal, viewMatrix ) );
+  vec3 Vw = normalize( cameraPosition - vWPos );
+  float NoV = clamp( dot( Nw, Vw ), 0.0, 1.0 );
+  float Fr = 0.04 + 0.96 * pow( 1.0 - NoV, 5.0 );
+  vec3 spec = reflectedLight.directSpecular + reflectedLight.indirectSpecular;
+  vec3 col = spec * ${back ? '1.35' : '1.10'};
+${back ? `  col *= 1.0 + ( vRad + vS + vPhi + vWPos.x + normal.x ) * 1e-5;   /* keep every varying live in this pass */
+` : `
+  /* ---- light transmitted through the solid: ball-lens exit ray ---- */
+  vec3 dI = - Vw;
+  float sinI = sqrt( max( 0.0, 1.0 - NoV * NoV ) );
+  float thI = asin( clamp( sinI, 0.0, 1.0 ) );
+  float thT = asin( clamp( sinI / 1.5, 0.0, 1.0 ) );
+  float Dv = 2.0 * ( thI - thT );
+  vec3 Np = Nw - dot( Nw, dI ) * dI;
+  vec3 tdir = - Np / max( length( Np ), 1e-4 );
+  vec3 dOut = normalize( dI * cos( Dv ) + tdir * sin( Dv ) );
+  vec3 trans = textureCubeUV( envMap, dOut, 0.06 ).rgb * envMapIntensity;
+  float thick = 2.0 * vRad * cos( thT );
+  vec3 tint = exp( - vec3( 1.2, 0.30, 0.55 ) * thick * 0.9 );
+  col += trans * tint * ( 1.0 - Fr ) * uTransGain;
+
+  /* ---- cross-polarised photoelastic birefringence (core -> surface gradient) ---- */
+  float b = sqrt( max( 0.0, 1.0 - NoV * NoV ) );
+  float prof = pow( b, 1.45 ) * ( 1.0 + 0.5 * cos( 8.0 * b ) );
+  float thk = 0.30 + 0.70 * smoothstep( 0.03, 0.45, vRad );
+  float Rn = 1500.0 * prof * thk;
+  Rn += uPulse * 520.0 * ( 0.5 + 0.5 * sin( 6.2831853 * ( vS * 3.0 - ( uTime - ${T_PULSE_A.toFixed(1)} ) * 0.85 ) ) ) * thk;
+  float dIm = length( vWPos - uImpactPos );
+  float waveR = 3.4 * max( uImpactT, 0.0 );
+  float rq = ( dIm - waveR ) / 0.26;
+  float ringEnv = exp( - rq * rq ) * exp( - max( uImpactT, 0.0 ) * 1.3 ) * step( 0.0, uImpactT );
+  Rn += 900.0 * ringEnv;
+  Rn += 260.0 * uRing * sin( 14.0 * dIm - 22.0 * uImpactT ) * exp( - 0.9 * dIm );
+  vec3 fr = isochromatic( Rn );
+  col += fr * uStress * ( 0.55 + 0.45 * b ) * 0.40;
+  col += vec3( 0.55, 0.75, 1.0 ) * ringEnv * 0.45;
+`}
+  /* ---- fracture: crack lead-in, opaque white crazed band, hot front ---- */
+  float passK = ${back ? '0.28' : '0.72'};
+  float crk = clamp( crackA * 0.85 + crackB * 0.45, 0.0, 1.0 );
+  float bandFade = 1.0 - 0.55 * smoothstep( 0.0, ${BAND_W.toFixed(3)}, dF );
+  vec3 milkCol = mix( vec3( 0.30, 0.40, 0.58 ), vec3( 0.95, 0.98, 1.0 ), crk ) * ( 0.70 + 0.30 * frostN ) * bandFade;
+  col = mix( col, milkCol + spec * 0.35, milk * passK * 0.92 );
+  col += vec3( 0.62, 0.82, 1.0 ) * leadLine * 0.9 * passK;
+  col += vec3( 0.60, 0.84, 1.0 ) * hotLine * ( 0.80 + 0.35 * milk ) * passK;
+  col += vec3( 0.22, 0.42, 0.85 ) * glowA * 0.12 * passK;
+  col += vec3( 1.0 ) * spark * milk * 0.9 * passK;
+  gl_FragColor = vec4( col, 1.0 );
+}
+`;
+}
+const GLASS_FRAG_ALPHA = `
+#include <dithering_fragment>
+gl_FragColor.a = clamp( max( gl_FragColor.r, max( gl_FragColor.g, gl_FragColor.b ) ), 0.0, 1.0 );
+`;
+
+/* ---------------- needle shards ---------------- */
+const SHARD_VERT_PARS = GLSL_MOTION + GLSL_NOISE + `
+attribute vec4 aA;   /* p0.xyz, length */
+attribute vec4 aB;   /* needle axis.xyz, thickness */
+attribute vec4 aC;   /* burst direction.xyz, activation time */
+attribute vec4 aD;   /* spin axis.xyz, spin rate */
+attribute vec4 aE;   /* v1, v2, vTerm, tBurst */
+uniform float uTime;
+varying float vAct;
+varying float vSeed;
+`;
+const SHARD_VERT_BEGIN = `
+float nAge = uTime - aC.w;
+vec3 axisA = aB.xyz;
+vec3 upv = abs( axisA.y ) < 0.95 ? vec3( 0.0, 1.0, 0.0 ) : vec3( 1.0, 0.0, 0.0 );
+vec3 sideA = normalize( cross( upv, axisA ) );
+vec3 upA = cross( axisA, sideA );
+vec3 lp = position;
+vec3 local = axisA * ( lp.x * aA.w ) + upA * ( lp.y * aB.w ) + sideA * ( lp.z * aB.w );
+float ang = aD.w * ( 1.0 - exp( -1.2 * max( nAge, 0.0 ) ) ) / 1.2;
+local = rotAxis( local, aD.xyz, ang );
+vec3 off = particleOffset( aC.w, aC.xyz, aE.x, aE.y, aE.z, aE.w, uTime );
+float grow = smoothstep( 0.0, 0.05, nAge );
+vec3 transformed = aA.xyz + off + local * grow;
+vAct = aC.w;
+vSeed = h31( aA.xyz * 17.0 );
+`;
+const SHARD_VERT_ALIVE = `
+#include <project_vertex>
+if ( nAge < 0.0 ) gl_Position = vec4( 2.0, 2.0, 2.0, 1.0 );
+`;
+const SHARD_FRAG_PARS = `
+uniform float uTime;
+varying float vAct;
+varying float vSeed;
+`;
+const SHARD_FRAG_TAIL = `
+{
+  vec3 spec = reflectedLight.directSpecular + reflectedLight.indirectSpecular;
+  float facing = clamp( dot( normal, normalize( vViewPosition ) ), 0.0, 1.0 );
+  float age = uTime - vAct;
+  float fade = smoothstep( 0.0, 0.10, age );
+  float hot = exp( - age * 3.2 );
+  float tw = 0.65 + 0.35 * sin( uTime * ( 6.0 + 10.0 * vSeed ) + vSeed * 50.0 );
+  vec3 col = spec * 1.7 * ( 0.7 + 0.6 * tw );
+  col += vec3( 0.30, 0.42, 0.56 ) * ( 0.022 + 0.085 * pow( 1.0 - facing, 2.0 ) );
+  col += vec3( 0.55, 0.78, 1.0 ) * hot * 0.26;
+  col *= fade;
+  gl_FragColor = vec4( col, 1.0 );
+}
+`;
+
+/* ---------------- bullet: mushrooming morph + rim dissolve ---------------- */
+const BULLET_VERT_PARS = GLSL_NOISE + `
+attribute vec2 aP1;      /* mushroom profile (axial, radial) */
+attribute vec2 aN1;      /* mushroom profile normal */
+attribute vec2 aST;      /* sigma along the profile, theta around the axis */
+uniform float uTau;
+varying vec3 vBPos;
+varying float vBRho;
+float bullWeight( float sig, float tau ) {
+  float t = clamp( ( tau - sig * 0.26 ) / 0.30, 0.0, 1.0 );
+  return 1.0 - pow( 1.0 - t, 2.6 );
+}
+`;
+const BULLET_VERT_NORMAL = `
+float bSig = aST.x;
+float bTh = aST.y;
+vec2 bdir = vec2( cos( bTh ), sin( bTh ) );
+vec2 bP0 = vec2( position.x, length( position.yz ) );
+vec2 bN0 = vec2( normal.x, length( normal.yz ) );
+float bw = bullWeight( bSig, uTau );
+vec2 bP = mix( bP0, aP1, bw );
+vec2 bN = mix( bN0, aN1, bw );
+bN = bN / max( length( bN ), 1e-4 );
+float rimM = smoothstep( 0.50, 0.62, bSig ) * ( 1.0 - smoothstep( 0.80, 0.92, bSig ) );
+float pet = 1.0 + bw * rimM * ( 0.16 * sin( 7.0 * bTh + 0.9 ) + 0.07 * sin( 13.0 * bTh + 2.1 ) );
+bP.y *= pet;
+vec3 objectNormal = vec3( bN.x, bN.y * bdir );
+`;
+const BULLET_VERT_BEGIN = `
+vec3 transformed = vec3( bP.x, bP.y * bdir );
+vBPos = transformed;
+vBRho = bP.y;
+`;
+const BULLET_FRAG_PARS = GLSL_NOISE + `
+uniform float uTau;
+varying vec3 vBPos;
+varying float vBRho;
+`;
+const BULLET_FRAG_PROLOGUE = `
+float dissEdge = 0.0;
+if ( uTau > 0.30 ) {
+  float dn = vn3( vBPos * 11.0 + 3.7 ) * 0.62 + vn3( vBPos * 27.0 ) * 0.38;
+  float rimR = clamp( vBRho / 0.54, 0.0, 1.0 );
+  float key = dn * 0.75 + ( 1.0 - rimR ) * 0.55;
+  float thr = smoothstep( 0.30, 1.28, uTau ) * 1.45 - 0.05;
+  if ( key < thr ) discard;
+  dissEdge = 1.0 - smoothstep( 0.0, 0.09, key - thr );
+}
+`;
+
+/* ---------------- spall droplets ---------------- */
+const SPALL_VERT_PARS = `
+attribute vec4 aS0;   /* spawn offset.xyz, size */
+attribute vec4 aS1;   /* velocity.xyz, delay */
+attribute vec4 aS2;   /* spin axis.xyz, spin rate */
+attribute vec4 aS3;   /* life, hot, -, stretch */
+uniform float uTau;
+uniform vec3 uContact;
+varying float vHot;
+` + GLSL_NOISE;
+const SPALL_VERT_BEGIN = `
+float sAge = uTau - aS1.w;
+float sLife = aS3.x;
+vec3 sPos = uContact + aS0.xyz + aS1.xyz * sAge + 0.5 * vec3( 0.0, -2.3, 0.0 ) * sAge * sAge;
+float sSc = aS0.w * smoothstep( 0.0, 0.03, sAge ) * ( 1.0 - smoothstep( sLife * 0.72, sLife, sAge ) );
+vec3 sp = position * vec3( 1.0, aS3.w, 0.8 );
+sp = rotAxis( sp, aS2.xyz, aS2.w * max( sAge, 0.0 ) );
+vec3 transformed = sPos + sp * sSc;
+vHot = aS3.y * exp( - max( sAge, 0.0 ) * 5.0 );
+`;
+const SPALL_VERT_ALIVE = `
+#include <project_vertex>
+if ( sAge < 0.0 || sAge > sLife ) gl_Position = vec4( 2.0, 2.0, 2.0, 1.0 );
+`;
+
+/* ---------------- dust ---------------- */
+const DUST_VERT = GLSL_MOTION + GLSL_NOISE + `
+attribute vec4 aA;   /* p0.xyz, size */
+attribute vec4 aB;   /* direction.xyz, activation time */
+attribute vec4 aC;   /* v1, v2, vTerm, seed */
+uniform float uTime;
+uniform float uViewScale;
+uniform float uPx;
+varying float vAlpha;
+varying float vSeed;
+void main() {
+  float age = uTime - aB.w;
+  vec3 p = aA.xyz + particleOffset( aB.w, aB.xyz, aC.x, aC.y, aC.z, ${T_BURST.toFixed(2)}, uTime );
+  vec4 mv = modelViewMatrix * vec4( p, 1.0 );
+  gl_Position = projectionMatrix * mv;
+  float grow = smoothstep( 0.0, 0.25, age );
+  gl_PointSize = max( 1.0, aA.w * ( 0.55 + 0.45 * grow ) * uViewScale * uPx / max( - mv.z, 0.1 ) );
+  float tw = 0.55 + 0.45 * sin( uTime * ( 3.0 + 9.0 * aC.w ) + aC.w * 60.0 );
+  vAlpha = smoothstep( 0.0, 0.18, age ) * tw * ( 0.55 + 0.45 * aC.w );
+  vSeed = aC.w;
+  if ( age < 0.0 ) gl_Position = vec4( 2.0, 2.0, 2.0, 1.0 );
+}
+`;
+const DUST_FRAG = `
+varying float vAlpha;
+varying float vSeed;
+void main() {
+  vec2 p = gl_PointCoord - 0.5;
+  float r2 = dot( p, p ) * 4.0;
+  float a = 1.0 - smoothstep( 0.0, 1.0, r2 );
+  a *= a;
+  vec3 c = mix( vec3( 0.62, 0.80, 1.0 ), vec3( 1.0, 0.96, 0.92 ), vSeed * 0.5 ) * a * vAlpha * 1.05;
+  gl_FragColor = vec4( c, clamp( max( c.r, max( c.g, c.b ) ), 0.0, 1.0 ) );
+}
+`;
+
+/* ---------------- glow quads (flash, front glow, shock ring) ---------------- */
+const GLOW_VERT = `
+uniform float uSize;
+varying vec2 vUv;
+void main() {
+  vUv = uv;
+  vec4 mv = modelViewMatrix * vec4( 0.0, 0.0, 0.0, 1.0 );
+  mv.xy += ( uv - 0.5 ) * uSize;
+  gl_Position = projectionMatrix * mv;
+}
+`;
+const GLOW_FRAG = `
+uniform vec3 uColor;
+uniform float uInt;
+uniform float uStreak;
+uniform float uRingR;
+uniform float uRingW;
+uniform float uRingI;
+varying vec2 vUv;
+void main() {
+  vec2 p = ( vUv - 0.5 ) * 2.0;
+  float r = length( p );
+  float core = exp( - r * r * 22.0 );
+  float halo = exp( - r * r * 3.5 ) * 0.40;
+  float streak = exp( - abs( p.y ) * 24.0 ) * exp( - abs( p.x ) * 2.0 ) * uStreak;
+  float gq = ( r - uRingR ) / max( uRingW, 1e-3 );
+  float ring = exp( - gq * gq ) * uRingI;
+  float I = ( core + halo + streak ) * uInt + ring;
+  I *= 1.0 - smoothstep( 0.80, 1.0, r );
+  vec3 c = uColor * I;
+  gl_FragColor = vec4( c, clamp( max( c.r, max( c.g, c.b ) ), 0.0, 1.0 ) );
+}
+`;
+
+/* ---------------- Mach cone (faint shock V behind the supersonic nose) ---------------- */
+const CONE_VERT = `
+varying vec2 vUv;
+void main() {
+  vUv = uv;
+  gl_Position = projectionMatrix * modelViewMatrix * vec4( position, 1.0 );
+}
+`;
+const CONE_FRAG = `
+uniform float uInt;
+varying vec2 vUv;
+void main() {
+  float x = vUv.x * 2.6;                    /* distance behind the nose */
+  float y = ( vUv.y - 0.5 ) * 1.7;
+  float tanMu = 0.38;
+  float d = abs( abs( y ) - x * tanMu );
+  float fade = ( 1.0 - smoothstep( 0.0, 2.6, x ) ) * smoothstep( 0.0, 0.06, x );
+  float lq = d / 0.011, hq = d / 0.055;
+  float line = exp( - lq * lq ) * fade;
+  float halo = exp( - hq * hq ) * fade * 0.20;
+  float inside = step( abs( y ), x * tanMu ) * exp( - x * 1.4 ) * 0.045;
+  float bq = ( x - 0.02 - 1.9 * y * y ) / 0.012;
+  float bow = exp( - bq * bq ) * step( x, 0.16 );
+  vec3 c = vec3( 0.58, 0.80, 1.0 ) * ( line * 0.85 + halo + inside + bow * 0.9 ) * uInt;
+  gl_FragColor = vec4( c, clamp( max( c.r, max( c.g, c.b ) ), 0.0, 1.0 ) );
+}
+`;
+
+/* ------------------------------------------------------------------ *
+ * 4. Scene construction
+ * ------------------------------------------------------------------ */
+
+/* 4a. Procedural studio light-box -> PMREM cube-UV environment */
+function buildEnvTexture() {
+  const envScene = new THREE.Scene();
+  const room = new THREE.Mesh(
+    new THREE.BoxGeometry(60, 40, 60),
+    new THREE.MeshBasicMaterial({ color: new THREE.Color(0.014, 0.016, 0.022), side: THREE.BackSide })
+  );
+  envScene.add(room);
+  function panel(w, h, x, y, z, col, k) {
+    const m = new THREE.Mesh(
+      new THREE.PlaneGeometry(w, h),
+      new THREE.MeshBasicMaterial({ color: new THREE.Color(col[0] * k, col[1] * k, col[2] * k), side: THREE.DoubleSide })
+    );
+    m.position.set(x, y, z);
+    m.lookAt(0, 0, 0);
+    envScene.add(m);
+  }
+  panel(14, 8, -9, 11, 12, [0.92, 0.97, 1.0], 9.0);      // key softbox (cool white)
+  panel(18, 4, 0, 16, 2, [1.0, 1.0, 1.0], 5.0);          // overhead strip
+  panel(4, 18, 15, 2, 9, [1.0, 0.96, 0.92], 3.2);        // fill strip
+  panel(3, 14, -16, 0, 6, [0.90, 0.95, 1.0], 2.0);       // left card
+  panel(3.5, 18, -14, 1, -12, [0.25, 0.90, 1.0], 8.0);   // cyan rim strip
+  panel(3.5, 18, 14, 1, -12, [1.0, 0.25, 0.85], 7.0);    // magenta rim strip
+  panel(20, 10, 0, -14, 6, [0.80, 0.90, 1.0], 1.2);      // floor bounce
+  panel(30, 16, 0, 2, -20, [0.35, 0.42, 0.55], 0.7);     // back wall
+  const pm = new THREE.PMREMGenerator(renderer);
+  const rt = pm.fromScene(envScene, 0.012);
+  pm.dispose();
+  return rt.texture;
+}
+
+/* 4b. Spine: bulb (s = 0) -> neck -> helical tail tip (s = 1), arc-length parameterised */
+const R_J_ANGLE = deg(130);
+const A_JUNC = BULB_R * (1 - Math.cos(R_J_ANGLE));
+const R_JUNC = BULB_R * Math.sin(R_J_ANGLE);
+const R_TAIL = 0.026;
+const LAMBDA = (R_JUNC - R_TAIL) / Math.tan(deg(40));
+const CAP_LEN = 0.045;
+
+function radiusAt(a, L) {
+  if (a <= 0) return 0;
+  let r;
+  if (a < A_JUNC) r = Math.sqrt(Math.max(0, BULB_R * BULB_R - (a - BULB_R) * (a - BULB_R)));
+  else r = R_TAIL + (R_JUNC - R_TAIL) * Math.exp(-(a - A_JUNC) / LAMBDA);
+  const aCap = L - CAP_LEN;
+  if (a > aCap) { const q = (a - aCap) / CAP_LEN; r *= Math.sqrt(Math.max(0, 1 - q * q)); }
+  return r;
+}
+
+function buildSpine() {
+  const V3 = THREE.Vector3;
+  const ctrl = [
+    new V3(0.10, -2.20, 0), new V3(0.10, -1.58, 0), new V3(0.15, -0.88, 0), new V3(0.36, -0.12, 0),
+    new V3(0.30, 0.70, 0), new V3(-0.08, 1.32, 0), new V3(-0.55, 1.74, 0), new V3(-1.12, 1.98, 0)
+  ];
+  const base = new THREE.CatmullRomCurve3(ctrl, false, 'centripetal');
+  const M = 2400;
+  const px = new Float64Array(M + 1), py = new Float64Array(M + 1), pz = new Float64Array(M + 1);
+  const U0 = 0.50, U1 = 0.905, TURNS = 2.5, HAMP = 0.15;
+  for (let i = 0; i <= M; i++) {
+    const u = i / M;
+    const p = base.getPoint(u);
+    const tg = base.getTangent(u);
+    let nx = -tg.y, ny = tg.x;
+    const nl = Math.hypot(nx, ny) || 1; nx /= nl; ny /= nl;
+    const env = sstep(U0, U0 + 0.10, u) * (1 - sstep(U1 - 0.09, U1, u));
+    const ph = Math.PI * 2 * TURNS * (u - U0) / (U1 - U0);
+    const off = HAMP * env;
+    px[i] = p.x + nx * off * Math.cos(ph);
+    py[i] = p.y + ny * off * Math.cos(ph);
+    pz[i] = off * Math.sin(ph);
+  }
+  const cum = new Float64Array(M + 1);
+  for (let i = 1; i <= M; i++) cum[i] = cum[i - 1] + Math.hypot(px[i] - px[i - 1], py[i] - py[i - 1], pz[i] - pz[i - 1]);
+  const L = cum[M];
+
+  const S = { L: L };
+  S.posAtA = function (a, out) {
+    a = clamp(a, 0, L);
+    let lo = 0, hi = M;
+    while (hi - lo > 1) { const mid = (lo + hi) >> 1; if (cum[mid] <= a) lo = mid; else hi = mid; }
+    const seg = cum[hi] - cum[lo];
+    const f = seg > 0 ? (a - cum[lo]) / seg : 0;
+    return out.set(lerp(px[lo], px[hi], f), lerp(py[lo], py[hi], f), lerp(pz[lo], pz[hi], f));
+  };
+  S.tanAtA = function (a, out) {
+    const e = 0.004;
+    const p0 = S.posAtA(Math.max(0, a - e), new V3()), p1 = S.posAtA(Math.min(L, a + e), new V3());
+    return out.copy(p1).sub(p0).normalize();
+  };
+
+  /* ring list: dome rings (uniform polar angle), neck rings (uniform arc length), tip-cap rings */
+  const ringA = [], domeK = 34;
+  for (let k = 0; k <= domeK; k++) ringA.push(BULB_R * (1 - Math.cos(R_J_ANGLE * k / domeK)));
+  const aEnd = L - CAP_LEN, nNeck = 300;
+  for (let k = 1; k <= nNeck; k++) ringA.push(A_JUNC + (aEnd - A_JUNC) * k / nNeck);
+  const nCap = 8;
+  for (let k = 1; k <= nCap; k++) ringA.push(aEnd + CAP_LEN * Math.sin(Math.PI / 2 * k / nCap));
+  const NR = ringA.length;
+  S.ringA = ringA; S.nDome = domeK + 1;
+  S.ringS = ringA.map(a => a / L);
+  S.ringR = ringA.map(a => radiusAt(a, L));
+  S.ringC = []; S.ringT = []; S.ringN = []; S.ringB = [];
+  for (let i = 0; i < NR; i++) {
+    S.ringC.push(S.posAtA(ringA[i], new V3()));
+    S.ringT.push(S.tanAtA(ringA[i], new V3()));
+  }
+  /* rotation-minimising frames (parallel transport) */
+  let Nprev = new V3(1, 0, 0);
+  for (let i = 0; i < NR; i++) {
+    const T = S.ringT[i];
+    const N = Nprev.clone().addScaledVector(T, -Nprev.dot(T)).normalize();
+    S.ringN.push(N); S.ringB.push(new V3().crossVectors(T, N).normalize());
+    Nprev = N;
+  }
+
+  S.frameAt = function (s, out) {
+    s = clamp(s, 0, 1);
+    const SS = S.ringS; let lo = 0, hi = SS.length - 1;
+    while (hi - lo > 1) { const mid = (lo + hi) >> 1; if (SS[mid] <= s) lo = mid; else hi = mid; }
+    const f = (s - SS[lo]) / Math.max(1e-9, SS[hi] - SS[lo]);
+    out.C.copy(S.ringC[lo]).lerp(S.ringC[hi], f);
+    out.T.copy(S.ringT[lo]).lerp(S.ringT[hi], f).normalize();
+    out.N.copy(S.ringN[lo]).lerp(S.ringN[hi], f);
+    out.N.addScaledVector(out.T, -out.N.dot(out.T)).normalize();
+    out.B.crossVectors(out.T, out.N);
+    out.r = lerp(S.ringR[lo], S.ringR[hi], f);
+    return out;
+  };
+
+  /* sampling density for shards / dust (volume-ish, with a floor so the thin tail is populated) */
+  S.makeCdf = function (floor) {
+    const cdf = new Float64Array(NR); let acc = 0;
+    for (let i = 1; i < NR; i++) {
+      const r = 0.5 * (S.ringR[i] + S.ringR[i - 1]);
+      acc += (Math.pow(r, 1.6) + floor) * (ringA[i] - ringA[i - 1]);
+      cdf[i] = acc;
+    }
+    for (let i = 0; i < NR; i++) cdf[i] /= acc;
+    return function (u) {
+      let lo = 0, hi = NR - 1;
+      while (hi - lo > 1) { const mid = (lo + hi) >> 1; if (cdf[mid] <= u) lo = mid; else hi = mid; }
+      const f = (u - cdf[lo]) / Math.max(1e-9, cdf[hi] - cdf[lo]);
+      return lerp(S.ringS[lo], S.ringS[hi], f);
+    };
+  };
+
+  /* landmarks */
+  S.A_CUT = L - 0.16;
+  S.S_CUT = S.A_CUT / L;
+  S.A_CLAMP = 1.78;
+  S.S_CLAMP = S.A_CLAMP / L;
+  S.bulbCenter = S.posAtA(BULB_R, new V3());
+  S.pCut = S.posAtA(S.A_CUT, new V3());
+  S.tCut = S.tanAtA(S.A_CUT, new V3());
+  /* bounding box of the glass */
+  let x0 = 1e9, x1 = -1e9, y0 = 1e9, y1 = -1e9;
+  for (let i = 0; i < NR; i++) {
+    const c = S.ringC[i], r = S.ringR[i];
+    x0 = Math.min(x0, c.x - r); x1 = Math.max(x1, c.x + r);
+    y0 = Math.min(y0, c.y - r); y1 = Math.max(y1, c.y + r);
+  }
+  S.bbox = { x0: x0, x1: x1, y0: y0, y1: y1 };
+  return S;
+}
+
+/* 4c. Materials ---------------------------------------------------- */
+function blendAdd(m) {
+  m.transparent = true;
+  m.depthWrite = false;
+  m.blending = THREE.CustomBlending;
+  m.blendEquation = THREE.AddEquation;
+  m.blendSrc = THREE.OneFactor;
+  m.blendDst = THREE.OneFactor;
+  return m;
+}
+
+function makeGlassMaterial(back) {
+  const m = new THREE.MeshPhysicalMaterial({
+    color: new THREE.Color(0.02, 0.025, 0.03),
+    metalness: 0.0, roughness: 0.02, reflectivity: 0.5,
+    envMap: envTex, envMapIntensity: 1.35,
+    side: back ? THREE.BackSide : THREE.FrontSide
+  });
+  blendAdd(m);
+  m.onBeforeCompile = function (shader) {
+    Object.assign(shader.uniforms, G.glassU);
+    let v = shader.vertexShader, f = shader.fragmentShader;
+    v = patch(v, '#include <common>', '#include <common>\n' + GLASS_VERT_PARS, 'glass vert pars');
+    v = patch(v, '#include <begin_vertex>', GLASS_VERT_BEGIN, 'glass vert begin');
+    v = patch(v, '#include <project_vertex>', GLASS_VERT_PROJ, 'glass vert proj');
+    f = patch(f, '#include <common>', '#include <common>\n' + GLASS_FRAG_PARS, 'glass frag pars');
+    f = patch(f, '#include <clipping_planes_fragment>', '#include <clipping_planes_fragment>\n' + GLASS_FRAG_PROLOGUE, 'glass frag prologue');
+    f = patch(f, '#include <tonemapping_fragment>', glassFragTail(back) + '\n#include <tonemapping_fragment>', 'glass frag tail');
+    f = patch(f, '#include <dithering_fragment>', GLASS_FRAG_ALPHA, 'glass frag alpha');
+    shader.vertexShader = v; shader.fragmentShader = f;
+  };
+  m.customProgramCacheKey = function () { return back ? 'prd-glass-back' : 'prd-glass-front'; };
+  return m;
+}
+
+function buildGlass() {
+  const NS = 48, NR = SP.ringA.length, nV = NR * (NS + 1);
+  const pos = new Float32Array(nV * 3), nor = new Float32Array(nV * 3);
+  const aS = new Float32Array(nV), aPhi = new Float32Array(nV), aRad = new Float32Array(nV);
+  const index = [];
+  for (let i = 0; i < NR; i++) {
+    const C = SP.ringC[i], T = SP.ringT[i], N = SP.ringN[i], B = SP.ringB[i], r = SP.ringR[i];
+    const i0 = Math.max(0, i - 1), i1 = Math.min(NR - 1, i + 1);
+    const rp = (SP.ringR[i1] - SP.ringR[i0]) / Math.max(1e-6, SP.ringA[i1] - SP.ringA[i0]);
+    const isDome = i < SP.nDome;
+    const phi = isDome ? R_J_ANGLE * i / (SP.nDome - 1) : 0;
+    for (let j = 0; j <= NS; j++) {
+      const th = j / NS * Math.PI * 2, c = Math.cos(th), s = Math.sin(th);
+      const rx = N.x * c + B.x * s, ry = N.y * c + B.y * s, rz = N.z * c + B.z * s;
+      const k = (i * (NS + 1) + j);
+      pos[k * 3] = C.x + rx * r; pos[k * 3 + 1] = C.y + ry * r; pos[k * 3 + 2] = C.z + rz * r;
+      let nx, ny, nz;
+      if (i === 0) { nx = -T.x; ny = -T.y; nz = -T.z; }
+      else if (i === NR - 1) { nx = T.x; ny = T.y; nz = T.z; }
+      else if (isDome) {
+        const sp = Math.sin(phi), cp = Math.cos(phi);
+        nx = sp * rx - cp * T.x; ny = sp * ry - cp * T.y; nz = sp * rz - cp * T.z;
+      } else {
+        const inv = 1 / Math.sqrt(1 + rp * rp);
+        nx = (rx - T.x * rp) * inv; ny = (ry - T.y * rp) * inv; nz = (rz - T.z * rp) * inv;
+      }
+      nor[k * 3] = nx; nor[k * 3 + 1] = ny; nor[k * 3 + 2] = nz;
+      aS[k] = SP.ringS[i]; aPhi[k] = th; aRad[k] = r;
+    }
+  }
+  for (let i = 0; i < NR - 1; i++) {
+    for (let j = 0; j < NS; j++) {
+      const a = i * (NS + 1) + j, b = (i + 1) * (NS + 1) + j, c = a + 1, d = b + 1;
+      index.push(a, c, b, b, c, d);
+    }
+  }
+  const geo = new THREE.BufferGeometry();
+  geo.setAttribute('position', new THREE.BufferAttribute(pos, 3));
+  geo.setAttribute('normal', new THREE.BufferAttribute(nor, 3));
+  geo.setAttribute('aS', new THREE.BufferAttribute(aS, 1));
+  geo.setAttribute('aPhi', new THREE.BufferAttribute(aPhi, 1));
+  geo.setAttribute('aRad', new THREE.BufferAttribute(aRad, 1));
+  geo.setIndex(index);
+
+  G.glassU = {
+    uTime: { value: 0 }, uFront: { value: 3 }, uCutS: { value: SP.S_CUT }, uSnip: { value: 0 }, uNuc: { value: 0 },
+    uStress: { value: 0.5 }, uPulse: { value: 0 }, uRing: { value: 0 }, uImpactT: { value: -1 },
+    uImpactPos: { value: new THREE.Vector3(SP.bulbCenter.x + BULB_R, SP.bulbCenter.y, 0) },
+    uTransGain: { value: 0.85 }, uPush: { value: 0 }, uClampS: { value: SP.S_CLAMP }
+  };
+  G.glassBack = new THREE.Mesh(geo, makeGlassMaterial(true));
+  G.glassFront = new THREE.Mesh(geo, makeGlassMaterial(false));
+  G.glassBack.renderOrder = 1; G.glassFront.renderOrder = 2;
+  G.glassBack.frustumCulled = false; G.glassFront.frustumCulled = false;
+  scene.add(G.glassBack); scene.add(G.glassFront);
+}
+
+/* brushed tool-steel streak map (detached 2D canvas, never added to the DOM) */
+function makeBrushedTexture() {
+  const c = document.createElement('canvas'); c.width = 256; c.height = 256;
+  const g = c.getContext('2d');
+  g.fillStyle = '#9a9a9a'; g.fillRect(0, 0, 256, 256);
+  for (let i = 0; i < 1500; i++) {
+    const y = rand() * 256, len = 30 + rand() * 220, x = rand() * 256;
+    const v = 70 + Math.floor(rand() * 150);
+    g.fillStyle = 'rgba(' + v + ',' + v + ',' + v + ',' + (0.10 + 0.28 * rand()).toFixed(3) + ')';
+    g.fillRect(x, y, len, 1);
+    if (x + len > 256) g.fillRect(x - 256, y, len, 1);
+  }
+  const t = new THREE.CanvasTexture(c);
+  t.wrapS = t.wrapT = THREE.RepeatWrapping;
+  return t;
+}
+
+function buildLights() {
+  function add(l, x, y, z) { l.position.set(x, y, z); scene.add(l); return l; }
+  G.key = add(new THREE.DirectionalLight(0xe4f0ff, 1.7), -5, 7, 9);
+  G.fill = add(new THREE.DirectionalLight(0xfff4ec, 0.35), 8, 1, 7);
+  G.rimC = add(new THREE.DirectionalLight(0x35e6ff, 0.9), -8, 3, -7);
+  G.rimM = add(new THREE.DirectionalLight(0xff3fd0, 0.8), 8, 2, -7);
+  G.frontLight = new THREE.PointLight(0xa4d2ff, 0, 9, 2);
+  scene.add(G.frontLight);
+}
+
+/* 4d. Dark anodised clamp + rod ------------------------------------ */
+function buildClamp() {
+  const V3 = THREE.Vector3;
+  const fr = { C: new V3(), T: new V3(), N: new V3(), B: new V3(), r: 0 };
+  SP.frameAt(SP.S_CLAMP, fr);
+  const mat = new THREE.MeshStandardMaterial({ color: srgb(0x23262d), metalness: 0.85, roughness: 0.40, envMap: envTex, envMapIntensity: 0.5 });
+  const rodMat = new THREE.MeshStandardMaterial({ color: srgb(0x16181d), metalness: 0.8, roughness: 0.6, envMap: envTex, envMapIntensity: 0.22 });
+  const grp = new THREE.Group();
+  grp.position.copy(fr.C);
+  grp.quaternion.setFromUnitVectors(new V3(0, 1, 0), fr.T);
+  const ri = fr.r + 0.016, ro = fr.r + 0.115, hw = 0.10;
+  const prof = [
+    new THREE.Vector2(ri, -hw), new THREE.Vector2(ro - 0.014, -hw), new THREE.Vector2(ro, -hw + 0.014),
+    new THREE.Vector2(ro, hw - 0.014), new THREE.Vector2(ro - 0.014, hw), new THREE.Vector2(ri, hw), new THREE.Vector2(ri, -hw)
+  ];
+  grp.add(new THREE.Mesh(new THREE.LatheGeometry(prof, 48), mat));
+  /* clamp block, screw, and rod (in the ring's local frame: Y = spine tangent) */
+  const back = new V3(-0.55, 0, -0.83).normalize();                 // direction away from the camera, toward the stand
+  const blockPos = back.clone().multiplyScalar(ro + 0.05);
+  const blockMat = new THREE.MeshStandardMaterial({ color: srgb(0x1c1e24), metalness: 0.8, roughness: 0.72, envMap: envTex, envMapIntensity: 0.2 });
+  const block = new THREE.Mesh(new THREE.BoxGeometry(0.17, 0.26, 0.17), blockMat);
+  block.position.copy(blockPos);
+  block.quaternion.setFromUnitVectors(new V3(0, 0, 1), back);
+  grp.add(block);
+  const screw = new THREE.Mesh(new THREE.CylinderGeometry(0.045, 0.045, 0.2, 18), blockMat);
+  screw.position.copy(back.clone().multiplyScalar(ro + 0.19)).add(new V3(0, 0.0, 0));
+  screw.quaternion.setFromUnitVectors(new V3(0, 1, 0), back);
+  grp.add(screw);
+  scene.add(grp);
+  G.clamp = grp;
+  /* the stand rod runs away behind the drop toward the lower left */
+  const rodDirW = new V3(-0.82, -0.40, -0.36).normalize();
+  const blockWorld = blockPos.clone().applyQuaternion(grp.quaternion).add(grp.position);
+  const rod = new THREE.Mesh(new THREE.CylinderGeometry(0.03, 0.03, 14, 14), rodMat);
+  rod.position.copy(blockWorld).addScaledVector(rodDirW, 7.0);
+  rod.quaternion.setFromUnitVectors(new V3(0, 1, 0), rodDirW);
+  scene.add(rod);
+}
+
+/* 4e. Steel nippers ------------------------------------------------- */
+const JAW_L = 0.96;
+const BETA_T = deg(7.6);      // arm angle at which the jaw faces just touch the tail
+const BETA_OPEN = deg(17);
+const GAP_HALF = 0.034;
+
+function buildNippers() {
+  const V3 = THREE.Vector3;
+  const steel = new THREE.MeshStandardMaterial({
+    color: srgb(0x7b828d), metalness: 1.0, roughness: 0.60, roughnessMap: makeBrushedTexture(),
+    envMap: envTex, envMapIntensity: 0.42
+  });
+  const rubber = new THREE.MeshStandardMaterial({ color: srgb(0x0a0b0e), metalness: 0.0, roughness: 0.55, envMap: envTex, envMapIntensity: 0.22 });
+  const pinMat = new THREE.MeshStandardMaterial({ color: srgb(0x8a909a), metalness: 1.0, roughness: 0.3, envMap: envTex, envMapIntensity: 0.7 });
+
+  const rot = (x, y, a) => [x * Math.cos(a) - y * Math.sin(a), x * Math.sin(a) + y * Math.cos(a)];
+  const toArm = (x, y) => rot(x, y, -BETA_T);
+  const F0 = toArm(0.60, GAP_HALF), F1 = toArm(0.965, GAP_HALF), TIP = toArm(0.985, GAP_HALF + 0.045);
+  const O1 = toArm(0.90, GAP_HALF + 0.15), O0 = toArm(0.52, GAP_HALF + 0.17);
+  const armPts = [
+    [-1.15, -0.085], [-0.30, -0.100], [0.0, -0.115], [0.30, -0.105], F0, F1, TIP, O1, O0,
+    [0.30, 0.105], [0.0, 0.115], [-0.30, 0.100], [-1.15, 0.085]
+  ];
+  const shape = new THREE.Shape();
+  armPts.forEach((p, i) => { if (i === 0) shape.moveTo(p[0], p[1]); else shape.lineTo(p[0], p[1]); });
+  shape.closePath();
+  const ext = { depth: 0.13, bevelEnabled: true, bevelThickness: 0.012, bevelSize: 0.010, bevelSegments: 2, curveSegments: 4 };
+  function armGeo(dz) { const g = new THREE.ExtrudeGeometry(shape, ext); g.translate(0, 0, -0.065 + dz); return g; }
+
+  /* rubber grip (rounded slab on the handle end) */
+  const gs = new THREE.Shape();
+  const gx0 = -3.6, gx1 = -1.10, gw = 0.135, gr = 0.09;
+  gs.moveTo(gx0 + gr, -gw); gs.lineTo(gx1 - 0.03, -gw + 0.012); gs.lineTo(gx1, -gw + 0.03); gs.lineTo(gx1, gw - 0.03);
+  gs.lineTo(gx1 - 0.03, gw - 0.012); gs.lineTo(gx0 + gr, gw);
+  gs.quadraticCurveTo(gx0, gw, gx0, gw - gr); gs.lineTo(gx0, -gw + gr); gs.quadraticCurveTo(gx0, -gw, gx0 + gr, -gw);
+  const gext = { depth: 0.19, bevelEnabled: true, bevelThickness: 0.02, bevelSize: 0.02, bevelSegments: 3, curveSegments: 8 };
+  function gripGeo() { const g = new THREE.ExtrudeGeometry(gs, gext); g.translate(0, 0, -0.095); return g; }
+
+  const armA = new THREE.Group(), armB = new THREE.Group();
+  const aMesh = new THREE.Mesh(armGeo(0.004), steel), aGrip = new THREE.Mesh(gripGeo(), rubber);
+  const bMesh = new THREE.Mesh(armGeo(-0.004), steel), bGrip = new THREE.Mesh(gripGeo(), rubber);
+  armA.add(aMesh, aGrip);
+  armB.add(bMesh, bGrip);
+  armB.scale.y = -1;                     // mirror image across the tool axis
+  const tool = new THREE.Group();
+  tool.add(armA, armB);
+  const pin = new THREE.Mesh(new THREE.CylinderGeometry(0.058, 0.058, 0.30, 24), pinMat);
+  pin.rotation.x = Math.PI / 2;
+  tool.add(pin);
+  [-1, 1].forEach(sg => {
+    const w = new THREE.Mesh(new THREE.CylinderGeometry(0.105, 0.105, 0.022, 28), pinMat);
+    w.rotation.x = Math.PI / 2; w.position.z = sg * 0.092; tool.add(w);
+    const hd = new THREE.Mesh(new THREE.CylinderGeometry(0.07, 0.07, 0.03, 6), pinMat);
+    hd.rotation.x = Math.PI / 2; hd.position.z = sg * 0.118; tool.add(hd);
+  });
+
+  const u = SP.tCut.clone().multiplyScalar(-1);             // pivot -> jaw tips
+  G.uDir = new V3(u.x, u.y, 0).normalize();
+  G.pivot = SP.pCut.clone().addScaledVector(SP.tCut, JAW_L); // the pivot sits beyond the tail tip
+  tool.rotation.z = Math.atan2(G.uDir.y, G.uDir.x);
+  tool.position.copy(G.pivot);
+  scene.add(tool);
+  G.tool = tool; G.armA = armA; G.armB = armB;
+}
+
+function jawBeta(t) {
+  const touch = BETA_T + deg(0.25), closed = BETA_T - deg(1.9);
+  if (t < T_PULSE_A) return BETA_OPEN;
+  if (t < T_TOUCH) {
+    const k = sstep(T_PULSE_A, T_TOUCH, t);
+    return lerp(BETA_OPEN, touch, k);
+  }
+  if (t < T_SNIP) {
+    const k = (t - T_TOUCH) / (T_SNIP - T_TOUCH);
+    return lerp(touch, BETA_T - deg(0.35), k * k);
+  }
+  return lerp(BETA_T - deg(0.35), closed, sstep(T_SNIP, T_SNIP + 0.09, t));
+}
+
+/* 4f. Lead bullet (copper-jacketed, mushrooms on impact) ------------- */
+function buildBullet() {
+  const BS = 1.14;                                  // overall bullet scale
+  const R0 = 0.17 * BS, LB = 1.0 * BS, AN = 0.58 * BS, A_CAP = 0.60 * BS, CH = 0.06 * BS;
+  const NOSE = 40, CYL = 14, CHAM = 4;
+  const P0 = [];
+  for (let i = 0; i <= NOSE; i++) {
+    const a = AN * Math.pow(i / NOSE, 1.25), uu = a / AN;
+    P0.push([a, R0 * Math.sin(0.5 * Math.PI * Math.pow(uu, 0.85))]);
+  }
+  for (let i = 1; i <= CYL; i++) P0.push([AN + (LB - CH - AN) * i / CYL, R0]);
+  for (let i = 1; i <= CHAM; i++) { const q = i / CHAM; P0.push([LB - CH + CH * q, R0 * (1 - 0.14 * q)]); }
+  P0.push([LB, R0 * 0.55]); P0.push([LB, 0.0]);
+  const N = P0.length, iCap = NOSE;
+
+  /* target "mushroom" profile with the same parameterisation */
+  const RM = 0.46 * BS, TR = 0.10 * BS, CUP = 0.7, RG = BULB_R, stemR = R0 * 1.12, STEM_K = 0.80;
+  const face = (rho) => -CUP * (RG - Math.sqrt(Math.max(0, RG * RG - rho * rho)));
+  const rhoF = RM - TR / 2, UF = 0.55, UR = 0.80;
+  const P1 = [];
+  for (let i = 0; i < N; i++) {
+    const a = P0[i][0], rho = P0[i][1];
+    if (i <= iCap) {
+      const u = i / iCap;
+      if (u <= UF) { const r = rhoF * (u / UF); P1.push([face(r), r]); }
+      else if (u <= UR) {
+        const psi = Math.PI * (u - UF) / (UR - UF);
+        P1.push([face(rhoF) + TR / 2 * (1 - Math.cos(psi)), rhoF + TR / 2 * Math.sin(psi)]);
+      } else {
+        const r = rhoF + (stemR - rhoF) * ((u - UR) / (1 - UR));
+        P1.push([face(r) + TR, r]);
+      }
+    } else {
+      const aCapEnd = face(stemR) + TR;
+      P1.push([aCapEnd + (a - A_CAP) * STEM_K, rho * 1.12 * (1 + 0.14 * Math.exp(-(a - A_CAP) / 0.10))]);
+    }
+  }
+  function profNormals(P) {
+    const out = [];
+    for (let i = 0; i < P.length; i++) {
+      if (i === 0) { out.push([-1, 0]); continue; }
+      if (i === P.length - 1) { out.push([1, 0]); continue; }
+      let da = P[i + 1][0] - P[i - 1][0], dr = P[i + 1][1] - P[i - 1][1];
+      const l = Math.hypot(da, dr) || 1; da /= l; dr /= l;
+      out.push([-dr, da]);
+    }
+    return out;
+  }
+  const NP0 = profNormals(P0), NP1 = profNormals(P1);
+
+  const NSEG = 56, nV = N * (NSEG + 1);
+  const pos = new Float32Array(nV * 3), nor = new Float32Array(nV * 3), col = new Float32Array(nV * 3);
+  const aP1 = new Float32Array(nV * 2), aN1 = new Float32Array(nV * 2), aST = new Float32Array(nV * 2);
+  const lead = [0.40, 0.42, 0.47], copper = [0.84, 0.38, 0.15];
+  for (let i = 0; i < N; i++) {
+    const cu = sstep(0.54, 0.64, P0[i][0]);
+    for (let j = 0; j <= NSEG; j++) {
+      const th = j / NSEG * Math.PI * 2, c = Math.cos(th), s = Math.sin(th);
+      const k = i * (NSEG + 1) + j;
+      pos[k * 3] = P0[i][0]; pos[k * 3 + 1] = P0[i][1] * c; pos[k * 3 + 2] = P0[i][1] * s;
+      nor[k * 3] = NP0[i][0]; nor[k * 3 + 1] = NP0[i][1] * c; nor[k * 3 + 2] = NP0[i][1] * s;
+      for (let q = 0; q < 3; q++) col[k * 3 + q] = lerp(lead[q], copper[q], cu) * (0.92 + 0.08 * Math.cos(th * 3));
+      aP1[k * 2] = P1[i][0]; aP1[k * 2 + 1] = P1[i][1];
+      aN1[k * 2] = NP1[i][0]; aN1[k * 2 + 1] = NP1[i][1];
+      aST[k * 2] = i / (N - 1); aST[k * 2 + 1] = th;
+    }
+  }
+  const index = [];
+  for (let i = 0; i < N - 1; i++) for (let j = 0; j < NSEG; j++) {
+    const a = i * (NSEG + 1) + j, b = (i + 1) * (NSEG + 1) + j, c = a + 1, d = b + 1;
+    index.push(a, c, b, b, c, d);              // outward-facing, same convention as the glass
+  }
+  const geo = new THREE.BufferGeometry();
+  geo.setAttribute('position', new THREE.BufferAttribute(pos, 3));
+  geo.setAttribute('normal', new THREE.BufferAttribute(nor, 3));
+  geo.setAttribute('color', new THREE.BufferAttribute(col, 3));
+  geo.setAttribute('aP1', new THREE.BufferAttribute(aP1, 2));
+  geo.setAttribute('aN1', new THREE.BufferAttribute(aN1, 2));
+  geo.setAttribute('aST', new THREE.BufferAttribute(aST, 2));
+  geo.setIndex(index);
+
+  G.bulletU = { uTau: { value: -1 } };
+  const m = new THREE.MeshStandardMaterial({ vertexColors: true, metalness: 1.0, roughness: 0.32, envMap: envTex, envMapIntensity: 0.72 });
+  m.onBeforeCompile = function (shader) {
+    Object.assign(shader.uniforms, G.bulletU);
+    let v = shader.vertexShader, f = shader.fragmentShader;
+    v = patch(v, '#include <common>', '#include <common>\n' + BULLET_VERT_PARS, 'bullet vert pars');
+    v = patch(v, '#include <beginnormal_vertex>', BULLET_VERT_NORMAL, 'bullet vert normal');
+    v = patch(v, '#include <begin_vertex>', BULLET_VERT_BEGIN, 'bullet vert begin');
+    f = patch(f, '#include <common>', '#include <common>\n' + BULLET_FRAG_PARS, 'bullet frag pars');
+    f = patch(f, '#include <clipping_planes_fragment>', '#include <clipping_planes_fragment>\n' + BULLET_FRAG_PROLOGUE, 'bullet frag prologue');
+    f = patch(f, '#include <emissivemap_fragment>', '#include <emissivemap_fragment>\ntotalEmissiveRadiance += vec3( 1.0, 0.46, 0.16 ) * dissEdge * 0.9;', 'bullet frag emissive');
+    shader.vertexShader = v; shader.fragmentShader = f;
+  };
+  m.customProgramCacheKey = function () { return 'prd-bullet'; };
+  const mesh = new THREE.Mesh(geo, m);
+  mesh.frustumCulled = false;
+  const grp = new THREE.Group();
+  grp.add(mesh);
+  scene.add(grp);
+  G.bullet = grp;
+  G.contactX = SP.bulbCenter.x + BULB_R;
+  G.contactY = SP.bulbCenter.y;
+}
+
+/* 4g. Spall droplets (instanced, analytic) --------------------------- */
+/* THREE.InstancedMesh whose instance matrices stay identity: every particle's motion is analytic in the vertex shader */
+function makeInstanced(geo, mat, count) {
+  const mesh = new THREE.InstancedMesh(geo, mat, count);
+  const I = new THREE.Matrix4();
+  for (let i = 0; i < count; i++) mesh.setMatrixAt(i, I);
+  mesh.instanceMatrix.needsUpdate = true;
+  mesh.frustumCulled = false;
+  return mesh;
+}
+
+function buildSpall() {
+  const NSP = 420;
+  const base = new THREE.IcosahedronGeometry(1, 0);
+  const geo = new THREE.BufferGeometry();
+  geo.setAttribute('position', base.attributes.position);
+  geo.setAttribute('normal', base.attributes.normal);
+  geo.setAttribute('uv', base.attributes.uv);
+  const S0 = new Float32Array(NSP * 4), S1 = new Float32Array(NSP * 4), S2 = new Float32Array(NSP * 4), S3 = new Float32Array(NSP * 4);
+  for (let i = 0; i < NSP; i++) {
+    const al = rand() * Math.PI * 2, ca = Math.cos(al), sa = Math.sin(al);
+    const rho0 = 0.46 * (0.30 + 0.70 * Math.sqrt(rand()));
+    const vr = 0.5 + 2.7 * Math.pow(rand(), 1.3) * (0.5 + 0.8 * rho0 / 0.46);
+    const delay = Math.pow(rand(), 1.7) * 0.7;
+    const life = 0.45 + (1.4 - delay - 0.45) * rand();
+    S0[i * 4] = 0.04 + 0.05 * rand(); S0[i * 4 + 1] = rho0 * ca; S0[i * 4 + 2] = rho0 * sa;
+    S0[i * 4 + 3] = 0.012 + 0.042 * Math.pow(rand(), 2.2);
+    S1[i * 4] = 0.15 + 1.5 * rand(); S1[i * 4 + 1] = vr * ca + (rand() - 0.5) * 0.5; S1[i * 4 + 2] = vr * sa + (rand() - 0.5) * 0.5;
+    S1[i * 4 + 3] = delay;
+    let ax = rand() - 0.5, ay = rand() - 0.5, az = rand() - 0.5; const al2 = Math.hypot(ax, ay, az) || 1;
+    S2[i * 4] = ax / al2; S2[i * 4 + 1] = ay / al2; S2[i * 4 + 2] = az / al2; S2[i * 4 + 3] = (rand() - 0.5) * 24;
+    S3[i * 4] = life; S3[i * 4 + 1] = rand() < 0.38 ? 1 : 0; S3[i * 4 + 2] = rand(); S3[i * 4 + 3] = 0.55 + 0.45 * rand();
+  }
+  geo.setAttribute('aS0', new THREE.InstancedBufferAttribute(S0, 4));
+  geo.setAttribute('aS1', new THREE.InstancedBufferAttribute(S1, 4));
+  geo.setAttribute('aS2', new THREE.InstancedBufferAttribute(S2, 4));
+  geo.setAttribute('aS3', new THREE.InstancedBufferAttribute(S3, 4));
+  G.spallU = { uTau: { value: -1 }, uContact: { value: new THREE.Vector3(G.contactX, G.contactY, 0) } };
+  const m = new THREE.MeshStandardMaterial({ color: srgb(0xa3a9b6), metalness: 1.0, roughness: 0.30, flatShading: true, envMap: envTex, envMapIntensity: 0.8 });
+  m.onBeforeCompile = function (shader) {
+    Object.assign(shader.uniforms, G.spallU);
+    let v = shader.vertexShader, f = shader.fragmentShader;
+    v = patch(v, '#include <common>', '#include <common>\n' + SPALL_VERT_PARS, 'spall vert pars');
+    v = patch(v, '#include <begin_vertex>', SPALL_VERT_BEGIN, 'spall vert begin');
+    v = patch(v, '#include <project_vertex>', SPALL_VERT_ALIVE, 'spall vert alive');
+    f = patch(f, '#include <common>', '#include <common>\nvarying float vHot;', 'spall frag pars');
+    f = patch(f, '#include <emissivemap_fragment>', '#include <emissivemap_fragment>\ntotalEmissiveRadiance += vec3( 1.0, 0.62, 0.26 ) * vHot * 2.2;', 'spall frag emissive');
+    shader.vertexShader = v; shader.fragmentShader = f;
+  };
+  m.customProgramCacheKey = function () { return 'prd-spall'; };
+  const mesh = makeInstanced(geo, m, NSP);
+  scene.add(mesh);
+  G.spall = mesh;
+}
+
+/* 4h. Glass needles (instanced, analytic) ---------------------------- */
+function buildNeedleGeometry() {
+  const rA = 0.5, xs = 0.22, tris = [];
+  const ring = (x) => [0, 1, 2].map(k => { const a = Math.PI / 2 + k * 2 * Math.PI / 3; return [x, rA * Math.cos(a), rA * Math.sin(a)]; });
+  const A = ring(-xs), B = ring(xs), tL = [-0.5, 0, 0], tR = [0.5, 0, 0];
+  for (let k = 0; k < 3; k++) {
+    const k2 = (k + 1) % 3;
+    tris.push([A[k], B[k], B[k2]], [A[k], B[k2], A[k2]], [tL, A[k2], A[k]], [tR, B[k], B[k2]]);
+  }
+  const pos = [], nor = [];
+  tris.forEach(t => {
+    const e1 = [t[1][0] - t[0][0], t[1][1] - t[0][1], t[1][2] - t[0][2]], e2 = [t[2][0] - t[0][0], t[2][1] - t[0][1], t[2][2] - t[0][2]];
+    let n = [e1[1] * e2[2] - e1[2] * e2[1], e1[2] * e2[0] - e1[0] * e2[2], e1[0] * e2[1] - e1[1] * e2[0]];
+    const cen = [(t[0][0] + t[1][0] + t[2][0]) / 3, (t[0][1] + t[1][1] + t[2][1]) / 3, (t[0][2] + t[1][2] + t[2][2]) / 3];
+    let tt = t;
+    if (n[0] * cen[0] + n[1] * cen[1] + n[2] * cen[2] < 0) { tt = [t[0], t[2], t[1]]; n = [-n[0], -n[1], -n[2]]; }
+    const nl = Math.hypot(n[0], n[1], n[2]) || 1;
+    tt.forEach(p => { pos.push(p[0], p[1], p[2]); nor.push(n[0] / nl, n[1] / nl, n[2] / nl); });
+  });
+  const g = new THREE.BufferGeometry();
+  g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
+  g.setAttribute('normal', new THREE.Float32BufferAttribute(nor, 3));
+  return g;
+}
+
+function buildShards() {
+  const V3 = THREE.Vector3;
+  const NSH = 6500;
+  const base = buildNeedleGeometry();
+  const geo = new THREE.BufferGeometry();
+  geo.setAttribute('position', base.attributes.position);
+  geo.setAttribute('normal', base.attributes.normal);
+  const A = new Float32Array(NSH * 4), B = new Float32Array(NSH * 4), C = new Float32Array(NSH * 4), D = new Float32Array(NSH * 4), E = new Float32Array(NSH * 4);
+  const sampleS = SP.makeCdf(0.02);
+  const fr = { C: new V3(), T: new V3(), N: new V3(), B: new V3(), r: 0 };
+  const bulbC = SP.bulbCenter;
+  const rad = new V3(), p0 = new V3(), dirV = new V3(), ax = new V3(), spinAx = new V3(), tmp = new V3();
+  for (let i = 0; i < NSH; i++) {
+    const s = sampleS(rand());
+    SP.frameAt(s, fr);
+    const th = rand() * Math.PI * 2, rho = fr.r * Math.sqrt(rand()) * 0.97;
+    rad.copy(fr.N).multiplyScalar(Math.cos(th)).addScaledVector(fr.B, Math.sin(th));
+    p0.copy(fr.C).addScaledVector(rad, rho);
+    /* explosion direction: spherical about the bulb centre for the head, radial about the spine elsewhere */
+    const bw = 1 - sstep(0.16, 0.30, s);
+    tmp.copy(p0).sub(bulbC);
+    if (tmp.lengthSq() < 1e-6) tmp.set(rand() - 0.5, rand() - 0.5, rand() - 0.5);
+    tmp.normalize();
+    dirV.copy(rad).multiplyScalar(1 - bw).addScaledVector(tmp, bw);
+    dirV.x += (rand() - 0.5) * 0.7; dirV.y += (rand() - 0.5) * 0.7; dirV.z += (rand() - 0.5) * 0.7;
+    dirV.addScaledVector(fr.T, (rand() - 0.5) * 0.5).normalize();
+    /* needle axis: mostly radial / axial slivers */
+    ax.copy(rad).multiplyScalar(0.8 * (rand() - 0.1)).addScaledVector(fr.T, (rand() - 0.5) * 1.6);
+    ax.x += (rand() - 0.5) * 0.5; ax.y += (rand() - 0.5) * 0.5; ax.z += (rand() - 0.5) * 0.5;
+    if (ax.lengthSq() < 1e-6) ax.set(1, 0, 0);
+    ax.normalize();
+    const len = 0.05 + 0.19 * Math.pow(rand(), 1.8);
+    const thick = len * (0.09 + 0.08 * rand());
+    /* activation: when the (ragged) fracture band has swept past this point */
+    const thr = BAND_W * (0.62 + 1.10 * rand());
+    let tAct = T_FRONT_A + (T_FRONT_B - T_FRONT_A) * (1 - (s - thr));
+    let v1 = 0.07 + 0.22 * rand(), v2 = (0.62 + 1.4 * Math.pow(rand(), 0.8)) * (0.55 + 0.45 * bw) * (0.7 + 0.3 * bw + 0.4 * rand());
+    let tBurst = T_BURST + 0.12 * rand();
+    if (s > SP.S_CUT) { tAct = T_SNIP + 0.01 * rand(); v1 = 0; v2 = 0.5 + 1.1 * rand(); tBurst = tAct; }
+    const spin = (rand() - 0.5) * 11;
+    spinAx.set(rand() - 0.5, rand() - 0.5, rand() - 0.5);
+    if (spinAx.lengthSq() < 1e-6) spinAx.set(0, 0, 1);
+    spinAx.normalize();
+    A[i * 4] = p0.x; A[i * 4 + 1] = p0.y; A[i * 4 + 2] = p0.z; A[i * 4 + 3] = len;
+    B[i * 4] = ax.x; B[i * 4 + 1] = ax.y; B[i * 4 + 2] = ax.z; B[i * 4 + 3] = thick;
+    C[i * 4] = dirV.x; C[i * 4 + 1] = dirV.y; C[i * 4 + 2] = dirV.z; C[i * 4 + 3] = tAct;
+    D[i * 4] = spinAx.x; D[i * 4 + 1] = spinAx.y; D[i * 4 + 2] = spinAx.z; D[i * 4 + 3] = spin;
+    E[i * 4] = v1; E[i * 4 + 1] = v2; E[i * 4 + 2] = 0.10 + 0.24 * rand(); E[i * 4 + 3] = tBurst;
+  }
+  geo.setAttribute('aA', new THREE.InstancedBufferAttribute(A, 4));
+  geo.setAttribute('aB', new THREE.InstancedBufferAttribute(B, 4));
+  geo.setAttribute('aC', new THREE.InstancedBufferAttribute(C, 4));
+  geo.setAttribute('aD', new THREE.InstancedBufferAttribute(D, 4));
+  geo.setAttribute('aE', new THREE.InstancedBufferAttribute(E, 4));
+  G.shardU = { uTime: { value: 0 } };
+  const m = new THREE.MeshStandardMaterial({
+    color: new THREE.Color(0.02, 0.03, 0.04), metalness: 0.0, roughness: 0.04, flatShading: true,
+    envMap: envTex, envMapIntensity: 1.5
+  });
+  blendAdd(m);
+  m.onBeforeCompile = function (shader) {
+    Object.assign(shader.uniforms, G.shardU);
+    let v = shader.vertexShader, f = shader.fragmentShader;
+    v = patch(v, '#include <common>', '#include <common>\n' + SHARD_VERT_PARS, 'shard vert pars');
+    v = patch(v, '#include <begin_vertex>', SHARD_VERT_BEGIN, 'shard vert begin');
+    v = patch(v, '#include <project_vertex>', SHARD_VERT_ALIVE, 'shard vert alive');
+    f = patch(f, '#include <common>', '#include <common>\n' + SHARD_FRAG_PARS, 'shard frag pars');
+    f = patch(f, '#include <tonemapping_fragment>', SHARD_FRAG_TAIL + '\n#include <tonemapping_fragment>', 'shard frag tail');
+    f = patch(f, '#include <dithering_fragment>', GLASS_FRAG_ALPHA, 'shard frag alpha');
+    shader.vertexShader = v; shader.fragmentShader = f;
+  };
+  m.customProgramCacheKey = function () { return 'prd-shards'; };
+  const mesh = makeInstanced(geo, m, NSH);
+  mesh.renderOrder = 3;
+  scene.add(mesh);
+  G.shards = mesh;
+}
+/* 4i. Dust (points, analytic) ---------------------------------------- */
+function buildDust() {
+  const V3 = THREE.Vector3;
+  const ND = 20000;
+  const sampleS = SP.makeCdf(0.05);
+  const fr = { C: new V3(), T: new V3(), N: new V3(), B: new V3(), r: 0 };
+  const A = new Float32Array(ND * 4), B = new Float32Array(ND * 4), C = new Float32Array(ND * 4);
+  const rad = new V3(), p0 = new V3(), dirV = new V3(), tmp = new V3();
+  const bulbC = SP.bulbCenter;
+  for (let i = 0; i < ND; i++) {
+    const s = sampleS(rand());
+    SP.frameAt(s, fr);
+    const th = rand() * Math.PI * 2, rho = fr.r * Math.sqrt(rand());
+    rad.copy(fr.N).multiplyScalar(Math.cos(th)).addScaledVector(fr.B, Math.sin(th));
+    p0.copy(fr.C).addScaledVector(rad, rho);
+    const bw = 1 - sstep(0.16, 0.30, s);
+    tmp.copy(p0).sub(bulbC); if (tmp.lengthSq() < 1e-6) tmp.set(0, 1, 0); tmp.normalize();
+    dirV.copy(rad).multiplyScalar(1 - bw).addScaledVector(tmp, bw);
+    dirV.x += (rand() - 0.5) * 0.9; dirV.y += (rand() - 0.5) * 0.9; dirV.z += (rand() - 0.5) * 0.9;
+    dirV.normalize();
+    const thr = BAND_W * (0.5 + 1.2 * rand());
+    let tAct = T_FRONT_A + (T_FRONT_B - T_FRONT_A) * (1 - (s - thr));
+    if (s > SP.S_CUT) tAct = T_SNIP + 0.02 * rand();
+    A[i * 4] = p0.x; A[i * 4 + 1] = p0.y; A[i * 4 + 2] = p0.z; A[i * 4 + 3] = 0.011 + 0.022 * Math.pow(rand(), 1.8);
+    B[i * 4] = dirV.x; B[i * 4 + 1] = dirV.y; B[i * 4 + 2] = dirV.z; B[i * 4 + 3] = tAct;
+    C[i * 4] = 0.04 + 0.20 * rand();
+    C[i * 4 + 1] = (0.55 + 2.0 * Math.pow(rand(), 0.9)) * (0.5 + 0.5 * bw + 0.3 * rand());
+    C[i * 4 + 2] = 0.14 + 0.34 * rand();
+    C[i * 4 + 3] = rand();
+  }
+  const geo = new THREE.BufferGeometry();
+  geo.setAttribute('position', new THREE.BufferAttribute(new Float32Array(ND * 3), 3));
+  geo.setAttribute('aA', new THREE.BufferAttribute(A, 4));
+  geo.setAttribute('aB', new THREE.BufferAttribute(B, 4));
+  geo.setAttribute('aC', new THREE.BufferAttribute(C, 4));
+  G.dustU = { uTime: { value: 0 }, uViewScale: { value: 800 }, uPx: { value: 1 } };
+  const m = new THREE.ShaderMaterial({ uniforms: G.dustU, vertexShader: DUST_VERT, fragmentShader: DUST_FRAG });
+  blendAdd(m);
+  const pts = new THREE.Points(geo, m);
+  pts.frustumCulled = false;
+  pts.renderOrder = 4;
+  scene.add(pts);
+  G.dust = pts;
+}
+
+/* 4j. Glow quads: impact flash, triboluminescent snip flash, front glow, burst */
+function makeGlow(color, order) {
+  const u = {
+    uSize: { value: 1 }, uColor: { value: new THREE.Color(color[0], color[1], color[2]) }, uInt: { value: 0 },
+    uStreak: { value: 0 }, uRingR: { value: 0.5 }, uRingW: { value: 0.06 }, uRingI: { value: 0 }
+  };
+  const m = new THREE.ShaderMaterial({ uniforms: u, vertexShader: GLOW_VERT, fragmentShader: GLOW_FRAG });
+  blendAdd(m);
+  m.depthTest = false;
+  const mesh = new THREE.Mesh(new THREE.PlaneGeometry(1, 1), m);
+  mesh.frustumCulled = false;
+  mesh.renderOrder = order;
+  mesh.visible = false;
+  scene.add(mesh);
+  return { mesh: mesh, u: u };
+}
+function buildFX() {
+  G.fxImpact = makeGlow([1.0, 0.82, 0.55], 20);
+  G.fxSnip = makeGlow([0.62, 0.80, 1.0], 21);
+  G.fxFront = makeGlow([0.55, 0.78, 1.0], 22);
+  G.fxBurst = makeGlow([0.78, 0.90, 1.0], 23);
+  G.fxImpact.mesh.position.set(G.contactX + 0.02, G.contactY, 0.1);
+  G.fxSnip.mesh.position.copy(SP.pCut).add(new THREE.Vector3(0, 0, 0.1));
+  G.fxBurst.mesh.position.copy(SP.bulbCenter).add(new THREE.Vector3(0, 0, 0.2));
+  /* shock cone quad: uv.x = 0 at the nose, growing backwards (+X) */
+  G.coneU = { uInt: { value: 0 } };
+  const cm = new THREE.ShaderMaterial({ uniforms: G.coneU, vertexShader: CONE_VERT, fragmentShader: CONE_FRAG });
+  blendAdd(cm);
+  cm.depthTest = false;
+  G.cone = new THREE.Mesh(new THREE.PlaneGeometry(1, 1), cm);
+  G.cone.scale.set(2.6, 1.7, 1);
+  G.cone.frustumCulled = false;
+  G.cone.renderOrder = 19;
+  scene.add(G.cone);
+}
+
+/* 4k. Camera framing (fixed lens, locked on the Z axis; distance adapts to the aspect) */
+function fitCamera() {
+  const b = SP.bbox, pad = 0.06;
+  const w = (b.x1 - b.x0) + 2 * pad, h = (b.y1 - b.y0) + 2 * pad;
+  const cx = (b.x0 + b.x1) / 2, cy = (b.y0 + b.y1) / 2;
+  const tanH = Math.tan(deg(FOV_DEG / 2));
+  const dH = (h / 0.70) / (2 * tanH);
+  const dW = (w / 0.70) / (2 * tanH * camera.aspect);
+  const dist = Math.max(dH, dW);
+  camera.position.set(cx, cy, dist);
+  camera.rotation.set(0, 0, 0);
+  camera.updateProjectionMatrix();
+}
+
+function applySize(w, h) {
+  if (!gfxOK) return;
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+  renderer.setSize(w, h, false);
+  camera.aspect = w / h;
+  fitCamera();
+  G.dustU.uViewScale.value = h / (2 * Math.tan(deg(FOV_DEG / 2)));
+  G.dustU.uPx.value = renderer.getPixelRatio();
+  needsRender = true;
+}
+
+function initGraphics() {
+  renderer = new THREE.WebGLRenderer({ canvas: document.getElementById('stage'), antialias: true, alpha: true });
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+  renderer.setSize(window.innerWidth, window.innerHeight, false);
+  renderer.outputEncoding = THREE.sRGBEncoding;
+  renderer.toneMapping = THREE.ACESFilmicToneMapping;
+  renderer.toneMappingExposure = 1.05;
+  renderer.setClearColor(0x000000, 0);
+  scene = new THREE.Scene();
+  camera = new THREE.PerspectiveCamera(FOV_DEG, window.innerWidth / window.innerHeight, 0.1, 120);
+
+  resetRng();                                  // seed 42: all procedural data below is drawn in a fixed order
+  envTex = buildEnvTexture();
+  scene.environment = envTex;
+  SP = buildSpine();
+  buildLights();
+  buildGlass();
+  buildClamp();
+  buildNippers();
+  buildBullet();
+  buildSpall();
+  buildShards();
+  buildDust();
+  buildFX();
+  gfxOK = true;
+  applySize(window.innerWidth, window.innerHeight);
+  renderer.compile(scene, camera);             // pre-warm every program now so no shader compiles mid-playback
+}
+
+/* ------------------------------------------------------------------ *
+ * 5. renderAt(simTime): the whole visible state is a pure function of t
+ * ------------------------------------------------------------------ */
+function bulbPush(t) {
+  const tau = t - T_IMPACT;
+  if (tau <= 0) return 0;
+  return 0.05 * Math.exp(-tau / 0.9) * Math.sin(Math.PI * 2 * 1.6 * tau);
+}
+
+function renderAt(tIn) {
+  if (!gfxOK) return;
+  const t = clamp(+tIn || 0, 0, DURATION);
+  const tau = t - T_IMPACT;
+  const push = bulbPush(t);
+
+  /* glass */
+  const U = G.glassU;
+  const frontS = 1 - (t - T_FRONT_A) / (T_FRONT_B - T_FRONT_A);
+  U.uTime.value = t;
+  U.uFront.value = t < T_SNIP ? 3.0 : Math.min(frontS, SP.S_CUT + 0.004);
+  U.uSnip.value = t >= T_SNIP ? 1 : 0;
+  U.uNuc.value = sstep(T_SNIP, T_FRONT_A + 0.05, t);
+  const pk = clamp((t - T_PULSE_A) / (T_PULSE_B - T_PULSE_A), 0, 1);
+  const pulse = (t >= T_PULSE_A && t <= T_PULSE_B) ? Math.pow(Math.sin(Math.PI * pk), 2) : 0;
+  U.uPulse.value = pulse;
+  U.uStress.value = 0.26 + 0.44 * pulse;
+  U.uRing.value = tau > 0 ? Math.exp(-tau / 0.8) : 0;
+  U.uImpactT.value = tau;
+  U.uPush.value = push;
+
+  /* shards / dust (nothing exists before the snip, so skip submitting them: pure function of t) */
+  G.shardU.uTime.value = t;
+  G.dustU.uTime.value = t;
+  G.shards.visible = G.dust.visible = t >= T_SNIP;
+
+  /* bullet + spall */
+  const cx = G.contactX - (tau > 0 ? push : 0);
+  G.bullet.position.set(tau <= 0 ? G.contactX + V_BULLET * (-tau) : cx, G.contactY, 0);
+  G.bullet.visible = tau < 1.4;
+  G.bulletU.uTau.value = tau;
+  G.spallU.uTau.value = tau;
+  G.spallU.uContact.value.set(cx, G.contactY, 0);
+  G.spall.visible = tau >= 0 && tau < 1.5;
+
+  /* supersonic bow-shock V attached to the flying nose; collapses on contact */
+  const noseX = G.contactX + V_BULLET * Math.max(-tau, 0);
+  G.cone.position.set(noseX + 1.3, G.contactY, 0.02);
+  G.coneU.uInt.value = 1 - sstep(T_IMPACT - 0.02, T_IMPACT + 0.05, t);
+  G.cone.visible = G.coneU.uInt.value > 0.002;
+
+  /* nippers: approach, close, snip, retreat */
+  const beta = jawBeta(t);
+  G.armA.rotation.z = beta;
+  G.armB.rotation.z = -beta;
+  const off = -0.10 * (1 - sstep(T_PULSE_A, T_TOUCH, t)) - 4.2 * sstep(4.9, 5.9, t);
+  G.tool.position.copy(G.pivot).addScaledVector(G.uDir, off);
+
+  /* flashes and glows */
+  const fi = tau < 0 ? 0 : Math.exp(-tau / 0.07) * 1.5 + 0.35 * Math.exp(-tau / 0.30);
+  setGlow(G.fxImpact, fi, 0.9 + 0.8 * clamp(tau, 0, 0.3) / 0.3, 0.25 * Math.exp(-Math.max(tau, 0) / 0.2), 0, 0);
+  const ts = t - T_SNIP;
+  const fs = ts < 0 ? 0 : (1.6 * Math.exp(-Math.pow((ts - 0.07) / 0.07, 2)) + 0.55 * Math.exp(-ts / 0.30)) * sstep(0, 0.012, ts);
+  setGlow(G.fxSnip, fs, 0.45 + 0.85 * Math.exp(-ts / 0.2), 0.9 * Math.exp(-Math.max(ts, 0) / 0.18), 0, 0);
+  const wf = (t >= T_FRONT_A && t <= T_FRONT_B + 0.15) ? sstep(T_FRONT_A, T_FRONT_A + 0.12, t) * (1 - sstep(T_FRONT_B, T_FRONT_B + 0.15, t)) : 0;
+  const fp = SP.posAtA(clamp(frontS, 0, 1) * SP.L, G.tmpV || (G.tmpV = new THREE.Vector3()));
+  G.fxFront.mesh.position.set(fp.x, fp.y, fp.z + 0.15);
+  setGlow(G.fxFront, wf * 0.75, 0.55, 0.15, 0, 0);
+  G.frontLight.position.set(fp.x, fp.y, fp.z + 1.0);
+  G.frontLight.intensity = wf * 4.5;
+  const tb = t - T_BURST;
+  const fb = tb < -0.12 ? 0 : (1.8 * Math.exp(-Math.pow((tb - 0.06) / 0.10, 2)) + 0.35 * Math.exp(-Math.max(tb, 0) / 0.45)) * sstep(-0.12, 0.02, tb);
+  setGlow(G.fxBurst, fb, 1.3 + 3.0 * Math.max(tb, 0) * 0.5, 0, Math.max(tb, 0) * 2.6, 0.9 * Math.exp(-Math.max(tb, 0) / 0.55) * sstep(0, 0.03, tb));
+
+  renderer.render(scene, camera);
+  needsRender = false;
+}
+
+function setGlow(fx, intensity, size, streak, ringR, ringI) {
+  fx.mesh.visible = intensity > 0.002 || ringI > 0.002;
+  fx.u.uInt.value = intensity;
+  fx.u.uSize.value = size;
+  fx.u.uStreak.value = streak;
+  fx.u.uRingR.value = clamp(ringR * 0.25, 0.0, 0.98) ;
+  fx.u.uRingW.value = 0.05;
+  fx.u.uRingI.value = ringI;
+}
+
+/* ------------------------------------------------------------------ *
+ * 6. Playback state machine and controls
+ * ------------------------------------------------------------------ */
+function showCountdown(n) {
+  if (elCountdown.style.display !== 'block') elCountdown.style.display = 'block';
+  const s = String(n);
+  if (elCountdown.textContent !== s) elCountdown.textContent = s;
+}
+function hideCountdown() {
+  elCountdown.style.display = 'none';
+  elCountdown.textContent = '';
+}
+function setPlayingIcons(playing) {
+  elIconPause.style.display = playing ? '' : 'none';
+  elIconPlay.style.display = playing ? 'none' : '';
+  elToggle.setAttribute('aria-label', playing ? 'Pause' : 'Play');
+}
+function setSpeed(pill) {
+  playbackSpeed = parseFloat(pill.getAttribute('data-speed'));
+  elPills.forEach(function (p) {
+    const on = p === pill;
+    p.classList.toggle('is-active', on);
+    p.setAttribute('aria-checked', on ? 'true' : 'false');
+  });
+}
+
+function doRefire() {
+  hideCountdown();
+  simTime = 0;
+  elScrubber.value = '0';
+  countdownElapsed = 0;
+  holdElapsed = 0;
+  state = 'REFIRE_HOLD';
+  setPlayingIcons(true);
+  renderAt(0);
+}
+function doToggle() {
+  if (state === 'PLAYING') {
+    state = 'PAUSED'; setPlayingIcons(false);
+  } else if (state === 'COUNTDOWN' || state === 'REFIRE_HOLD') {
+    hideCountdown();
+    simTime = 0; elScrubber.value = '0';
+    state = 'PAUSED'; setPlayingIcons(false);
+    renderAt(0);
+  } else if (state === 'PAUSED') {
+    state = 'PLAYING'; setPlayingIcons(true);
+  } else if (state === 'ENDED') {
+    hideCountdown();
+    simTime = 0; elScrubber.value = '0';
+    state = 'PLAYING'; setPlayingIcons(true);
+    renderAt(0);
+  }
+}
+function doScrub() {
+  if (state === 'COUNTDOWN' || state === 'REFIRE_HOLD') hideCountdown();
+  simTime = clamp(parseFloat(elScrubber.value) || 0, 0, DURATION);
+  state = 'PAUSED';
+  setPlayingIcons(false);
+  renderAt(simTime);
+}
+
+function frame(ts) {
+  requestAnimationFrame(frame);
+  let rawDt = lastTs === null ? 0 : (ts - lastTs) / 1000;
+  lastTs = ts;
+  if (!(rawDt >= 0)) rawDt = 0;
+  const dt = Math.min(rawDt, 0.1);
+
+  if (state === 'COUNTDOWN') {
+    countdownElapsed += dt;
+    if (countdownElapsed >= 3.0) {
+      hideCountdown();
+      state = 'PLAYING';
+    } else {
+      showCountdown(3 - Math.floor(countdownElapsed));
+    }
+  } else if (state === 'REFIRE_HOLD') {
+    holdElapsed += dt;
+    if (holdElapsed >= 1.0) state = 'PLAYING';
+  } else if (state === 'PLAYING') {
+    simTime = Math.min(DURATION, simTime + dt * playbackSpeed);
+    elScrubber.value = simTime.toFixed(3);
+    renderAt(simTime);
+    if (simTime >= DURATION) {
+      simTime = DURATION;
+      elScrubber.value = DURATION.toFixed(3);
+      state = 'ENDED';
+      setPlayingIcons(false);
+    }
+    return;
+  }
+  if (needsRender) renderAt(simTime);
+}
+
+elToggle.addEventListener('click', doToggle);
+elRefire.addEventListener('click', doRefire);
+elScrubber.addEventListener('input', doScrub);
+elPills.forEach(function (p) { p.addEventListener('click', function () { setSpeed(p); }); });
+window.addEventListener('resize', function () {
+  applySize(window.innerWidth, window.innerHeight);
+  renderAt(simTime);
+});
+
+/* ------------------------------------------------------------------ *
+ * 7. Boot: build, draw the resting scene (simTime = 0), then start the
+ *    wall-clock countdown on the first animation frame after that.
+ * ------------------------------------------------------------------ */
+try {
+  if (typeof THREE === 'undefined') throw new Error('three.js failed to load');
+  initGraphics();
+} catch (err) {
+  gfxOK = false;
+  console.error('Graphics initialisation failed:', err);
+}
+showCountdown(3);
+elScrubber.value = '0';
+setPlayingIcons(true);
+renderAt(0);
+requestAnimationFrame(frame);
+</script>
+</body>
+</html>
