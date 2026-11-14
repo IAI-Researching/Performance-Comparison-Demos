@@ -5,7 +5,7 @@ This file records which version of the execution protocol produced each set of r
 | Version | Name | Status | Applies to |
 | :--- | :--- | :--- | :--- |
 | **v1.0** | Shared-Host Seatbelt | Retired | [`ballistics/water-balloon`](ballistics/water-balloon/), [`materials/prince-ruperts-drop`](materials/prince-ruperts-drop/) (runs from 2026-11-11 to 2026-11-14) |
-| **v1.1** | Shared-Host Seatbelt, all harnesses enforced | Current | [`vehicle-dynamics/f1-night-duel`](vehicle-dynamics/f1-night-duel/) |
+| **v1.1** | Shared-Host Seatbelt, all harnesses enforced | Current | [`vehicle-dynamics/f1-night-duel`](vehicle-dynamics/f1-night-duel/) (introduced in stages during the first round; see below) |
 | **v2.0** | Isolated, one run per environment | Planned | Future benchmarks |
 
 ---
@@ -41,14 +41,35 @@ The Seatbelt profile controlled *files*, but not *processes* or some *shared tem
 
 ## v1.1: Shared-Host Seatbelt, all harnesses enforced (current)
 
-Changes from v1.0, applied 2026-11-14:
+v1.1 was introduced during the first F1 Night Duel round on 2026-11-14. Its changes were made in three stages as each gap was found, so the table at the end of this section lists the conditions each run actually had.
 
-- **Every harness now runs inside the same Seatbelt profile.** The DeepSeek Harness runs with its built-in sandbox switched off and the outer profile as the boundary. This matches how the Claude Code, Codex CLI and Antigravity CLI runs are configured.
-- **The DeepSeek Harness gets a fresh, empty home folder per run.** It receives only login credentials and its base configuration, with no past sessions, attachments, cache or user instructions. This matches how Codex CLI and Kimi Code are isolated.
-- **The real DeepSeek Harness state folder is unreadable from inside a run**, like the Codex and Kimi folders.
-- **Runs are executed one at a time.**
+**Every harness**
 
-Still shared with v1.0: one machine and one user account, so process visibility and the shared Claude Code temporary folder remain. These are addressed in v2.0.
+- **Same boundary.** Every harness runs inside the same Seatbelt profile and uses its own built-in sandbox switched off (`--dangerously-skip-permissions`, `--dangerously-bypass-approvals-and-sandbox`, `danger-full-access`).
+- **Clean, login-only home per run.** Each harness gets a home or config folder that contains only its login credentials and base configuration. It has no past sessions, conversations, history, memory, plans, attachments, caches or user instructions. The host's real state folders (`~/.claude`, `~/.codex`, `~/.gemini`, `~/.kimi`, `~/.kimi-code`, `~/.dsh`, `~/.minimax`) are unreadable from inside a run.
+  - Codex CLI, Kimi Code, DeepSeek Harness and Antigravity CLI receive a fresh copy of their login in the run's own folder.
+  - Claude Code and MiniMax Code tie their login to a fixed folder, so each uses a dedicated benchmark-only folder (`~/.pcd-harness/claude`, `~/.pcd-harness/minimax`). It was signed in once, and everything in it except the login is deleted before every run.
+- **No web tools.** Web search and web fetch tools are disabled for every harness, by flag or configuration, and checked with a test call. The one exception is below.
+- **Private temporary folder.** Each run has its own temporary folder. The shared `/private/tmp/claude-*` area is no longer reachable from any run.
+- **No extra tool catalogues.** Account-level connectors (Claude Code) and cloud connector tools (MiniMax Code) are disabled, because other harnesses have no equivalent.
+- **Same stop rule.** A run ends when the agent exits or after the 2-hour timeout. An Antigravity-only rule that stopped runs after 6 minutes without file changes was removed; it had never triggered.
+- **Same version per round.** Within a round, every model on the same harness uses the identical harness version, which is checked before each run (for example, Codex CLI 0.169.0 for all Codex models in F1 Night Duel). Auto-update is disabled during runs where the harness supports it.
+- **One run at a time.** Benchmark runs never overlap. Short sandboxed setup tests (under two minutes each) ran alongside some runs while these changes were being made.
+
+**Known exception: Antigravity web search.** Antigravity CLI's `search_web` tool runs on Google's side and could not be disabled by any available setting. Gemini runs therefore have search available. To keep this auditable, each Gemini run's full step-by-step transcript is appended to its `raw_output.json`, and every `search_web` call is counted and noted in the run's commit message.
+
+**F1 Night Duel round, conditions per run**
+
+| Run | Started (UTC) | Conditions |
+| :--- | :--- | :--- |
+| Codex GPT 6.1 Terra | 06:31 | Stage A. Codex isolation unchanged from v1.0 (fresh login-only home, web search off). The shared Claude temp area was still reachable. |
+| DeepSeek v4.1 Flash | 12:52 | Stage A. First sandboxed DeepSeek run with a fresh home. Its web tools were still available; the log shows no web calls. |
+| Codex GPT 6.1 Sol, Codex GPT 6 Astra | 13:50, 14:32 | Stage A, as Terra. |
+| Kimi Code K3.1 Pro | 15:30 | Stage B. Clean homes and web tools off for Kimi, DeepSeek and Antigravity. The shared Claude temp area was still reachable. |
+| Gemini 4 Hydrogen, Gemini 4 Argon | 16:38, 16:53 | Stage B. Transcript appended; `search_web` calls: 0 and 0. |
+| All later runs | from 17:03 | Stage C. Full v1.1 as described above. |
+
+Still shared with v1.0: one machine and one user account. Agents can still list and stop other processes on the machine. That is addressed in v2.0.
 
 ---
 
