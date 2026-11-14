@@ -61,8 +61,8 @@ Each benchmark test directory (e.g. [`ballistics/water-balloon/`](ballistics/wat
 
 | Model | Developer Harness | Verification | Wall-Clock | Deliverable |
 | :--- | :--- | :---: | :---: | :---: |
+| **Kimi Code K3.1 Pro (Max)** | Kimi Code | **PASS (100%)** | 3999.3s | [`vehicle-dynamics/f1-night-duel/kimi-k3.1-pro/`](vehicle-dynamics/f1-night-duel/kimi-k3.1-pro/) |
 | **Codex GPT 6 Astra (Max)** | Codex CLI | **PASS (100%)** | 1700.9s | [`vehicle-dynamics/f1-night-duel/codex-gpt-6-astra/`](vehicle-dynamics/f1-night-duel/codex-gpt-6-astra/) |
 | **Codex GPT 6.1 Sol (Max)** | Codex CLI | **PASS (100%)** | 2515.6s | [`vehicle-dynamics/f1-night-duel/codex-gpt-6.1-sol/`](vehicle-dynamics/f1-night-duel/codex-gpt-6.1-sol/) |
-| **DeepSeek v4.1 Flash (Max)** | DeepSeek CLI | **PASS (100%)** | 3055.7s | [`vehicle-dynamics/f1-night-duel/deepseek-v4.1-flash/`](vehicle-dynamics/f1-night-duel/deepseek-v4.1-flash/) |
 
 *Showing the 3 most recent benchmark deliverables. See [`TELEMETRY.md`](vehicle-dynamics/f1-night-duel/TELEMETRY.md) for the complete multi-model leaderboard, full token metrics, cache ratios, and runtime verification logs.*
