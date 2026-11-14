@@ -27,10 +27,12 @@ Models:
 - claude-fable-5-1 (Claude Fable 5.1, Max)
 - claude-fable-5-2 (Claude Fable 5.2, Max)
 - claude-opus-5-5 (Claude Opus 5.5, Max)
+- claude-sonnet-5-5 (Claude Sonnet 5.5, Max)
+- claude-haiku-5-5 (Claude Haiku 5.5, Max)
 
 ---
 
-### Track 2: Antigravity CLI (Antigravity CLI 1.5.7 — First-Party Native)
+### Track 2: Antigravity CLI (Antigravity CLI 1.5.8 — First-Party Native)
 Command:
 agy \
   --model <model_id> \
@@ -43,13 +45,11 @@ agy \
 Models:
 - gemini-4-argon-high (Gemini 4 Argon, High)
 - gemini-4-carbon-high (Gemini 4 Carbon, High)
-- gemini-4-hydrogen-high (Gemini 4 Hydrogen, High)
 - gemini-4-hydrogen-xhigh (Gemini 4 Hydrogen, XHigh)
-- gemini-3.8-flash-high (Gemini 3.8 Flash, High)
 
 ---
 
-### Track 3: Codex CLI (Codex CLI 0.167.1 — First-Party Native)
+### Track 3: Codex CLI (Codex CLI 0.167.1 / 0.168.0 — First-Party Native)
 Environment:
 CODEX_HOME=<ephemeral_home_with_auth_json_only>
 
@@ -68,52 +68,4 @@ codex exec \
 Models:
 - gpt-6-astra (Codex GPT 6 Astra, Max)
 - gpt-6.1-sol (Codex GPT 6.1 Sol, Max)
-
----
-
-### Track 4: Kimi Code (Kimi Code 2.5.3 — First-Party Native)
-Environment:
-KIMI_CODE_HOME=<ephemeral_home_with_auth_and_effort_max_config_toml>
-
-Command:
-kimi \
-  -m "kimi-code/k3.1-pro" \
-  -p "<PROMPT>" \
-  --output-format stream-json
-
-Models:
-- kimi-code/k3.1-pro (Kimi Code K3.1 Pro, Max)
-
----
-
-### Track 5: OpenCode (OpenCode 2.2.7 — Dedicated Agentic Orchestrator)
-Note: Utilized for models lacking an official first-party orchestrable CLI.
-Environment:
-XDG_DATA_HOME=<ephemeral_xdg_data_with_credentials_only_opencode_db>
-
-Command:
-opencode --standalone run \
-  --auto \
-  --archived \
-  --thinking \
-  --format json \
-  -m "<model_id>" \
-  "<PROMPT>"
-
-Models:
-- fireworks-ai/accounts/fireworks/models/glm-5p3#max (GLM 5.3, Max)
-- fireworks-ai/accounts/fireworks/models/glm-5p3-flash#max (GLM 5.3 Flash, Max)
-
----
-
-### Track 6: MiniMax Code ({{MCODE_HARNESS_LABEL}} — First-Party Native)
-Command:
-mcode exec \
-  --model minimax/MiniMax-M3.1-Flash \
-  --effort max \
-  --permission full \
-  --output-format stream-json \
-  "<PROMPT>"
-
-Models:
-- minimax/MiniMax-M3.1-Flash (MiniMax M3.1 Flash, Max)
+- gpt-6.1-terra (Codex GPT 6.1 Terra, Max; run on Codex CLI 0.168.0)

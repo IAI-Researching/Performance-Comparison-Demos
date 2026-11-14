@@ -1,0 +1,2690 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Prince Rupert's Drop: Bullet Impact vs. Tail Snip</title>
+<style>
+*, *::before, *::after {
+  box-sizing: border-box;
+}
+html, body {
+  margin: 0;
+  padding: 0;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  background: radial-gradient(circle at center, #161922 0%, #090a0f 100%);
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -webkit-user-select: none;
+  user-select: none;
+}
+#stage {
+  display: block;
+  width: 100vw;
+  height: 100vh;
+}
+
+#countdown {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 50;
+  pointer-events: none;
+  font-size: 96px;
+  font-weight: 700;
+  line-height: 1;
+  color: rgba(255, 255, 255, 0.35);
+  font-variant-numeric: tabular-nums;
+}
+
+#dock {
+  position: fixed;
+  bottom: 24px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 100;
+  width: 536px;
+  height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 0 14px;
+  background: rgba(15, 17, 23, 0.78);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 9999px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.35);
+}
+
+#dock button {
+  font-family: inherit;
+  line-height: 1;
+  margin: 0;
+  flex-shrink: 0;
+  white-space: nowrap;
+  appearance: none;
+  -webkit-appearance: none;
+}
+
+.dock-sep {
+  width: 1px;
+  height: 18px;
+  flex-shrink: 0;
+  background: rgba(255, 255, 255, 0.12);
+}
+
+#btn-refire {
+  width: 78px;
+  height: 28px;
+  padding: 0 10px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 9999px;
+  color: #ffffff;
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+}
+#btn-refire:hover {
+  background: rgba(255, 255, 255, 0.16);
+}
+
+#btn-toggle {
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 9999px;
+  color: #ffffff;
+  cursor: pointer;
+}
+#btn-toggle:hover {
+  background: rgba(255, 255, 255, 0.16);
+}
+
+#speed-group {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  flex-shrink: 0;
+}
+.speed-pill {
+  width: 42px;
+  height: 24px;
+  padding: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 9999px;
+  color: rgba(255, 255, 255, 0.6);
+  font-size: 11px;
+  font-weight: 500;
+  font-variant-numeric: tabular-nums;
+  cursor: pointer;
+}
+.speed-pill:hover {
+  color: #ffffff;
+  background: rgba(255, 255, 255, 0.06);
+}
+.speed-pill.is-active {
+  color: #ffffff;
+  background: rgba(255, 255, 255, 0.18);
+  border-color: rgba(255, 255, 255, 0.2);
+}
+
+#scrubber {
+  width: 157px;
+  height: 4px;
+  margin: 0;
+  padding: 0;
+  flex-shrink: 0;
+  appearance: none;
+  -webkit-appearance: none;
+  background: rgba(255, 255, 255, 0.22);
+  border-radius: 9999px;
+  outline: none;
+  cursor: pointer;
+}
+#scrubber::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: #ffffff;
+  border: none;
+  cursor: pointer;
+}
+#scrubber::-moz-range-thumb {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: #ffffff;
+  border: none;
+  cursor: pointer;
+}
+</style>
+</head>
+<body>
+<canvas id="stage"></canvas>
+<div id="countdown" aria-hidden="true">3</div>
+
+<div id="dock" role="toolbar" aria-label="Simulation Controls">
+  <button id="btn-refire" type="button" aria-label="Re-fire" title="Re-fire">
+    <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+      <path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.19"/>
+    </svg>
+    <span>Re-fire</span>
+  </button>
+  <span class="dock-sep" aria-hidden="true"></span>
+  <button id="btn-toggle" type="button" aria-label="Pause" title="Play / Pause">
+    <svg id="icon-pause" viewBox="0 0 24 24" width="14" height="14" fill="currentColor" aria-hidden="true">
+      <rect x="6" y="4" width="4" height="16" rx="1"/>
+      <rect x="14" y="4" width="4" height="16" rx="1"/>
+    </svg>
+    <svg id="icon-play" viewBox="0 0 24 24" width="14" height="14" fill="currentColor" aria-hidden="true" style="display:none;">
+      <path d="M8 5v14l11-7z"/>
+    </svg>
+  </button>
+  <span class="dock-sep" aria-hidden="true"></span>
+  <div id="speed-group" role="radiogroup" aria-label="Playback Speed">
+    <button class="speed-pill" type="button" role="radio" aria-checked="false" data-speed="0.25">0.25×</button>
+    <button class="speed-pill" type="button" role="radio" aria-checked="false" data-speed="0.5">0.5×</button>
+    <button class="speed-pill is-active" type="button" role="radio" aria-checked="true" data-speed="1.0">1.0×</button>
+    <button class="speed-pill" type="button" role="radio" aria-checked="false" data-speed="2.0">2.0×</button>
+  </div>
+  <span class="dock-sep" aria-hidden="true"></span>
+  <input id="scrubber" type="range" min="0" max="8" step="0.001" value="0" aria-label="Timeline Scrubber">
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+(function() {
+  'use strict';
+
+  // =========================================================================
+  // 1. CONSTANTS & DETERMINISTIC SEEDED PRNG (MULBERRY32, SEED = 42)
+  // =========================================================================
+  var DURATION = 8;
+  var SEED = 42;
+
+  function createMulberry32(seed) {
+    var a = seed >>> 0;
+    return function() {
+      a = (a + 0x6D2B79F5) >>> 0;
+      var t = Math.imul(a ^ (a >>> 15), 1 | a);
+      t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+      return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+    };
+  }
+
+  var rng = createMulberry32(SEED);
+
+  function clamp(v, lo, hi) {
+    return v < lo ? lo : (v > hi ? hi : v);
+  }
+  function lerp(a, b, t) {
+    return a + (b - a) * t;
+  }
+  function smoothstep(e0, e1, x) {
+    var t = clamp((x - e0) / (e1 - e0), 0.0, 1.0);
+    return t * t * (3.0 - 2.0 * t);
+  }
+  function smootherstep(e0, e1, x) {
+    var t = clamp((x - e0) / (e1 - e0), 0.0, 1.0);
+    return t * t * t * (t * (t * 6.0 - 15.0) + 10.0);
+  }
+
+  // Helper for premultiplied-alpha safe additive glow over transparent canvas
+  function configureAdditiveBlend(mat) {
+    mat.transparent = true;
+    mat.depthWrite = false;
+    mat.blending = THREE.CustomBlending;
+    mat.blendEquation = THREE.AddEquation;
+    mat.blendSrc = THREE.SrcAlphaFactor;
+    mat.blendDst = THREE.OneFactor;
+    mat.blendEquationAlpha = THREE.AddEquation;
+    mat.blendSrcAlpha = THREE.ZeroFactor;
+    mat.blendDstAlpha = THREE.OneFactor;
+    return mat;
+  }
+
+  // =========================================================================
+  // 2. RENDERER, SCENE & NARROW 85MM EQUIVALENT CAMERA SETUP
+  // =========================================================================
+  var stageCanvas = document.getElementById('stage');
+  var renderer = new THREE.WebGLRenderer({
+    canvas: stageCanvas,
+    antialias: true,
+    alpha: true,
+    powerPreference: 'high-performance'
+  });
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+  renderer.setSize(window.innerWidth, window.innerHeight, false);
+  renderer.outputEncoding = THREE.sRGBEncoding;
+  renderer.toneMapping = THREE.ACESFilmicToneMapping;
+  renderer.toneMappingExposure = 1.12;
+  renderer.setClearColor(0x000000, 0);
+
+  var scene = new THREE.Scene();
+
+  // Fixed narrow perspective camera (85mm equivalent, FOV = 35 deg) locked along Z-axis
+  var BASE_CAM_Z = 15.0;
+  var camera = new THREE.PerspectiveCamera(35, window.innerWidth / window.innerHeight, 0.1, 100);
+  camera.position.set(0, 0.08, BASE_CAM_Z);
+  camera.lookAt(0, 0.08, 0);
+
+  function updateCameraFraming() {
+    var w = window.innerWidth || 1;
+    var h = window.innerHeight || 1;
+    var aspect = w / h;
+    camera.aspect = aspect;
+    // Frame entire centerpiece cleanly inside central 70% for both 16:9 (1.778) and 1280x1340 (0.955)
+    var zDist = BASE_CAM_Z;
+    if (aspect < 0.90) {
+      zDist = BASE_CAM_Z * (0.90 / Math.max(aspect, 0.35));
+    }
+    camera.position.set(0, 0.08, zDist);
+    camera.lookAt(0, 0.08, 0);
+    camera.updateProjectionMatrix();
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+    renderer.setSize(w, h, false);
+  }
+  updateCameraFraming();
+
+  // =========================================================================
+  // 3. PROCEDURAL STUDIO REFLECTION ENVIRONMENT (PMREMGenerator + CubeCamera)
+  // =========================================================================
+  function buildStudioEnvironment() {
+    var envScene = new THREE.Scene();
+
+    // Studio dark enclosure dome
+    var domeGeo = new THREE.SphereGeometry(40, 32, 24);
+    var domePos = domeGeo.attributes.position;
+    var domeCols = new Float32Array(domePos.count * 3);
+    for (var i = 0; i < domePos.count; i++) {
+      var ny = clamp(domePos.getY(i) / 40.0, -1.0, 1.0);
+      var grad = smoothstep(-0.8, 0.9, ny);
+      domeCols[i * 3 + 0] = lerp(0.03, 0.09, grad);
+      domeCols[i * 3 + 1] = lerp(0.04, 0.11, grad);
+      domeCols[i * 3 + 2] = lerp(0.06, 0.16, grad);
+    }
+    domeGeo.setAttribute('color', new THREE.BufferAttribute(domeCols, 3));
+    var domeMat = new THREE.MeshBasicMaterial({ vertexColors: true, side: THREE.BackSide });
+    var domeMesh = new THREE.Mesh(domeGeo, domeMat);
+    envScene.add(domeMesh);
+
+    function addPanel(w, h, colorHex, intensity, pos, lookTarget) {
+      var pGeo = new THREE.PlaneGeometry(w, h);
+      var c = new THREE.Color(colorHex).multiplyScalar(intensity);
+      var pMat = new THREE.MeshBasicMaterial({ color: c, side: THREE.DoubleSide });
+      var m = new THREE.Mesh(pGeo, pMat);
+      m.position.copy(pos);
+      m.lookAt(lookTarget);
+      envScene.add(m);
+      return { geo: pGeo, mat: pMat };
+    }
+
+    var origin = new THREE.Vector3(0, 0, 0);
+    var panels = [
+      // Tall cool-white key softbox (front-left-top) for long glass specular ribbon
+      addPanel(9.5, 22.0, 0xf2f7ff, 3.8, new THREE.Vector3(-11.0, 8.5, 13.0), origin),
+      // Crisp narrow specular kicker strip
+      addPanel(2.4, 24.0, 0xffffff, 5.5, new THREE.Vector3(-5.5, 11.0, 15.5), origin),
+      // Front-right soft fill diffuser
+      addPanel(10.0, 16.0, 0xcad8f4, 1.5, new THREE.Vector3(13.5, -1.5, 12.0), origin),
+      // Electric cyan back-left rim strip
+      addPanel(4.8, 24.0, 0x2ce8ff, 4.4, new THREE.Vector3(-14.5, 3.5, -9.5), origin),
+      // Magenta-violet back-right rim strip
+      addPanel(4.8, 24.0, 0xff3cb8, 3.9, new THREE.Vector3(14.5, -2.5, -9.5), origin),
+      // Overhead softbox crown
+      addPanel(14.0, 8.0, 0xe8f2ff, 2.8, new THREE.Vector3(0.0, 18.5, 2.0), origin),
+      // Subtle floor bounce
+      addPanel(20.0, 14.0, 0x26324a, 0.9, new THREE.Vector3(0.0, -17.0, 2.0), origin)
+    ];
+
+    // 1) PMREMGenerator for PBR Standard/Physical materials (lead, copper, tool steel, clamp)
+    var pmremGen = new THREE.PMREMGenerator(renderer);
+    pmremGen.compileCubemapShader();
+    var pmremRT = pmremGen.fromScene(envScene, 0.03);
+    scene.environment = pmremRT.texture;
+    pmremGen.dispose();
+
+    // 2) True Mipmapped Cubemap for custom GLSL glass chromatic dispersion & crystal facets
+    var cubeRT = new THREE.WebGLCubeRenderTarget(256, {
+      format: THREE.RGBAFormat,
+      generateMipmaps: true,
+      minFilter: THREE.LinearMipmapLinearFilter,
+      magFilter: THREE.LinearFilter
+    });
+    var cubeCam = new THREE.CubeCamera(0.1, 100, cubeRT);
+    cubeCam.update(renderer, envScene);
+
+    // Dispose temporary studio geometry/materials
+    domeGeo.dispose();
+    domeMat.dispose();
+    for (var p = 0; p < panels.length; p++) {
+      panels[p].geo.dispose();
+      panels[p].mat.dispose();
+    }
+
+    return {
+      pmremTexture: pmremRT.texture,
+      cubeTexture: cubeRT.texture
+    };
+  }
+
+  var studioEnv = buildStudioEnvironment();
+
+  // Studio Three-Point + Dual Rim Direct Lights
+  var keyLight = new THREE.DirectionalLight(0xf0f6ff, 2.1);
+  keyLight.position.set(-5.0, 6.5, 7.5);
+  scene.add(keyLight);
+
+  var fillLight = new THREE.DirectionalLight(0x9fb8e8, 0.85);
+  fillLight.position.set(6.0, -1.5, 6.5);
+  scene.add(fillLight);
+
+  var cyanRimLight = new THREE.DirectionalLight(0x2ce8ff, 2.2);
+  cyanRimLight.position.set(-7.5, 2.5, -5.5);
+  scene.add(cyanRimLight);
+
+  var magentaRimLight = new THREE.DirectionalLight(0xff42b8, 1.9);
+  magentaRimLight.position.set(7.5, -2.5, -5.5);
+  scene.add(magentaRimLight);
+
+  var topRimLight = new THREE.DirectionalLight(0xffffff, 1.35);
+  topRimLight.position.set(0.5, 8.5, -3.5);
+  scene.add(topRimLight);
+
+  var ambientLight = new THREE.AmbientLight(0x242c3d, 0.55);
+  scene.add(ambientLight);
+
+  // Dynamic physical event lights
+  var impactFlashLight = new THREE.PointLight(0xffe8c2, 0.0, 7.0, 2.0);
+  scene.add(impactFlashLight);
+
+  var triboFlashLight = new THREE.PointLight(0x8ae2ff, 0.0, 8.0, 2.0);
+  scene.add(triboFlashLight);
+
+  var wavefrontLight = new THREE.PointLight(0xc8ecff, 0.0, 6.5, 1.8);
+  scene.add(wavefrontLight);
+
+  // =========================================================================
+  // 4. PROCEDURAL IN-MEMORY SPRITE TEXTURES (DETACHED CANVASES ONLY)
+  // =========================================================================
+  function createFlareTexture() {
+    var cnv = document.createElement('canvas');
+    cnv.width = 128;
+    cnv.height = 128;
+    var ctx = cnv.getContext('2d');
+    var cx = 64, cy = 64;
+
+    var grad = ctx.createRadialGradient(cx, cy, 0, cx, cy, 62);
+    grad.addColorStop(0.0, 'rgba(255, 255, 255, 1.0)');
+    grad.addColorStop(0.16, 'rgba(215, 240, 255, 0.85)');
+    grad.addColorStop(0.42, 'rgba(110, 195, 255, 0.28)');
+    grad.addColorStop(1.0, 'rgba(0, 0, 0, 0.0)');
+    ctx.fillStyle = grad;
+    ctx.fillRect(0, 0, 128, 128);
+
+    // Subtle crisp optical cross-spikes
+    ctx.save();
+    ctx.translate(cx, cy);
+    for (var k = 0; k < 4; k++) {
+      ctx.rotate(Math.PI * 0.25);
+      var spikeLen = (k % 2 === 0) ? 60 : 38;
+      var spikeW = (k % 2 === 0) ? 2.4 : 1.4;
+      var sg = ctx.createLinearGradient(-spikeLen, 0, spikeLen, 0);
+      sg.addColorStop(0.0, 'rgba(255,255,255,0)');
+      sg.addColorStop(0.5, 'rgba(255,255,255,0.75)');
+      sg.addColorStop(1.0, 'rgba(255,255,255,0)');
+      ctx.fillStyle = sg;
+      ctx.fillRect(-spikeLen, -spikeW * 0.5, spikeLen * 2, spikeW);
+    }
+    ctx.restore();
+
+    var tex = new THREE.CanvasTexture(cnv);
+    tex.encoding = THREE.sRGBEncoding;
+    return tex;
+  }
+
+  function createDustSpriteTexture() {
+    var cnv = document.createElement('canvas');
+    cnv.width = 64;
+    cnv.height = 64;
+    var ctx = cnv.getContext('2d');
+    var grad = ctx.createRadialGradient(32, 32, 0, 32, 32, 30);
+    grad.addColorStop(0.0, 'rgba(255, 255, 255, 1.0)');
+    grad.addColorStop(0.28, 'rgba(235, 245, 255, 0.72)');
+    grad.addColorStop(0.65, 'rgba(185, 215, 250, 0.20)');
+    grad.addColorStop(1.0, 'rgba(255, 255, 255, 0.0)');
+    ctx.fillStyle = grad;
+    ctx.fillRect(0, 0, 64, 64);
+    var tex = new THREE.CanvasTexture(cnv);
+    tex.encoding = THREE.sRGBEncoding;
+    return tex;
+  }
+
+  var flareTexture = createFlareTexture();
+  var dustTexture = createDustSpriteTexture();
+
+  // =========================================================================
+  // 5. PRINCE RUPERT'S DROP SPINE CURVE, BISHOP FRAMES & RADIUS PROFILE
+  // =========================================================================
+  // Centered vertically/diagonally from lower bulbous head (s = 0) to curled tail tip (s = 1)
+  var SPINE_POINTS = [
+    new THREE.Vector3(-0.52, -2.52,  0.00), // s = 0.000: bottom bulb pole
+    new THREE.Vector3(-0.45, -1.95,  0.00), // s ~ 0.104: bulb equator (bullet target!)
+    new THREE.Vector3(-0.31, -1.22,  0.02), // s ~ 0.240: bulb upper shoulder
+    new THREE.Vector3(-0.07, -0.35,  0.05), // lower neck
+    new THREE.Vector3( 0.24,  0.52,  0.04), // mid neck
+    new THREE.Vector3( 0.51,  1.32, -0.02), // upper neck (clamp zone s ~ 0.71)
+    new THREE.Vector3( 0.59,  1.90, -0.04), // lower tail
+    new THREE.Vector3( 0.45,  2.22,  0.02), // s ~ 0.895: tail snip point!
+    new THREE.Vector3( 0.19,  2.42,  0.09), // upper tail curl
+    new THREE.Vector3( 0.01,  2.31,  0.14)  // s = 1.000: helical tail tip
+  ];
+
+  var spineCurve = new THREE.CatmullRomCurve3(SPINE_POINTS, false, 'centripetal');
+  spineCurve.arcLengthDivisions = 800;
+  spineCurve.updateArcLengths();
+
+  var S_BULB_EQ = 0.104;
+  var S_CLAMP = 0.715;
+  var S_CUT = 0.895;
+  var S_NUCLEATE_END = 0.855;
+  var R_BULB_MAX = 0.55;
+
+  function dropRadius(s) {
+    if (s <= 0.0) return 0.0;
+    if (s >= 1.0) return 0.0;
+    if (s < S_BULB_EQ) {
+      var d = s / S_BULB_EQ;
+      return R_BULB_MAX * Math.sqrt(Math.max(0.0, 2.0 * d - d * d));
+    }
+    var w = (s - S_BULB_EQ) / (1.0 - S_BULB_EQ);
+    var bulbTaper = 1.0 / Math.pow(1.0 + 11.5 * Math.pow(w, 2.10), 1.38);
+    var tailFilament = 0.015 * (1.0 - 0.32 * w);
+    var r = R_BULB_MAX * bulbTaper + tailFilament * Math.pow(w, 0.65);
+    if (s > 0.992) {
+      var tipT = (1.0 - s) / 0.008;
+      r *= Math.sqrt(Math.max(0.0, 2.0 * tipT - tipT * tipT));
+    }
+    return r;
+  }
+
+  // Precompute twist-free parallel-transport (Bishop) frames along normalized arc-length s in [0, 1]
+  var N_LUT = 512;
+  var lutPos = new Array(N_LUT + 1);
+  var lutTan = new Array(N_LUT + 1);
+  var lutNorm = new Array(N_LUT + 1);
+  var lutBinorm = new Array(N_LUT + 1);
+  var lutRad = new Float32Array(N_LUT + 1);
+
+  (function buildSpineLUT() {
+    for (var i = 0; i <= N_LUT; i++) {
+      var s = i / N_LUT;
+      lutPos[i] = spineCurve.getPointAt(s);
+      lutTan[i] = spineCurve.getTangentAt(s).normalize();
+      lutRad[i] = dropRadius(s);
+    }
+    // Initial frame at s = 0 with N pointing roughly +X, B roughly +Z
+    var t0 = lutTan[0];
+    var refZ = new THREE.Vector3(0, 0, 1);
+    var n0 = new THREE.Vector3().crossVectors(t0, refZ).normalize();
+    if (n0.x < 0) n0.negate();
+    var b0 = new THREE.Vector3().crossVectors(t0, n0).normalize();
+    lutNorm[0] = n0;
+    lutBinorm[0] = b0;
+
+    var axis = new THREE.Vector3();
+    var quat = new THREE.Quaternion();
+    for (var j = 1; j <= N_LUT; j++) {
+      var prevT = lutTan[j - 1];
+      var currT = lutTan[j];
+      var nPrev = lutNorm[j - 1].clone();
+      axis.crossVectors(prevT, currT);
+      var sinA = axis.length();
+      if (sinA > 1e-6) {
+        axis.divideScalar(sinA);
+        var cosA = clamp(prevT.dot(currT), -1.0, 1.0);
+        var ang = Math.atan2(sinA, cosA);
+        quat.setFromAxisAngle(axis, ang);
+        nPrev.applyQuaternion(quat);
+      }
+      // Gram-Schmidt orthogonalize
+      nPrev.addScaledVector(currT, -nPrev.dot(currT)).normalize();
+      lutNorm[j] = nPrev;
+      lutBinorm[j] = new THREE.Vector3().crossVectors(currT, nPrev).normalize();
+    }
+  })();
+
+  function sampleSpine(s, outObj) {
+    var sc = clamp(s, 0.0, 1.0) * N_LUT;
+    var idx = Math.min(N_LUT - 1, Math.floor(sc));
+    var f = sc - idx;
+    outObj.pos.copy(lutPos[idx]).lerp(lutPos[idx + 1], f);
+    outObj.tan.copy(lutTan[idx]).lerp(lutTan[idx + 1], f).normalize();
+    outObj.norm.copy(lutNorm[idx]).lerp(lutNorm[idx + 1], f).normalize();
+    outObj.binorm.copy(lutBinorm[idx]).lerp(lutBinorm[idx + 1], f).normalize();
+    outObj.radius = lerp(lutRad[idx], lutRad[idx + 1], f);
+    return outObj;
+  }
+
+  var tmpSample = {
+    pos: new THREE.Vector3(),
+    tan: new THREE.Vector3(),
+    norm: new THREE.Vector3(),
+    binorm: new THREE.Vector3(),
+    radius: 0
+  };
+
+  // Key World Landmarks on the Drop
+  var bulbCenter = spineCurve.getPointAt(S_BULB_EQ).clone(); // (-0.45, -1.95, 0.00)
+  var impactPoint = new THREE.Vector3(bulbCenter.x + R_BULB_MAX, bulbCenter.y - 0.015, bulbCenter.z);
+  var cutPoint = spineCurve.getPointAt(S_CUT).clone();
+  var cutTangent = spineCurve.getTangentAt(S_CUT).normalize();
+  var clampPoint = spineCurve.getPointAt(S_CLAMP).clone();
+
+  // =========================================================================
+  // 6. EXACT SUPERSONIC FRACTURE WAVEFRONT TIMELINE & INVERSE BIRTH MAPPING
+  // =========================================================================
+  // Tail Snip & Nucleation: 3.800s - 4.400s (bite sever at 4.050s, nucleation s: 0.895 -> 0.855)
+  // Supersonic Wavefront:   4.400s - 5.800s (constant arc-length speed s: 0.855 -> 0.000)
+  // Catastrophic Burst:     5.800s - 8.000s (s < 0, full radial crystalline disintegration + gravity)
+  var T_SNIP_BITE = 4.050;
+  var T_WAVE_START = 4.400;
+  var T_WAVE_END = 5.800;
+
+  function getFractureS(simTime) {
+    if (simTime < T_SNIP_BITE) {
+      return 1.05; // 100% intact
+    }
+    if (simTime < T_WAVE_START) {
+      var u = (simTime - T_SNIP_BITE) / (T_WAVE_START - T_SNIP_BITE);
+      return S_CUT - (S_CUT - S_NUCLEATE_END) * (u * u);
+    }
+    if (simTime < T_WAVE_END) {
+      var w = (simTime - T_WAVE_START) / (T_WAVE_END - T_WAVE_START);
+      return S_NUCLEATE_END * (1.0 - w);
+    }
+    return -0.06; // 100% fractured
+  }
+
+  function getBirthTimeForS(s, jitter) {
+    var jit = (jitter || 0) * 0.006;
+    if (s >= S_CUT) {
+      var tipFrac = (s - S_CUT) / Math.max(1e-4, 1.0 - S_CUT);
+      return T_SNIP_BITE + 0.095 * tipFrac + jit;
+    }
+    if (s >= S_NUCLEATE_END) {
+      var nucFrac = (S_CUT - s) / (S_CUT - S_NUCLEATE_END);
+      return T_SNIP_BITE + (T_WAVE_START - T_SNIP_BITE) * Math.sqrt(Math.max(0.0, nucFrac)) + jit;
+    }
+    var waveFrac = (S_NUCLEATE_END - s) / S_NUCLEATE_END;
+    return T_WAVE_START + (T_WAVE_END - T_WAVE_START) * waveFrac + jit;
+  }
+
+  // Elastic flexural vibration of the intact drop when struck by bullet (1.200s - 2.900s)
+  function getDropFlexOffset(s, simTime, outVec) {
+    if (simTime <= 1.200 || simTime >= 3.100) {
+      outVec.set(0, 0, 0);
+      return outVec;
+    }
+    var dt = simTime - 1.200;
+    var fade = 1.0 - smoothstep(2.45, 3.05, simTime);
+    var env = (1.0 - Math.exp(-dt * 45.0)) * Math.exp(-dt * 4.6) * fade;
+    // Cantilevered around the anodized clamp at s = S_CLAMP
+    var arm = Math.abs(s - S_CLAMP);
+    var signArm = (s < S_CLAMP) ? 1.0 : -0.45;
+    var mode1 = Math.sin(dt * 58.0 - arm * 3.5);
+    var mode2 = 0.35 * Math.sin(dt * 142.0 + s * 9.0);
+    var dx = -0.036 * env * signArm * Math.pow(arm / S_CLAMP, 1.25) * (0.65 * mode1 + 0.35 + mode2);
+    var dy = -0.010 * env * arm * mode1;
+    outVec.set(dx, dy, 0.005 * env * mode2);
+    return outVec;
+  }
+
+  // =========================================================================
+  // 7. QUENCHED GLASS PRINCE RUPERT'S DROP MESH & BIREFRINGENCE SHADER
+  // =========================================================================
+  var dropUniforms = {
+    uEnvCube: { value: studioEnv.cubeTexture },
+    uSimTime: { value: 0.0 },
+    uFractureS: { value: 1.05 },
+    uSeverTip: { value: 0.0 },
+    uWaveActive: { value: 0.0 },
+    uStressPulse: { value: 0.0 },
+    uImpactShock: { value: 0.0 },
+    uImpactPos: { value: impactPoint.clone() },
+    uTriboFlash: { value: 0.0 },
+    uCutPos: { value: cutPoint.clone() },
+    uClampS: { value: S_CLAMP }
+  };
+
+  function buildDropGeometry() {
+    var rings = 272;
+    var radialSegs = 64;
+    var vertCount = (rings + 1) * (radialSegs + 1);
+
+    var positions = new Float32Array(vertCount * 3);
+    var normals = new Float32Array(vertCount * 3);
+    var uvs = new Float32Array(vertCount * 2);
+    var spineAttr = new Float32Array(vertCount);
+    var indices = [];
+
+    // Cluster rings smoothly near s = 0 (hemispherical bulb pole) and s = 1 (tail tip)
+    var sValues = new Float32Array(rings + 1);
+    for (var i = 0; i <= rings; i++) {
+      var u = i / rings;
+      // Smooth sine-blended pole clustering
+      var sCluster = 0.5 - 0.5 * Math.cos(Math.PI * u);
+      sValues[i] = lerp(u, sCluster, 0.42);
+    }
+
+    var gridPos = new Array(rings + 1);
+    for (var r = 0; r <= rings; r++) {
+      var s = sValues[r];
+      sampleSpine(s, tmpSample);
+      gridPos[r] = new Array(radialSegs + 1);
+      for (var c = 0; c <= radialSegs; c++) {
+        var theta = (c / radialSegs) * Math.PI * 2.0;
+        var cosT = Math.cos(theta);
+        var sinT = Math.sin(theta);
+        var px = tmpSample.pos.x + tmpSample.radius * (cosT * tmpSample.norm.x + sinT * tmpSample.binorm.x);
+        var py = tmpSample.pos.y + tmpSample.radius * (cosT * tmpSample.norm.y + sinT * tmpSample.binorm.y);
+        var pz = tmpSample.pos.z + tmpSample.radius * (cosT * tmpSample.norm.z + sinT * tmpSample.binorm.z);
+        gridPos[r][c] = new THREE.Vector3(px, py, pz);
+      }
+    }
+
+    var dU = new THREE.Vector3();
+    var dV = new THREE.Vector3();
+    var nrm = new THREE.Vector3();
+    var ptr = 0;
+
+    for (var r2 = 0; r2 <= rings; r2++) {
+      var sVal = sValues[r2];
+      sampleSpine(sVal, tmpSample);
+      for (var c2 = 0; c2 <= radialSegs; c2++) {
+        var p = gridPos[r2][c2];
+        positions[ptr * 3 + 0] = p.x;
+        positions[ptr * 3 + 1] = p.y;
+        positions[ptr * 3 + 2] = p.z;
+
+        if (r2 === 0) {
+          nrm.copy(tmpSample.tan).negate();
+        } else if (r2 === rings) {
+          nrm.copy(tmpSample.tan);
+        } else {
+          var cPrev = (c2 === 0) ? radialSegs - 1 : c2 - 1;
+          var cNext = (c2 === radialSegs) ? 1 : c2 + 1;
+          dU.subVectors(gridPos[r2 + 1][c2], gridPos[r2 - 1][c2]);
+          dV.subVectors(gridPos[r2][cNext], gridPos[r2][cPrev]);
+          nrm.crossVectors(dV, dU);
+          if (nrm.lengthSq() < 1e-10) {
+            nrm.subVectors(p, tmpSample.pos);
+          }
+          nrm.normalize();
+          // Ensure outward orientation
+          var radialCheck = dU.subVectors(p, tmpSample.pos);
+          if (nrm.dot(radialCheck) < 0) nrm.negate();
+        }
+
+        normals[ptr * 3 + 0] = nrm.x;
+        normals[ptr * 3 + 1] = nrm.y;
+        normals[ptr * 3 + 2] = nrm.z;
+
+        uvs[ptr * 2 + 0] = c2 / radialSegs;
+        uvs[ptr * 2 + 1] = sVal;
+        spineAttr[ptr] = sVal;
+        ptr++;
+      }
+    }
+
+    for (var r3 = 0; r3 < rings; r3++) {
+      for (var c3 = 0; c3 < radialSegs; c3++) {
+        var a = r3 * (radialSegs + 1) + c3;
+        var b = (r3 + 1) * (radialSegs + 1) + c3;
+        var d = (r3 + 1) * (radialSegs + 1) + (c3 + 1);
+        var e = r3 * (radialSegs + 1) + (c3 + 1);
+        indices.push(a, e, b);
+        indices.push(e, d, b);
+      }
+    }
+
+    var geo = new THREE.BufferGeometry();
+    geo.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+    geo.setAttribute('normal', new THREE.BufferAttribute(normals, 3));
+    geo.setAttribute('uv', new THREE.BufferAttribute(uvs, 2));
+    geo.setAttribute('aSpineS', new THREE.BufferAttribute(spineAttr, 1));
+    geo.setIndex(indices);
+    return geo;
+  }
+
+  var dropVertShader = [
+    'attribute float aSpineS;',
+    'uniform float uSimTime;',
+    'uniform float uClampS;',
+    'varying vec3 vWorldPos;',
+    'varying vec3 vLocalPos;',
+    'varying vec3 vWorldNormal;',
+    'varying float vSpineS;',
+    '',
+    'vec3 computeFlexOffset(float s, float t) {',
+    '  if (t <= 1.200 || t >= 3.100) return vec3(0.0);',
+    '  float dt = t - 1.200;',
+    '  float fade = 1.0 - smoothstep(2.45, 3.05, t);',
+    '  float env = (1.0 - exp(-dt * 45.0)) * exp(-dt * 4.6) * fade;',
+    '  float arm = abs(s - uClampS);',
+    '  float signArm = (s < uClampS) ? 1.0 : -0.45;',
+    '  float mode1 = sin(dt * 58.0 - arm * 3.5);',
+    '  float mode2 = 0.35 * sin(dt * 142.0 + s * 9.0);',
+    '  float dx = -0.036 * env * signArm * pow(arm / uClampS, 1.25) * (0.65 * mode1 + 0.35 + mode2);',
+    '  float dy = -0.010 * env * arm * mode1;',
+    '  return vec3(dx, dy, 0.005 * env * mode2);',
+    '}',
+    '',
+    'void main() {',
+    '  vSpineS = aSpineS;',
+    '  vLocalPos = position;',
+    '  vec3 flex = computeFlexOffset(aSpineS, uSimTime);',
+    '  vec4 wp = modelMatrix * vec4(position + flex, 1.0);',
+    '  vWorldPos = wp.xyz;',
+    '  vWorldNormal = normalize((modelMatrix * vec4(normal, 0.0)).xyz);',
+    '  gl_Position = projectionMatrix * viewMatrix * wp;',
+    '}'
+  ].join('\n');
+
+  var dropFragShader = [
+    'uniform samplerCube uEnvCube;',
+    'uniform float uSimTime;',
+    'uniform float uFractureS;',
+    'uniform float uSeverTip;',
+    'uniform float uWaveActive;',
+    'uniform float uStressPulse;',
+    'uniform float uImpactShock;',
+    'uniform vec3 uImpactPos;',
+    'uniform float uTriboFlash;',
+    'uniform vec3 uCutPos;',
+    '',
+    'varying vec3 vWorldPos;',
+    'varying vec3 vLocalPos;',
+    'varying vec3 vWorldNormal;',
+    'varying float vSpineS;',
+    '',
+    'float hash31(vec3 p) {',
+    '  p = fract(p * 0.1031);',
+    '  p += dot(p, p.yzx + 33.33);',
+    '  return fract((p.x + p.y) * p.z);',
+    '}',
+    '',
+    'float valueNoise3D(vec3 x) {',
+    '  vec3 i = floor(x);',
+    '  vec3 f = fract(x);',
+    '  f = f * f * (3.0 - 2.0 * f);',
+    '  return mix(',
+    '    mix(mix(hash31(i + vec3(0.0, 0.0, 0.0)), hash31(i + vec3(1.0, 0.0, 0.0)), f.x),',
+    '        mix(hash31(i + vec3(0.0, 1.0, 0.0)), hash31(i + vec3(1.0, 1.0, 0.0)), f.x), f.y),',
+    '    mix(mix(hash31(i + vec3(0.0, 0.0, 1.0)), hash31(i + vec3(1.0, 0.0, 1.0)), f.x),',
+    '        mix(hash31(i + vec3(0.0, 1.0, 1.0)), hash31(i + vec3(1.0, 1.0, 1.0)), f.x), f.y), f.z);',
+    '}',
+    '',
+    'vec3 acesToneMap(vec3 x) {',
+    '  float a = 2.51;',
+    '  float b = 0.03;',
+    '  float c = 2.43;',
+    '  float d = 0.59;',
+    '  float e = 0.14;',
+    '  return clamp((x * (a * x + b)) / (x * (c * x + d) + e), 0.0, 1.0);',
+    '}',
+    '',
+    'void main() {',
+    '  // Severed upper curl clip once nippers snip at s = 0.895',
+    '  if (uSeverTip > 0.5 && vSpineS >= 0.895) discard;',
+    '',
+    '  // Jagged 3D cellular crack perturbation at supersonic fracture wavefront',
+    '  float n1 = valueNoise3D(vLocalPos * 26.0);',
+    '  float n2 = valueNoise3D(vLocalPos * 68.0 + vec3(4.2));',
+    '  float jag = (n1 - 0.5) * 0.022 + (n2 - 0.5) * 0.009;',
+    '  float frontS = uFractureS + jag;',
+    '  if (vSpineS > frontS) discard;',
+    '',
+    '  vec3 N = normalize(vWorldNormal);',
+    '  if (!gl_FrontFacing) N = -N;',
+    '  vec3 V = normalize(cameraPosition - vWorldPos);',
+    '  float ndv = clamp(dot(N, V), 0.0, 1.0);',
+    '',
+    '  // Schlick Fresnel for high-index quenched soda-lime glass (n ~ 1.525)',
+    '  float F0 = 0.044;',
+    '  float fresnel = F0 + (1.0 - F0) * pow(1.0 - ndv, 4.6);',
+    '',
+    '  // 3-channel RGB chromatic dispersion refraction through convex glass volume',
+    '  vec3 I = -V;',
+    '  vec3 Nlens = normalize(mix(N, vec3(N.xy * 1.35, N.z * 0.65), 0.35));',
+    '  vec3 refR = refract(I, Nlens, 1.0 / 1.504);',
+    '  vec3 refG = refract(I, Nlens, 1.0 / 1.522);',
+    '  vec3 refB = refract(I, Nlens, 1.0 / 1.544);',
+    '  float colR = textureCube(uEnvCube, refR, 0.5).r;',
+    '  float colG = textureCube(uEnvCube, refG, 0.5).g;',
+    '  float colB = textureCube(uEnvCube, refB, 0.5).b;',
+    '  vec3 refracted = vec3(colR, colG, colB) * vec3(0.96, 0.99, 1.03);',
+    '',
+    '  // Crisp studio cubemap reflection',
+    '  vec3 R = reflect(I, N);',
+    '  vec3 reflected = textureCube(uEnvCube, R, 0.0).rgb;',
+    '',
+    '  // Cross-polarized photoelastic birefringence (Michelson-Levy interference fringes)',
+    '  // Core-to-surface compression/tension optical retardation gradient',
+    '  float thicknessFactor = mix(1.85, 0.32, smoothstep(0.06, 0.85, vSpineS));',
+    '  float radialGradient = sin(ndv * 3.14159265) * (0.55 + 0.85 * pow(ndv, 1.4));',
+    '  float stressRetardation = radialGradient * thicknessFactor * 11.5 + vSpineS * 5.2;',
+    '',
+    '  // Phase 2: Acoustic compressive shock fringes radiating from bullet impact',
+    '  if (uImpactShock > 0.001) {',
+    '    float distImp = length(vWorldPos - uImpactPos);',
+    '    float dtImp = max(0.0, uSimTime - 1.200);',
+    '    float shockWave = sin(distImp * 18.0 - dtImp * 46.0) * exp(-distImp * 0.65);',
+    '    stressRetardation += shockWave * 4.5 * uImpactShock;',
+    '  }',
+    '',
+    '  // Phase 3: Cross-polarized stress pulse sweeping along spine (2.600s - 3.800s)',
+    '  if (uStressPulse > 0.001) {',
+    '    float pulseWave = sin(vSpineS * 12.0 - (uSimTime - 2.6) * 8.5) * 0.5 + 0.5;',
+    '    stressRetardation += uStressPulse * (1.8 + 2.4 * pulseWave);',
+    '  }',
+    '',
+    '  // Spectral interference colors (wavelength-dependent phase shift)',
+    '  vec3 lambdaInv = vec3(1.00, 1.19, 1.44);',
+    '  vec3 fringe = 0.5 - 0.5 * cos(stressRetardation * lambdaInv);',
+    '  // Polarizer isoclinic dark neutral band between outer compression & inner tension',
+    '  float neutralZone = smoothstep(0.20, 0.34, ndv) * (1.0 - smoothstep(0.34, 0.48, ndv));',
+    '  fringe *= (1.0 - 0.52 * neutralZone);',
+    '  float fringeStrength = (0.20 + 0.24 * uStressPulse + 0.22 * uImpactShock) * smoothstep(0.06, 0.35, ndv);',
+    '',
+    '  // Combine crystal-clear refracted glass, photoelastic fringes, and Fresnel reflection',
+    '  vec3 glassBody = refracted * (0.65 + 0.55 * ndv) + fringe * fringeStrength;',
+    '',
+    '  // Dual cyan/magenta rim-light Fresnel accents & cool-white studio specular highlights',
+    '  vec3 Lkey = normalize(vec3(-0.55, 0.68, 0.72));',
+    '  vec3 Lcyan = normalize(vec3(-0.78, 0.28, -0.56));',
+    '  vec3 Lmag = normalize(vec3(0.78, -0.28, -0.56));',
+    '  float specKey = pow(max(dot(N, normalize(Lkey + V)), 0.0), 140.0) * 2.4;',
+    '  float rimCyan = pow(1.0 - ndv, 3.2) * pow(max(dot(N, Lcyan), 0.0) * 0.5 + 0.5, 2.0) * 0.55;',
+    '  float rimMag  = pow(1.0 - ndv, 3.2) * pow(max(dot(N, Lmag), 0.0) * 0.5 + 0.5, 2.0) * 0.48;',
+    '',
+    '  vec3 color = mix(glassBody, reflected * 1.18, clamp(fresnel * 1.45, 0.0, 0.94));',
+    '  color += vec3(0.95, 0.98, 1.0) * specKey;',
+    '  color += vec3(0.16, 0.88, 1.0) * rimCyan;',
+    '  color += vec3(1.0, 0.24, 0.72) * rimMag;',
+    '',
+    '  // Internal waveguide glow during tail-snip triboluminescence flash',
+    '  if (uTriboFlash > 0.001) {',
+    '    float dCut = length(vWorldPos - uCutPos);',
+    '    color += vec3(0.55, 0.85, 1.0) * uTriboFlash * exp(-dCut * 2.4) * 2.2;',
+    '  }',
+    '',
+    '  // Phase 4/5: Opaque chalk-white supersonic bifurcation crack front ahead of s_front',
+    '  float distToFront = frontS - vSpineS;',
+    '  float alpha = clamp(0.84 + 0.16 * fresnel, 0.0, 1.0);',
+    '  if (uWaveActive > 0.01 && distToFront < 0.068) {',
+    '    float crackBand = 1.0 - clamp(distToFront / 0.068, 0.0, 1.0);',
+    '    float branchPattern = abs(valueNoise3D(vLocalPos * vec3(55.0, 28.0, 55.0)) - 0.5) * 2.0;',
+    '    float veins = smoothstep(0.32, 0.04, branchPattern) * smoothstep(0.0, 0.35, crackBand);',
+    '    float opaqueCore = smoothstep(0.42, 0.96, crackBand);',
+    '    float shatterMask = clamp(veins * 0.85 + opaqueCore, 0.0, 1.0) * uWaveActive;',
+    '    vec3 crackGlow = mix(vec3(0.88, 0.95, 1.0), vec3(1.65, 1.78, 1.95), opaqueCore);',
+    '    color = mix(color, crackGlow, shatterMask);',
+    '    alpha = mix(alpha, 0.99, shatterMask);',
+    '  }',
+    '',
+    '  color = acesToneMap(color * 1.08);',
+    '  color = pow(color, vec3(1.0 / 2.2));',
+    '  gl_FragColor = vec4(color, alpha);',
+    '}'
+  ].join('\n');
+
+  var dropGeo = buildDropGeometry();
+  var dropMat = new THREE.ShaderMaterial({
+    uniforms: dropUniforms,
+    vertexShader: dropVertShader,
+    fragmentShader: dropFragShader,
+    transparent: true,
+    depthWrite: true,
+    side: THREE.FrontSide
+  });
+  var dropMesh = new THREE.Mesh(dropGeo, dropMat);
+  dropMesh.renderOrder = 2;
+  scene.add(dropMesh);
+
+  // Back-face subtle internal glass reflection shell (renders behind front glass wall)
+  var dropBackMat = new THREE.ShaderMaterial({
+    uniforms: dropUniforms,
+    vertexShader: dropVertShader,
+    fragmentShader: dropFragShader,
+    transparent: true,
+    depthWrite: false,
+    side: THREE.BackSide
+  });
+  var dropBackMesh = new THREE.Mesh(dropGeo, dropBackMat);
+  dropBackMesh.renderOrder = 1;
+  scene.add(dropBackMesh);
+
+  // Volumetric Opaque-White Supersonic Fracture Front Cone riding inside P(s_front)
+  var fractureConeGeo = new THREE.ConeGeometry(1.0, 1.8, 32, 1, false);
+  fractureConeGeo.rotateX(Math.PI * 0.5); // Tip points +Z (aligned to spine tangent)
+  var fractureConeMat = new THREE.MeshBasicMaterial({
+    color: 0xf4faff
+  });
+  var fractureConeMesh = new THREE.Mesh(fractureConeGeo, fractureConeMat);
+  fractureConeMesh.visible = false;
+  fractureConeMesh.renderOrder = 2;
+  scene.add(fractureConeMesh);
+
+  // Authentic Internal Vacuum Shrinkage Micro-Bubbles inside the Quenched Bulb & Lower Neck
+  var internalBubbles = [];
+  (function buildInternalBubbles() {
+    var bubbleSpecs = [
+      { s: 0.088, rOff: 0.14, ang: 0.8, rx: 0.042, ry: 0.056 },
+      { s: 0.118, rOff: 0.05, ang: 2.4, rx: 0.062, ry: 0.095 },
+      { s: 0.152, rOff: 0.11, ang: 4.1, rx: 0.036, ry: 0.068 },
+      { s: 0.195, rOff: 0.04, ang: 1.5, rx: 0.044, ry: 0.115 },
+      { s: 0.255, rOff: 0.03, ang: 3.2, rx: 0.028, ry: 0.095 },
+      { s: 0.335, rOff: 0.02, ang: 0.4, rx: 0.020, ry: 0.085 }
+    ];
+    var bGeo = new THREE.SphereGeometry(1.0, 20, 16);
+    var bMat = new THREE.MeshPhysicalMaterial({
+      color: 0xdff2ff,
+      metalness: 0.1,
+      roughness: 0.05,
+      envMapIntensity: 2.2,
+      transparent: true,
+      opacity: 0.62,
+      depthWrite: false
+    });
+    for (var i = 0; i < bubbleSpecs.length; i++) {
+      var bs = bubbleSpecs[i];
+      sampleSpine(bs.s, tmpSample);
+      var m = new THREE.Mesh(bGeo, bMat);
+      var basePos = tmpSample.pos.clone()
+        .addScaledVector(tmpSample.norm, Math.cos(bs.ang) * bs.rOff)
+        .addScaledVector(tmpSample.binorm, Math.sin(bs.ang) * bs.rOff);
+      m.position.copy(basePos);
+      // Align elongated bubble axis along local spine tangent
+      m.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), tmpSample.tan);
+      m.scale.set(bs.rx, bs.ry, bs.rx);
+      m.renderOrder = 1;
+      scene.add(m);
+      internalBubbles.push({ mesh: m, s: bs.s, basePos: basePos });
+    }
+  })();
+
+  // =========================================================================
+  // 8. SUBTLE DARK ANODIZED LABORATORY V-CLAMP FIXTURE (RECESSED AT s = 0.715)
+  // =========================================================================
+  var clampGroup = new THREE.Group();
+  scene.add(clampGroup);
+
+  (function buildAnodizedClamp() {
+    sampleSpine(S_CLAMP, tmpSample);
+    var rNeck = tmpSample.radius; // ~0.072
+
+    var anodMat = new THREE.MeshStandardMaterial({
+      color: 0x1b202b,
+      metalness: 0.82,
+      roughness: 0.36,
+      envMapIntensity: 1.1
+    });
+    var screwMat = new THREE.MeshStandardMaterial({
+      color: 0x6e7788,
+      metalness: 0.90,
+      roughness: 0.26,
+      envMapIntensity: 1.3
+    });
+    var padMat = new THREE.MeshStandardMaterial({
+      color: 0x0e1015,
+      metalness: 0.15,
+      roughness: 0.82
+    });
+
+    clampGroup.position.copy(tmpSample.pos);
+
+    // Recessed C-collar behind the glass neck (-Z and -X) so front view (+Z) is 100% unobstructed
+    var collarBack = new THREE.Mesh(new THREE.BoxGeometry(0.32, 0.22, 0.16), anodMat);
+    collarBack.position.set(-0.14, 0.0, -rNeck - 0.11);
+    collarBack.rotation.z = -0.52;
+    clampGroup.add(collarBack);
+
+    // Subtle upper & lower dark Viton V-pads cradling the rear/left (-X, -Z) of the glass neck
+    var padGeo = new THREE.CylinderGeometry(0.036, 0.036, 0.18, 16);
+    var pad1 = new THREE.Mesh(padGeo, padMat);
+    pad1.position.set(-rNeck - 0.025, 0.02, -0.045);
+    pad1.rotation.z = -0.52;
+    clampGroup.add(pad1);
+
+    var pad2 = new THREE.Mesh(padGeo, padMat);
+    pad2.position.set(0.02, -0.02, -rNeck - 0.032);
+    pad2.rotation.z = -0.52;
+    clampGroup.add(pad2);
+
+    // Slender dark-anodized horizontal support rod extending recessed toward upper-left
+    var rodGeo = new THREE.CylinderGeometry(0.052, 0.058, 3.6, 20);
+    rodGeo.rotateZ(Math.PI * 0.5);
+    var rod = new THREE.Mesh(rodGeo, anodMat);
+    rod.position.set(-1.92, 0.22, -rNeck - 0.15);
+    rod.rotation.z = -0.12;
+    clampGroup.add(rod);
+
+    // Knurled locking collar & hex cap screw
+    var boss = new THREE.Mesh(new THREE.CylinderGeometry(0.088, 0.088, 0.16, 24), anodMat);
+    boss.rotation.z = Math.PI * 0.5 - 0.12;
+    boss.position.set(-0.34, 0.03, -rNeck - 0.15);
+    clampGroup.add(boss);
+
+    var screw = new THREE.Mesh(new THREE.CylinderGeometry(0.034, 0.034, 0.24, 16), screwMat);
+    screw.position.set(-0.20, 0.11, -rNeck - 0.12);
+    clampGroup.add(screw);
+  })();
+
+  // =========================================================================
+  // 9. CONICAL LEAD BULLET, PLASTIC MUSHROOMING & RADIAL METALLIC SPALL
+  // =========================================================================
+  var BULLET_START_X = 8.85;
+  var BULLET_IMPACT_X = impactPoint.x; // ~ +0.100
+  var BULLET_Y = impactPoint.y;        // ~ -1.965
+  var BULLET_Z = impactPoint.z;
+  var BULLET_LEN = 0.64;
+  var BULLET_RAD = 0.132;
+
+  var bulletRings = 28;
+  var bulletSegs = 36;
+  var bulletVertCount = (bulletRings + 1) * (bulletSegs + 1);
+  var bulletBaseU = new Float32Array(bulletVertCount);
+  var bulletBaseTheta = new Float32Array(bulletVertCount);
+  var bulletBaseRad = new Float32Array(bulletVertCount);
+  var bulletPetalNoise = new Float32Array(bulletVertCount);
+
+  var bulletGeo = (function createDeformableBulletGeometry() {
+    var pos = new Float32Array(bulletVertCount * 3);
+    var col = new Float32Array(bulletVertCount * 3);
+    var indices = [];
+
+    // Precompute deterministic petal asymmetry per angular sector
+    var sectorJitter = new Float32Array(bulletSegs + 1);
+    for (var s = 0; s < bulletSegs; s++) {
+      var ang = (s / bulletSegs) * Math.PI * 2.0;
+      sectorJitter[s] = 1.0 + 0.26 * Math.sin(ang * 8.0 + 0.7) + 0.15 * Math.cos(ang * 5.0 - 1.4) + (rng() - 0.5) * 0.12;
+    }
+    sectorJitter[bulletSegs] = sectorJitter[0];
+
+    var ptr = 0;
+    for (var r = 0; r <= bulletRings; r++) {
+      var u = r / bulletRings; // 0 = nose tip (-X side), 1 = flat base (+X side)
+      var rad;
+      if (u < 0.54) {
+        // Conical / secant-ogive lead projectile nose
+        var nu = u / 0.54;
+        rad = BULLET_RAD * Math.pow(Math.sin(nu * Math.PI * 0.5), 0.76);
+      } else if (u < 0.96) {
+        rad = BULLET_RAD;
+        // Subtle lubrication / crimping cannelure grooves
+        if (Math.abs(u - 0.66) < 0.025 || Math.abs(u - 0.78) < 0.025) {
+          rad *= 0.91;
+        }
+      } else {
+        // Closed base cap
+        var bu = (1.0 - u) / 0.04;
+        rad = BULLET_RAD * Math.sqrt(Math.max(0.0, bu));
+      }
+
+      var isCopperBand = (u >= 0.73);
+      for (var c = 0; c <= bulletSegs; c++) {
+        var th = (c / bulletSegs) * Math.PI * 2.0;
+        // Subtle helical rifling land engravings along cylindrical bearing surface
+        var rifling = (u > 0.48 && u < 0.94) ? (1.0 + 0.018 * Math.sin(th * 6.0 + u * 4.2)) : 1.0;
+        var rFinal = rad * rifling;
+
+        bulletBaseU[ptr] = u;
+        bulletBaseTheta[ptr] = th;
+        bulletBaseRad[ptr] = rFinal;
+        bulletPetalNoise[ptr] = sectorJitter[c];
+
+        pos[ptr * 3 + 0] = u * BULLET_LEN;
+        pos[ptr * 3 + 1] = Math.cos(th) * rFinal;
+        pos[ptr * 3 + 2] = Math.sin(th) * rFinal;
+
+        if (isCopperBand) {
+          // Gilded copper driving band / heel
+          col[ptr * 3 + 0] = 0.78;
+          col[ptr * 3 + 1] = 0.44;
+          col[ptr * 3 + 2] = 0.25;
+        } else {
+          // Satin dark-pewter soft lead
+          var shade = 0.42 + 0.05 * Math.sin(th * 6.0 + u * 4.2);
+          col[ptr * 3 + 0] = shade * 0.96;
+          col[ptr * 3 + 1] = shade * 1.00;
+          col[ptr * 3 + 2] = shade * 1.08;
+        }
+        ptr++;
+      }
+    }
+
+    for (var r2 = 0; r2 < bulletRings; r2++) {
+      for (var c2 = 0; c2 < bulletSegs; c2++) {
+        var a = r2 * (bulletSegs + 1) + c2;
+        var b = (r2 + 1) * (bulletSegs + 1) + c2;
+        var d = (r2 + 1) * (bulletSegs + 1) + (c2 + 1);
+        var e = r2 * (bulletSegs + 1) + (c2 + 1);
+        indices.push(a, b, e);
+        indices.push(e, b, d);
+      }
+    }
+
+    var g = new THREE.BufferGeometry();
+    g.setAttribute('position', new THREE.BufferAttribute(pos, 3));
+    g.setAttribute('color', new THREE.BufferAttribute(col, 3));
+    g.setIndex(indices);
+    g.computeVertexNormals();
+    return g;
+  })();
+
+  var bulletBaseColors = new Float32Array(bulletGeo.attributes.color.array);
+
+  var bulletMat = new THREE.MeshStandardMaterial({
+    vertexColors: true,
+    metalness: 0.88,
+    roughness: 0.30,
+    envMapIntensity: 1.55
+  });
+  var bulletMesh = new THREE.Mesh(bulletGeo, bulletMat);
+  scene.add(bulletMesh);
+
+  // Supersonic Aerodynamic Mach Wake Cone trailing incoming bullet (0.000s - 1.215s)
+  var machConeGeo = new THREE.ConeGeometry(0.46, 2.2, 32, 1, true);
+  machConeGeo.rotateZ(Math.PI * 0.5); // Tip at -X, flaring toward +X
+  machConeGeo.translate(1.1, 0, 0);
+  var machConeMat = configureAdditiveBlend(new THREE.ShaderMaterial({
+    uniforms: {
+      uOpacity: { value: 0.0 }
+    },
+    vertexShader: [
+      'varying vec2 vUv;',
+      'varying vec3 vNormal;',
+      'varying vec3 vViewPos;',
+      'void main() {',
+      '  vUv = uv;',
+      '  vec4 mv = modelViewMatrix * vec4(position, 1.0);',
+      '  vViewPos = -mv.xyz;',
+      '  vNormal = normalize(normalMatrix * normal);',
+      '  gl_Position = projectionMatrix * mv;',
+      '}'
+    ].join('\n'),
+    fragmentShader: [
+      'uniform float uOpacity;',
+      'varying vec2 vUv;',
+      'varying vec3 vNormal;',
+      'varying vec3 vViewPos;',
+      'void main() {',
+      '  vec3 V = normalize(vViewPos);',
+      '  float rim = 1.0 - abs(dot(normalize(vNormal), V));',
+      '  float axial = smoothstep(0.0, 0.25, vUv.y) * (1.0 - smoothstep(0.35, 1.0, vUv.y));',
+      '  float a = pow(rim, 2.2) * axial * uOpacity;',
+      '  gl_FragColor = vec4(vec3(0.68, 0.84, 1.0), a);',
+      '}'
+    ].join('\n'),
+    side: THREE.DoubleSide
+  }));
+  var machConeMesh = new THREE.Mesh(machConeGeo, machConeMat);
+  scene.add(machConeMesh);
+
+  // Acoustic Shockwave Ring Sprite / Shell on Bulb Impact (1.200s - 1.520s) and Terminal Burst (5.800s - 6.300s)
+  var shockRingGeo = new THREE.RingGeometry(0.84, 1.0, 64);
+  var shockRingMat = configureAdditiveBlend(new THREE.MeshBasicMaterial({
+    color: 0xb8e4ff,
+    opacity: 0.0,
+    side: THREE.DoubleSide
+  }));
+  var impactShockRing = new THREE.Mesh(shockRingGeo, shockRingMat);
+  impactShockRing.position.copy(impactPoint);
+  impactShockRing.visible = false;
+  scene.add(impactShockRing);
+
+  var burstShockMat = configureAdditiveBlend(new THREE.MeshBasicMaterial({
+    color: 0xd8f0ff,
+    opacity: 0.0,
+    side: THREE.DoubleSide
+  }));
+  var burstShockRing = new THREE.Mesh(shockRingGeo, burstShockMat);
+  burstShockRing.position.copy(bulbCenter);
+  burstShockRing.visible = false;
+  scene.add(burstShockRing);
+
+  // Kinetic Impact Flash Sprite & Triboluminescence Flash Sprite
+  var impactFlareMat = configureAdditiveBlend(new THREE.SpriteMaterial({
+    map: flareTexture,
+    color: 0xffdfad,
+    opacity: 0.0
+  }));
+  var impactFlare = new THREE.Sprite(impactFlareMat);
+  impactFlare.position.copy(impactPoint).add(new THREE.Vector3(0.04, 0, 0.12));
+  impactFlare.renderOrder = 10;
+  scene.add(impactFlare);
+
+  var triboFlareMat = configureAdditiveBlend(new THREE.SpriteMaterial({
+    map: flareTexture,
+    color: 0x9ce8ff,
+    opacity: 0.0
+  }));
+  var triboFlare = new THREE.Sprite(triboFlareMat);
+  triboFlare.position.copy(cutPoint).add(new THREE.Vector3(0, 0, 0.10));
+  triboFlare.renderOrder = 10;
+  scene.add(triboFlare);
+
+  // Deformable Bullet Analytical Update Function
+  function restorePristineBullet() {
+    if (!bulletMesh.userData.wasDeformed) return;
+    var posAttr = bulletGeo.attributes.position;
+    var colAttr = bulletGeo.attributes.color;
+    var posArr = posAttr.array;
+    for (var i = 0; i < bulletVertCount; i++) {
+      var u0 = bulletBaseU[i];
+      var th0 = bulletBaseTheta[i];
+      var r0 = bulletBaseRad[i];
+      posArr[i * 3 + 0] = u0 * BULLET_LEN;
+      posArr[i * 3 + 1] = Math.cos(th0) * r0;
+      posArr[i * 3 + 2] = Math.sin(th0) * r0;
+    }
+    colAttr.array.set(bulletBaseColors);
+    posAttr.needsUpdate = true;
+    colAttr.needsUpdate = true;
+    bulletGeo.computeVertexNormals();
+    bulletMesh.userData.wasDeformed = false;
+  }
+
+  function updateBulletAt(simTime) {
+    var posAttr = bulletGeo.attributes.position;
+    var colAttr = bulletGeo.attributes.color;
+    var posArr = posAttr.array;
+    var colArr = colAttr.array;
+
+    if (simTime < 1.200) {
+      bulletMesh.visible = true;
+      var frac = clamp(simTime / 1.200, 0.0, 1.0);
+      var noseX = lerp(BULLET_START_X, BULLET_IMPACT_X, frac);
+      var spin = simTime * 92.0;
+
+      restorePristineBullet();
+      bulletMesh.position.set(noseX, BULLET_Y, BULLET_Z);
+      bulletMesh.rotation.set(spin, 0, 0);
+
+      machConeMesh.visible = true;
+      machConeMesh.position.set(noseX + 0.08, BULLET_Y, BULLET_Z);
+      machConeMat.uniforms.uOpacity.value = 0.24 * smoothstep(0.02, 0.18, simTime);
+      return;
+    }
+
+    machConeMesh.visible = false;
+    machConeMesh.position.set(BULLET_IMPACT_X + 0.08, BULLET_Y, BULLET_Z);
+    machConeMat.uniforms.uOpacity.value = 0.0;
+    var dt = simTime - 1.200;
+
+    // Hide once well off-screen below viewport (with canonical transform & pristine buffer reset)
+    if (dt > 2.55) {
+      restorePristineBullet();
+      bulletMesh.visible = false;
+      bulletMesh.position.set(BULLET_IMPACT_X, -12.0, BULLET_Z);
+      bulletMesh.rotation.set(0, 0, 0);
+      return;
+    }
+    bulletMesh.visible = true;
+    bulletMesh.userData.wasDeformed = true;
+
+    // Plastic crushing & mushrooming occurs rapidly between 1.200s and 1.480s
+    var crushLin = clamp(dt / 0.280, 0.0, 1.0);
+    var crush = 1.0 - Math.pow(1.0 - crushLin, 2.6);
+
+    // Glancing rebound + gravitational drop after crush arrest
+    var dtReb = Math.max(0.0, dt - 0.200);
+    var slugOffsetX = 0.56 * dtReb;
+    var slugOffsetY = -0.48 * dtReb - 1.65 * dtReb * dtReb;
+    var slugOffsetZ = 0.16 * dtReb;
+
+    var spinBase = 1.200 * 92.0 + 18.0 * (1.0 - Math.exp(-dt * 5.0));
+    var tumblePitch = dtReb * 2.8;
+    var tumbleYaw = -dtReb * 1.9;
+
+    // World center of the bulb at impact time (including drop elastic flex!)
+    var flexBulb = getDropFlexOffset(S_BULB_EQ, simTime, new THREE.Vector3());
+    var bx = bulbCenter.x + flexBulb.x;
+    var by = bulbCenter.y + flexBulb.y;
+    var bz = bulbCenter.z + flexBulb.z;
+    var minSafeR = R_BULB_MAX + 0.008;
+
+    for (var k = 0; k < bulletVertCount; k++) {
+      var u = bulletBaseU[k];
+      var th = bulletBaseTheta[k] + spinBase * (1.0 - 0.65 * crush);
+      var rOrig = bulletBaseRad[k];
+      var petal = bulletPetalNoise[k];
+
+      // Axial crushing: front nose flattens completely, rear compresses to ~34% length
+      var frontWeight = Math.pow(1.0 - u, 1.55);
+      var xLocal = u * BULLET_LEN * (1.0 - 0.67 * crush);
+
+      // Radial plastic extrusion into jagged curled mushroom skirt
+      var mushroomBell = Math.exp(-Math.pow(u / 0.58, 1.8));
+      var rDeformed = rOrig + crush * 0.40 * mushroomBell * petal;
+
+      // Outer mushroom petals curl backward (+X) around the convex bulb surface
+      var curlBack = crush * 0.16 * Math.pow(mushroomBell, 1.4) * Math.max(0.0, petal - 0.72);
+      xLocal += curlBack;
+
+      var yLocal = Math.cos(th) * rDeformed;
+      var zLocal = Math.sin(th) * rDeformed;
+
+      // While in contact with bulb (dt < 0.30s), mold front surface strictly outside glass bulb sphere
+      if (dt < 0.34) {
+        var wx = BULLET_IMPACT_X + slugOffsetX + xLocal - bx;
+        var wy = BULLET_Y + slugOffsetY + yLocal - by;
+        var wz = BULLET_Z + slugOffsetZ + zLocal - bz;
+        var distSq = wx * wx + wy * wy + wz * wz;
+        if (distSq < minSafeR * minSafeR) {
+          var dist = Math.sqrt(Math.max(1e-6, distSq));
+          var push = minSafeR / dist;
+          xLocal = (bx + wx * push) - (BULLET_IMPACT_X + slugOffsetX);
+          yLocal = (by + wy * push) - (BULLET_Y + slugOffsetY);
+          zLocal = (bz + wz * push) - (BULLET_Z + slugOffsetZ);
+        }
+      }
+
+      posArr[k * 3 + 0] = xLocal;
+      posArr[k * 3 + 1] = yLocal;
+      posArr[k * 3 + 2] = zLocal;
+
+      // Freshly sheared lead on mushroom skirt brightens metallically
+      if (u < 0.72) {
+        var gleam = crush * mushroomBell * 0.34;
+        colArr[k * 3 + 0] = bulletBaseColors[k * 3 + 0] + gleam;
+        colArr[k * 3 + 1] = bulletBaseColors[k * 3 + 1] + gleam * 1.02;
+        colArr[k * 3 + 2] = bulletBaseColors[k * 3 + 2] + gleam * 1.06;
+      }
+    }
+
+    posAttr.needsUpdate = true;
+    colAttr.needsUpdate = true;
+    bulletGeo.computeVertexNormals();
+
+    bulletMesh.position.set(BULLET_IMPACT_X + slugOffsetX, BULLET_Y + slugOffsetY, BULLET_Z + slugOffsetZ);
+    bulletMesh.rotation.set(0.35 * dtReb, tumbleYaw, tumblePitch);
+  }
+
+  // Radial Metallic Lead/Copper Spall Droplets & Fragments (GPU Analytical InstancedMesh)
+  var SPALL_COUNT = 560;
+  var spallUniforms = {
+    uEnvCube: { value: studioEnv.cubeTexture },
+    uSimTime: { value: 0.0 },
+    uBulbCenter: { value: bulbCenter.clone() },
+    uBulbRad: { value: R_BULB_MAX + 0.025 }
+  };
+
+  var spallMesh = (function buildSpallSystem() {
+    var baseGeo = new THREE.OctahedronGeometry(1.0, 0);
+    baseGeo.scale(1.5, 0.55, 0.95);
+    var instGeo = baseGeo.toNonIndexed();
+    instGeo.computeVertexNormals();
+    baseGeo.dispose();
+
+    var aBirth = new Float32Array(SPALL_COUNT);
+    var aOrigin = new Float32Array(SPALL_COUNT * 3);
+    var aVel = new Float32Array(SPALL_COUNT * 3);
+    var aSpin = new Float32Array(SPALL_COUNT * 4);
+    var aScale = new Float32Array(SPALL_COUNT * 3);
+    var aTint = new Float32Array(SPALL_COUNT * 3);
+
+    for (var i = 0; i < SPALL_COUNT; i++) {
+      var birth = 1.202 + Math.pow(rng(), 1.4) * 0.235;
+      aBirth[i] = birth;
+
+      var phi = rng() * Math.PI * 2.0;
+      var ringR = 0.06 + rng() * 0.24;
+      var oy = BULLET_Y + Math.cos(phi) * ringR;
+      var oz = BULLET_Z + Math.sin(phi) * ringR;
+      var ox = BULLET_IMPACT_X + 0.03 + rng() * 0.06;
+      aOrigin[i * 3 + 0] = ox;
+      aOrigin[i * 3 + 1] = oy;
+      aOrigin[i * 3 + 2] = oz;
+
+      // Splash crown tangent to the spherical glass bulb
+      var speed = 2.1 + Math.pow(rng(), 0.7) * 5.8;
+      var coneAngle = -0.22 + rng() * 0.68; // Slightly glancing past/away from bulb
+      var vx = Math.sin(coneAngle) * speed;
+      var vr = Math.cos(coneAngle) * speed;
+      aVel[i * 3 + 0] = vx;
+      aVel[i * 3 + 1] = Math.cos(phi) * vr;
+      aVel[i * 3 + 2] = Math.sin(phi) * vr;
+
+      var ax = rng() - 0.5, ay = rng() - 0.5, az = rng() - 0.5;
+      var alen = Math.sqrt(ax * ax + ay * ay + az * az) || 1.0;
+      aSpin[i * 4 + 0] = ax / alen;
+      aSpin[i * 4 + 1] = ay / alen;
+      aSpin[i * 4 + 2] = az / alen;
+      aSpin[i * 4 + 3] = (8.0 + rng() * 26.0) * (rng() < 0.5 ? 1.0 : -1.0);
+
+      var sz = 0.012 + Math.pow(rng(), 2.2) * 0.042;
+      aScale[i * 3 + 0] = sz * (0.8 + rng() * 1.4);
+      aScale[i * 3 + 1] = sz * (0.4 + rng() * 0.6);
+      aScale[i * 3 + 2] = sz * (0.7 + rng() * 0.9);
+
+      var isCopper = (rng() < 0.18);
+      if (isCopper) {
+        aTint[i * 3 + 0] = 0.88;
+        aTint[i * 3 + 1] = 0.50;
+        aTint[i * 3 + 2] = 0.28;
+      } else {
+        var b = 0.68 + rng() * 0.26;
+        aTint[i * 3 + 0] = b * 0.95;
+        aTint[i * 3 + 1] = b * 0.99;
+        aTint[i * 3 + 2] = b * 1.06;
+      }
+    }
+
+    instGeo.setAttribute('aBirth', new THREE.InstancedBufferAttribute(aBirth, 1));
+    instGeo.setAttribute('aOrigin', new THREE.InstancedBufferAttribute(aOrigin, 3));
+    instGeo.setAttribute('aVel', new THREE.InstancedBufferAttribute(aVel, 3));
+    instGeo.setAttribute('aSpin', new THREE.InstancedBufferAttribute(aSpin, 4));
+    instGeo.setAttribute('aScale', new THREE.InstancedBufferAttribute(aScale, 3));
+    instGeo.setAttribute('aTint', new THREE.InstancedBufferAttribute(aTint, 3));
+
+    var mat = new THREE.ShaderMaterial({
+      uniforms: spallUniforms,
+      vertexShader: [
+        'attribute float aBirth;',
+        'attribute vec3 aOrigin;',
+        'attribute vec3 aVel;',
+        'attribute vec4 aSpin;',
+        'attribute vec3 aScale;',
+        'attribute vec3 aTint;',
+        'uniform float uSimTime;',
+        'uniform vec3 uBulbCenter;',
+        'uniform float uBulbRad;',
+        'varying vec3 vWorldNormal;',
+        'varying vec3 vWorldPos;',
+        'varying vec3 vTint;',
+        'varying float vHeat;',
+        '',
+        'vec3 rotateAxis(vec3 v, vec3 axis, float ang) {',
+        '  float c = cos(ang);',
+        '  float s = sin(ang);',
+        '  return v * c + cross(axis, v) * s + axis * dot(axis, v) * (1.0 - c);',
+        '}',
+        '',
+        'void main() {',
+        '  float age = uSimTime - aBirth;',
+        '  if (age < 0.0 || age > 2.2) {',
+        '    gl_Position = vec4(2.0, 2.0, 2.0, 1.0);',
+        '    return;',
+        '  }',
+        '  float drag = 1.35;',
+        '  float dFactor = (1.0 - exp(-drag * age)) / drag;',
+        '  vec3 center = aOrigin + aVel * dFactor + vec3(0.0, -1.55 * age * age, 0.0);',
+        '',
+        '  // Analytical sphere deflection so spall skims cleanly around the intact glass bulb',
+        '  vec3 rel = center - uBulbCenter;',
+        '  float dist = length(rel);',
+        '  if (dist < uBulbRad) {',
+        '    center = uBulbCenter + (rel / max(dist, 1e-4)) * uBulbRad;',
+        '  }',
+        '',
+        '  float shrink = 1.0 - smoothstep(1.6, 2.2, age);',
+        '  vec3 localP = position * aScale * shrink;',
+        '  float ang = age * aSpin.w;',
+        '  vec3 rotP = rotateAxis(localP, aSpin.xyz, ang);',
+        '  vec3 rotN = rotateAxis(normal, aSpin.xyz, ang);',
+        '',
+        '  vec4 wp = modelMatrix * vec4(center + rotP, 1.0);',
+        '  vWorldPos = wp.xyz;',
+        '  vWorldNormal = normalize((modelMatrix * vec4(rotN, 0.0)).xyz);',
+        '  vTint = aTint;',
+        '  vHeat = exp(-age * 9.0);',
+        '  gl_Position = projectionMatrix * viewMatrix * wp;',
+        '}'
+      ].join('\n'),
+      fragmentShader: [
+        'uniform samplerCube uEnvCube;',
+        'varying vec3 vWorldNormal;',
+        'varying vec3 vWorldPos;',
+        'varying vec3 vTint;',
+        'varying float vHeat;',
+        'void main() {',
+        '  vec3 N = normalize(vWorldNormal);',
+        '  vec3 V = normalize(cameraPosition - vWorldPos);',
+        '  vec3 R = reflect(-V, N);',
+        '  vec3 env = textureCube(uEnvCube, R, 1.2).rgb;',
+        '  float diff = max(dot(N, normalize(vec3(-0.5, 0.7, 0.6))), 0.0) * 0.65 + 0.25;',
+        '  vec3 col = vTint * (env * 1.25 + diff * 0.45);',
+        '  col += vec3(1.0, 0.62, 0.22) * vHeat * 0.55;',
+        '  col = clamp(col, 0.0, 1.0);',
+        '  col = pow(col, vec3(1.0 / 2.2));',
+        '  gl_FragColor = vec4(col, 1.0);',
+        '}'
+      ].join('\n')
+    });
+
+    var mesh = new THREE.InstancedMesh(instGeo, mat, SPALL_COUNT);
+    var idMat = new THREE.Matrix4();
+    for (var m = 0; m < SPALL_COUNT; m++) {
+      mesh.setMatrixAt(m, idMat);
+    }
+    mesh.instanceMatrix.needsUpdate = true;
+    mesh.frustumCulled = false;
+    scene.add(mesh);
+    return mesh;
+  })();
+
+  // Kinetic Friction & Triboluminescence Micro-Spark Streaks (GPU Analytical InstancedMesh)
+  var SPARK_COUNT = 260; // 0..159 = bullet impact sparks, 160..259 = tail snip triboluminescence sparks
+  var sparkUniforms = {
+    uSimTime: { value: 0.0 }
+  };
+
+  (function buildMicroSparks() {
+    var instGeo = new THREE.PlaneGeometry(1.0, 1.0);
+
+    var aBirth = new Float32Array(SPARK_COUNT);
+    var aLife = new Float32Array(SPARK_COUNT);
+    var aOrigin = new Float32Array(SPARK_COUNT * 3);
+    var aVel = new Float32Array(SPARK_COUNT * 3);
+    var aColor = new Float32Array(SPARK_COUNT * 3);
+
+    for (var i = 0; i < SPARK_COUNT; i++) {
+      var isSnip = (i >= 160);
+      if (!isSnip) {
+        aBirth[i] = 1.200 + rng() * 0.14;
+        aLife[i] = 0.18 + rng() * 0.34;
+        aOrigin[i * 3 + 0] = impactPoint.x + 0.02;
+        aOrigin[i * 3 + 1] = impactPoint.y + (rng() - 0.5) * 0.12;
+        aOrigin[i * 3 + 2] = impactPoint.z + (rng() - 0.5) * 0.12;
+        var ang = rng() * Math.PI * 2.0;
+        var spd = 3.2 + rng() * 6.5;
+        aVel[i * 3 + 0] = (0.15 + rng() * 0.75) * spd;
+        aVel[i * 3 + 1] = Math.cos(ang) * spd;
+        aVel[i * 3 + 2] = Math.sin(ang) * spd * 0.7;
+        aColor[i * 3 + 0] = 1.0;
+        aColor[i * 3 + 1] = 0.76 + rng() * 0.22;
+        aColor[i * 3 + 2] = 0.45 + rng() * 0.35;
+      } else {
+        aBirth[i] = T_SNIP_BITE + rng() * 0.08;
+        aLife[i] = 0.16 + rng() * 0.28;
+        aOrigin[i * 3 + 0] = cutPoint.x + (rng() - 0.5) * 0.04;
+        aOrigin[i * 3 + 1] = cutPoint.y + (rng() - 0.5) * 0.04;
+        aOrigin[i * 3 + 2] = cutPoint.z + (rng() - 0.5) * 0.04;
+        var uAng = rng() * Math.PI * 2.0;
+        var zAng = (rng() - 0.5) * 2.0;
+        var rHoriz = Math.sqrt(Math.max(0.0, 1.0 - zAng * zAng));
+        var sSpd = 1.4 + rng() * 3.8;
+        aVel[i * 3 + 0] = Math.cos(uAng) * rHoriz * sSpd;
+        aVel[i * 3 + 1] = Math.sin(uAng) * rHoriz * sSpd;
+        aVel[i * 3 + 2] = zAng * sSpd;
+        aColor[i * 3 + 0] = 0.68 + rng() * 0.32;
+        aColor[i * 3 + 1] = 0.88 + rng() * 0.12;
+        aColor[i * 3 + 2] = 1.0;
+      }
+    }
+
+    instGeo.setAttribute('aBirth', new THREE.InstancedBufferAttribute(aBirth, 1));
+    instGeo.setAttribute('aLife', new THREE.InstancedBufferAttribute(aLife, 1));
+    instGeo.setAttribute('aOrigin', new THREE.InstancedBufferAttribute(aOrigin, 3));
+    instGeo.setAttribute('aVel', new THREE.InstancedBufferAttribute(aVel, 3));
+    instGeo.setAttribute('aColor', new THREE.InstancedBufferAttribute(aColor, 3));
+
+    var mat = configureAdditiveBlend(new THREE.ShaderMaterial({
+      uniforms: sparkUniforms,
+      vertexShader: [
+        'attribute float aBirth;',
+        'attribute float aLife;',
+        'attribute vec3 aOrigin;',
+        'attribute vec3 aVel;',
+        'attribute vec3 aColor;',
+        'uniform float uSimTime;',
+        'varying vec2 vUv;',
+        'varying vec3 vColor;',
+        'varying float vAlpha;',
+        'void main() {',
+        '  float age = uSimTime - aBirth;',
+        '  if (age < 0.0 || age > aLife) {',
+        '    gl_Position = vec4(2.0, 2.0, 2.0, 1.0);',
+        '    return;',
+        '  }',
+        '  float u = age / aLife;',
+        '  vAlpha = (1.0 - u) * (1.0 - u);',
+        '  vColor = aColor;',
+        '  vUv = uv;',
+        '  float drag = 3.2;',
+        '  vec3 pNow = aOrigin + aVel * ((1.0 - exp(-drag * age)) / drag) + vec3(0.0, -1.2 * age * age, 0.0);',
+        '  vec3 vNow = aVel * exp(-drag * age) + vec3(0.0, -2.4 * age, 0.0);',
+        '  vec3 dir = normalize(vec3(vNow.xy, 0.0) + vec3(1e-4, 0.0, 0.0));',
+        '  vec3 perp = vec3(-dir.y, dir.x, 0.0);',
+        '  float len = clamp(length(vNow) * 0.032, 0.02, 0.18);',
+        '  float wid = 0.011;',
+        '  vec3 worldP = pNow + dir * (position.x * len) + perp * (position.y * wid);',
+        '  gl_Position = projectionMatrix * viewMatrix * vec4(worldP, 1.0);',
+        '}'
+      ].join('\n'),
+      fragmentShader: [
+        'varying vec2 vUv;',
+        'varying vec3 vColor;',
+        'varying float vAlpha;',
+        'void main() {',
+        '  float d = length((vUv - 0.5) * 2.0);',
+        '  float core = smoothstep(1.0, 0.0, d);',
+        '  gl_FragColor = vec4(vColor * (1.2 + core), core * core * vAlpha);',
+        '}'
+      ].join('\n'),
+      side: THREE.DoubleSide
+    }));
+
+    var mesh = new THREE.InstancedMesh(instGeo, mat, SPARK_COUNT);
+    var idMat = new THREE.Matrix4();
+    for (var m = 0; m < SPARK_COUNT; m++) {
+      mesh.setMatrixAt(m, idMat);
+    }
+    mesh.instanceMatrix.needsUpdate = true;
+    mesh.frustumCulled = false;
+    mesh.renderOrder = 8;
+    scene.add(mesh);
+  })();
+
+  // =========================================================================
+  // 10. ARTICULATED BRUSHED TOOL-STEEL NIPPERS AT UPPER TAIL TIP (s = 0.895)
+  // =========================================================================
+  var nippersRoot = new THREE.Group();
+  var nipperPivotGroup = new THREE.Group();
+  var leftJawGroup = new THREE.Group();
+  var rightJawGroup = new THREE.Group();
+  var nippersApproachDir = new THREE.Vector3();
+  var PIVOT_DIST = 0.36; // Distance from cutting tip to rivet pivot
+
+  (function buildArticulatedNippers() {
+    // Construct exact 3D orthonormal basis around P_cut so BOTH X_nip (handles) and Y_nip (jaw pinch)
+    // are strictly perpendicular to cutTangent (wire passes cleanly through jaw V-gap!) while presenting
+    // a clear 3/4 view to the Z-axis camera inside the central 70% frame.
+    var zNip = cutTangent.clone().normalize();
+    var rawApproach = new THREE.Vector3(0.58, 0.46, -0.67);
+    nippersApproachDir.copy(rawApproach).addScaledVector(zNip, -rawApproach.dot(zNip)).normalize();
+    var yNip = new THREE.Vector3().crossVectors(zNip, nippersApproachDir).normalize();
+    var basisMat = new THREE.Matrix4().makeBasis(nippersApproachDir, yNip, zNip);
+    nippersRoot.position.copy(cutPoint);
+    nippersRoot.quaternion.setFromRotationMatrix(basisMat);
+
+    // Pivot sits at +X = PIVOT_DIST in nippersRoot local space (cutting edge meets at local origin 0,0,0)
+    nipperPivotGroup.position.set(PIVOT_DIST, 0, 0);
+    nippersRoot.add(nipperPivotGroup);
+    nipperPivotGroup.add(leftJawGroup);
+    nipperPivotGroup.add(rightJawGroup);
+
+    var steelMat = new THREE.MeshStandardMaterial({
+      color: 0xaab4c4,
+      metalness: 0.91,
+      roughness: 0.27,
+      envMapIntensity: 1.5
+    });
+    var bevelMat = new THREE.MeshStandardMaterial({
+      color: 0xdbe4f0,
+      metalness: 0.96,
+      roughness: 0.14,
+      envMapIntensity: 1.85
+    });
+    var gripMat = new THREE.MeshStandardMaterial({
+      color: 0x1e2432,
+      metalness: 0.25,
+      roughness: 0.72,
+      envMapIntensity: 0.8
+    });
+    var rivetMat = new THREE.MeshStandardMaterial({
+      color: 0x6c7586,
+      metalness: 0.92,
+      roughness: 0.24,
+      envMapIntensity: 1.4
+    });
+
+    // Helper to build one curved pincer jaw + handle lever around pivot (0,0,0)
+    // Cutting edge tip meets cleanly at (-PIVOT_DIST, 0, 0) when jaw rotation = 0!
+    function populateJaw(jawGrp, signY) {
+      // 1) Curved steel cheek from pivot (0,0) arching out to ( -0.18, signY*0.13 ) then inward to (-PIVOT_DIST, 0)
+      var cheekArch = new THREE.Mesh(new THREE.BoxGeometry(0.24, 0.068, 0.085), steelMat);
+      cheekArch.position.set(-0.13, signY * 0.088, signY * 0.012);
+      cheekArch.rotation.z = -signY * 0.42;
+      jawGrp.add(cheekArch);
+
+      // 2) Hardened curved beak tapering inward to the precision cutting edge
+      var beak = new THREE.Mesh(new THREE.BoxGeometry(0.19, 0.056, 0.078), steelMat);
+      beak.position.set(-0.275, signY * 0.064, 0.0);
+      beak.rotation.z = signY * 0.56;
+      jawGrp.add(beak);
+
+      // 3) Ground 45-degree tool-steel cutting wedge meeting right at (-PIVOT_DIST, 0, 0)
+      var bladeGeo = new THREE.ConeGeometry(0.042, 0.095, 4);
+      bladeGeo.rotateY(Math.PI * 0.25);
+      bladeGeo.scale(0.65, 1.0, 1.25);
+      // Tip of ConeGeometry(r, h) is at +Y = +h/2; rotate so tip points to -signY at x = -PIVOT_DIST
+      bladeGeo.rotateZ(signY > 0 ? Math.PI : 0.0);
+      var blade = new THREE.Mesh(bladeGeo, bevelMat);
+      blade.position.set(-PIVOT_DIST, signY * 0.0475, 0.0);
+      jawGrp.add(blade);
+
+      // 4) Brushed handle tang extending toward +X (crosses over pivot scissor-style: -signY side!)
+      var tang = new THREE.Mesh(new THREE.BoxGeometry(0.32, 0.055, 0.068), steelMat);
+      tang.position.set(0.16, -signY * 0.052, signY * 0.014);
+      tang.rotation.z = -signY * 0.28;
+      jawGrp.add(tang);
+
+      // 5) Matte dark insulated ergonomic grip sleeve (compact so entire tool stays inside 70% frame)
+      var sleeveGeo = new THREE.CylinderGeometry(0.036, 0.042, 0.52, 16);
+      sleeveGeo.rotateZ(Math.PI * 0.5);
+      var sleeve = new THREE.Mesh(sleeveGeo, gripMat);
+      sleeve.position.set(0.52, -signY * 0.145, signY * 0.014);
+      sleeve.rotation.z = -signY * 0.22;
+      jawGrp.add(sleeve);
+    }
+
+    populateJaw(leftJawGroup, 1.0);
+    populateJaw(rightJawGroup, -1.0);
+
+    // Central lap-joint circular boss & machined pivot screw
+    var lapDisc = new THREE.Mesh(new THREE.CylinderGeometry(0.098, 0.098, 0.105, 28), steelMat);
+    lapDisc.rotation.x = Math.PI * 0.5;
+    nipperPivotGroup.add(lapDisc);
+
+    var screwHead = new THREE.Mesh(new THREE.CylinderGeometry(0.048, 0.048, 0.125, 24), rivetMat);
+    screwHead.rotation.x = Math.PI * 0.5;
+    nipperPivotGroup.add(screwHead);
+
+    var screwSlot = new THREE.Mesh(new THREE.BoxGeometry(0.075, 0.014, 0.132), gripMat);
+    screwSlot.rotation.z = 0.45;
+    nipperPivotGroup.add(screwSlot);
+
+    scene.add(nippersRoot);
+  })();
+
+  function updateNippersAt(simTime) {
+    // Phase 1 & 2 (0.000s - 2.600s): Poised slightly retracted with jaws open 24 deg
+    // Phase 3     (2.600s - 3.800s): Glides onto tail tip and closes jaws down to glass contact (4.5 deg)
+    // Phase 4     (3.800s - 4.400s): Squeezes flush shut (0.0 deg at 4.050s), severing the tail!
+    // Phase 5 & 6 (4.400s - 8.000s): Subtle post-cut recoil & slight jaw relaxation
+    var approachT = smootherstep(2.600, 3.550, simTime);
+    var postCutRecoil = smootherstep(4.120, 4.950, simTime);
+    var retractDist = 0.24 * (1.0 - approachT) + 0.14 * postCutRecoil;
+
+    var jawHalfAngle;
+    if (simTime < 2.600) {
+      jawHalfAngle = 0.36;
+    } else if (simTime < 3.800) {
+      var close1 = smootherstep(2.650, 3.800, simTime);
+      jawHalfAngle = lerp(0.36, 0.078, close1); // Contacts thin glass tail at 3.800s
+    } else if (simTime < T_SNIP_BITE) {
+      var bite = smootherstep(3.800, T_SNIP_BITE, simTime);
+      jawHalfAngle = lerp(0.078, 0.0, bite); // Flush sever at 4.050s!
+    } else if (simTime < 4.350) {
+      jawHalfAngle = 0.0;
+    } else {
+      jawHalfAngle = 0.09 * smootherstep(4.350, 5.100, simTime);
+    }
+
+    // Offset along nippersApproachDir (+X_local away from cutPoint)
+    nippersRoot.position.copy(cutPoint).addScaledVector(nippersApproachDir, retractDist);
+
+    // Rotating (-PIVOT_DIST, 0) by -angle moves y to +PIVOT_DIST*sin(angle) (+Y = open)
+    leftJawGroup.rotation.z = -jawHalfAngle;
+    rightJawGroup.rotation.z = jawHalfAngle;
+  }
+
+  // =========================================================================
+  // 11. PRE-SEEDED CRYSTALLINE GLASS NEEDLES, SHELL PRISMS & SILICA DUST
+  // =========================================================================
+  var shardUniforms = {
+    uEnvCube: { value: studioEnv.cubeTexture },
+    uSimTime: { value: 0.0 },
+    uWaveEndTime: { value: T_WAVE_END }
+  };
+
+  // Shared GLSL for analytical supersonic birth + Phase 6 catastrophic burst + gravitational drift
+  var shardVertShader = [
+    'attribute float aBirth;',
+    'attribute vec3 aOrigin;',
+    'attribute vec3 aVelWave;',
+    'attribute vec3 aVelBurst;',
+    'attribute vec4 aQuat0;',
+    'attribute vec4 aSpin;',
+    'attribute vec3 aScale;',
+    'attribute vec3 aOptical;', // x = birefringent hue phase, y = gravity scale, z = white flash duration
+    '',
+    'uniform float uSimTime;',
+    'uniform float uWaveEndTime;',
+    '',
+    'varying vec3 vWorldPos;',
+    'varying vec3 vWorldNormal;',
+    'varying float vAge;',
+    'varying vec3 vOptical;',
+    '',
+    'vec3 quatRotate(vec4 q, vec3 v) {',
+    '  return v + 2.0 * cross(q.xyz, cross(q.xyz, v) + q.w * v);',
+    '}',
+    '',
+    'vec3 axisRotate(vec3 v, vec3 axis, float ang) {',
+    '  float c = cos(ang);',
+    '  float s = sin(ang);',
+    '  return v * c + cross(axis, v) * s + axis * dot(axis, v) * (1.0 - c);',
+    '}',
+    '',
+    'void main() {',
+    '  float age = uSimTime - aBirth;',
+    '  if (age < 0.0) {',
+    '    gl_Position = vec4(2.0, 2.0, 2.0, 1.0);',
+    '    return;',
+    '  }',
+    '  vAge = age;',
+    '  vOptical = aOptical;',
+    '',
+    '  // Stage 1: Supersonic fracture wavefront radial crystal expansion behind s_front',
+    '  float drag1 = 1.15;',
+    '  vec3 dispWave = aVelWave * ((1.0 - exp(-drag1 * age)) / drag1);',
+    '',
+    '  // Stage 2: Catastrophic radial strain release once wavefront completes at 5.800s',
+    '  float ageBurst = max(0.0, uSimTime - max(uWaveEndTime, aBirth));',
+    '  float drag2 = 0.82;',
+    '  vec3 dispBurst = aVelBurst * ((1.0 - exp(-drag2 * ageBurst)) / drag2);',
+    '',
+    '  // Slow-motion gravitational downward drift across Phases 5 & 6',
+    '  float gravY = -(0.16 * age * age + 0.25 * ageBurst * ageBurst) * aOptical.y;',
+    '',
+    '  vec3 center = aOrigin + dispWave + dispBurst + vec3(0.0, gravY, 0.0);',
+    '',
+    '  // Rapid micro-growth in first 4ms so shards emerge cleanly at crack plane',
+    '  float popIn = smoothstep(0.0, 0.008, age);',
+    '  vec3 scaledP = position * aScale * popIn;',
+    '',
+    '  // Initial orientation inside glass + tumbling rotation',
+    '  vec3 p0 = quatRotate(aQuat0, scaledP);',
+    '  vec3 n0 = quatRotate(aQuat0, normal);',
+    '  float spinAng = (age * 0.65 + ageBurst * 0.85) * aSpin.w;',
+    '  vec3 rotP = axisRotate(p0, aSpin.xyz, spinAng);',
+    '  vec3 rotN = axisRotate(n0, aSpin.xyz, spinAng);',
+    '',
+    '  vec4 wp = modelMatrix * vec4(center + rotP, 1.0);',
+    '  vWorldPos = wp.xyz;',
+    '  vWorldNormal = normalize((modelMatrix * vec4(rotN, 0.0)).xyz);',
+    '  gl_Position = projectionMatrix * viewMatrix * wp;',
+    '}'
+  ].join('\n');
+
+  var shardFragShader = [
+    'uniform samplerCube uEnvCube;',
+    'varying vec3 vWorldPos;',
+    'varying vec3 vWorldNormal;',
+    'varying float vAge;',
+    'varying vec3 vOptical;',
+    '',
+    'vec3 acesToneMap(vec3 x) {',
+    '  return clamp((x * (2.51 * x + 0.03)) / (x * (2.43 * x + 0.59) + 0.14), 0.0, 1.0);',
+    '}',
+    '',
+    'void main() {',
+    '  vec3 N = normalize(vWorldNormal);',
+    '  if (!gl_FrontFacing) N = -N;',
+    '  vec3 V = normalize(cameraPosition - vWorldPos);',
+    '  float ndv = clamp(dot(N, V), 0.0, 1.0);',
+    '',
+    '  float fresnel = 0.06 + 0.94 * pow(1.0 - ndv, 3.8);',
+    '  vec3 R = reflect(-V, N);',
+    '  vec3 T = refract(-V, N, 1.0 / 1.52);',
+    '  vec3 envRefl = textureCube(uEnvCube, R, 0.0).rgb;',
+    '  vec3 envRefr = textureCube(uEnvCube, T, 0.8).rgb;',
+    '',
+    '  // Subtle residual birefringent tint on crystal facets',
+    '  vec3 irid = 0.5 - 0.5 * cos(vec3(1.0, 1.22, 1.48) * (vOptical.x + ndv * 4.5));',
+    '',
+    '  // Razor-sharp studio diamond facet glints (key + cyan + magenta)',
+    '  vec3 L1 = normalize(vec3(-0.52, 0.72, 0.68));',
+    '  vec3 L2 = normalize(vec3(-0.78, 0.28, -0.56));',
+    '  vec3 L3 = normalize(vec3(0.78, -0.28, -0.56));',
+    '  float glint1 = pow(max(dot(N, normalize(L1 + V)), 0.0), 110.0) * 3.4;',
+    '  float glint2 = pow(max(dot(N, normalize(L2 + V)), 0.0), 64.0) * 1.6;',
+    '  float glint3 = pow(max(dot(N, normalize(L3 + V)), 0.0), 64.0) * 1.4;',
+    '',
+    '  vec3 crystal = mix(envRefr * 0.95 + irid * 0.18, envRefl * 1.35, fresnel);',
+    '  crystal += vec3(1.0, 0.99, 0.98) * glint1;',
+    '  crystal += vec3(0.18, 0.90, 1.0) * glint2;',
+    '  crystal += vec3(1.0, 0.25, 0.74) * glint3;',
+    '',
+    '  // Newly fractured shards scatter chalk-white light for the first ~85ms behind wavefront',
+    '  float whiteScatter = exp(-vAge / max(0.03, vOptical.z));',
+    '  vec3 col = mix(crystal, vec3(1.35, 1.46, 1.62), whiteScatter * 0.88);',
+    '',
+    '  col = acesToneMap(col * 1.12);',
+    '  col = pow(col, vec3(1.0 / 2.2));',
+    '  float alpha = mix(0.86 + 0.14 * fresnel, 0.98, whiteScatter);',
+    '  gl_FragColor = vec4(col, alpha);',
+    '}'
+  ].join('\n');
+
+  // Helper: create flat-faceted acicular glass needle geometry (16 triangles, sharp cleavage faces)
+  function createAcicularNeedleGeometry() {
+    var verts = [
+      new THREE.Vector3( 0.00,  1.00,  0.00), // 0: top sharp tip
+      new THREE.Vector3( 0.00, -1.00,  0.00), // 1: bottom sharp tip
+      // Upper waist ring (y = +0.24)
+      new THREE.Vector3( 1.00,  0.24,  0.15), // 2
+      new THREE.Vector3(-0.15,  0.24,  0.95), // 3
+      new THREE.Vector3(-0.95,  0.24, -0.20), // 4
+      new THREE.Vector3( 0.20,  0.24, -0.88), // 5
+      // Lower waist ring (y = -0.32)
+      new THREE.Vector3( 0.78, -0.32,  0.32), // 6
+      new THREE.Vector3(-0.35, -0.32,  0.76), // 7
+      new THREE.Vector3(-0.74, -0.32, -0.30), // 8
+      new THREE.Vector3( 0.30, -0.32, -0.72)  // 9
+    ];
+    var faces = [
+      // Top pyramid facets
+      0, 2, 3,  0, 3, 4,  0, 4, 5,  0, 5, 2,
+      // Middle prism cleavage facets
+      2, 6, 7,  2, 7, 3,
+      3, 7, 8,  3, 8, 4,
+      4, 8, 9,  4, 9, 5,
+      5, 9, 6,  5, 6, 2,
+      // Bottom splinter facets
+      1, 7, 6,  1, 8, 7,  1, 9, 8,  1, 6, 9
+    ];
+    var posArr = new Float32Array(faces.length * 3);
+    for (var i = 0; i < faces.length; i++) {
+      var v = verts[faces[i]];
+      posArr[i * 3 + 0] = v.x;
+      posArr[i * 3 + 1] = v.y;
+      posArr[i * 3 + 2] = v.z;
+    }
+    var g = new THREE.BufferGeometry();
+    g.setAttribute('position', new THREE.BufferAttribute(posArr, 3));
+    g.computeVertexNormals(); // Flat per-face normals since non-indexed!
+    return g;
+  }
+
+  // Helper: create asymmetric flat-faceted outer compressive shell glass prism
+  function createShellPrismGeometry() {
+    var base = new THREE.CylinderGeometry(0.68, 1.0, 1.15, 5, 1, false);
+    var pos = base.attributes.position;
+    for (var i = 0; i < pos.count; i++) {
+      var x = pos.getX(i), y = pos.getY(i), z = pos.getZ(i);
+      pos.setXYZ(i, x * (1.0 + 0.18 * y), y, z * (0.85 - 0.12 * y));
+    }
+    var nonIdx = base.toNonIndexed();
+    nonIdx.computeVertexNormals();
+    base.dispose();
+    return nonIdx;
+  }
+
+  function populateShardInstancedMesh(baseGeo, count, isOuterShell) {
+    var instGeo = baseGeo.clone();
+
+    var aBirth = new Float32Array(count);
+    var aOrigin = new Float32Array(count * 3);
+    var aVelWave = new Float32Array(count * 3);
+    var aVelBurst = new Float32Array(count * 3);
+    var aQuat0 = new Float32Array(count * 4);
+    var aSpin = new Float32Array(count * 4);
+    var aScale = new Float32Array(count * 3);
+    var aOptical = new Float32Array(count * 3);
+
+    var qTmp = new THREE.Quaternion();
+    var upY = new THREE.Vector3(0, 1, 0);
+    var dirTmp = new THREE.Vector3();
+    var radDir = new THREE.Vector3();
+
+    for (var i = 0; i < count; i++) {
+      // Sample spine s weighted by cross-sectional glass volume R(s)^1.45 so bulb & neck are densely packed
+      // while ensuring rich representation all the way up the slender tail!
+      var uRand = rng();
+      var s;
+      if (uRand < 0.14) {
+        // Dedicated upper tail & severed curl shards (s in [0.65, 0.998])
+        s = 0.65 + rng() * 0.348;
+      } else if (uRand < 0.42) {
+        // Mid/upper neck shards (s in [0.28, 0.72])
+        s = 0.28 + Math.pow(rng(), 1.15) * 0.44;
+      } else {
+        // Thick bulbous head & shoulder shards (s in [0.004, 0.32])
+        s = 0.004 + Math.pow(rng(), 1.25) * 0.316;
+      }
+
+      sampleSpine(s, tmpSample);
+      var R = tmpSample.radius;
+
+      var theta = rng() * Math.PI * 2.0;
+      var cosT = Math.cos(theta);
+      var sinT = Math.sin(theta);
+      radDir.set(
+        cosT * tmpSample.norm.x + sinT * tmpSample.binorm.x,
+        cosT * tmpSample.norm.y + sinT * tmpSample.binorm.y,
+        cosT * tmpSample.norm.z + sinT * tmpSample.binorm.z
+      ).normalize();
+
+      // Radial coordinate inside glass cross-section
+      var rFrac = isOuterShell ? (0.78 + 0.21 * rng()) : (0.08 + 0.78 * Math.sqrt(rng()));
+      var rActual = R * rFrac;
+
+      aOrigin[i * 3 + 0] = tmpSample.pos.x + radDir.x * rActual;
+      aOrigin[i * 3 + 1] = tmpSample.pos.y + radDir.y * rActual;
+      aOrigin[i * 3 + 2] = tmpSample.pos.z + radDir.z * rActual;
+
+      // Exact analytical birth time matching s_front(simTime)
+      aBirth[i] = getBirthTimeForS(s, rng() - 0.5);
+
+      // Stored elastic energy scales strongly with local bulb radius R(s)
+      var energyScale = 0.32 + 1.55 * Math.pow(R / R_BULB_MAX, 0.80);
+
+      if (s >= S_CUT) {
+        // Severed upper tail splinters snap upward/outward on nipper bite
+        var snapSpd = 0.45 + rng() * 0.95;
+        aVelWave[i * 3 + 0] = radDir.x * snapSpd + tmpSample.tan.x * 0.35;
+        aVelWave[i * 3 + 1] = radDir.y * snapSpd + 0.45 * rng();
+        aVelWave[i * 3 + 2] = radDir.z * snapSpd;
+        aVelBurst[i * 3 + 0] = radDir.x * 0.25;
+        aVelBurst[i * 3 + 1] = -0.15;
+        aVelBurst[i * 3 + 2] = radDir.z * 0.25;
+      } else {
+        // Stage 1 wavefront plume expansion + Stage 2 catastrophic radial disintegration
+        var v1Mag = energyScale * (0.48 + rng() * 0.88) * (0.55 + 0.65 * rFrac);
+        var axialKick1 = (rng() - 0.62) * 0.38 * energyScale;
+        aVelWave[i * 3 + 0] = radDir.x * v1Mag + tmpSample.tan.x * axialKick1;
+        aVelWave[i * 3 + 1] = radDir.y * v1Mag + tmpSample.tan.y * axialKick1;
+        aVelWave[i * 3 + 2] = radDir.z * v1Mag + tmpSample.tan.z * axialKick1;
+
+        var v2Mag = energyScale * (0.75 + Math.pow(rng(), 0.8) * 1.85);
+        var axialKick2 = (s < 0.14 ? -0.55 * (1.0 - s / 0.14) : (rng() - 0.5) * 0.45) * energyScale;
+        aVelBurst[i * 3 + 0] = radDir.x * v2Mag + tmpSample.tan.x * axialKick2 + (rng() - 0.5) * 0.35;
+        aVelBurst[i * 3 + 1] = radDir.y * v2Mag + tmpSample.tan.y * axialKick2 + (rng() - 0.42) * 0.35;
+        aVelBurst[i * 3 + 2] = radDir.z * v2Mag + tmpSample.tan.z * axialKick2 + (rng() - 0.5) * 0.35;
+      }
+
+      // Align acicular needles radially/diagonally like real Prince Rupert's Drop cleavage cones
+      if (isOuterShell) {
+        dirTmp.copy(radDir).lerp(tmpSample.tan, (rng() - 0.5) * 0.5).normalize();
+      } else {
+        dirTmp.copy(radDir).multiplyScalar(0.78).addScaledVector(tmpSample.tan, (rng() - 0.5) * 0.85).normalize();
+      }
+      qTmp.setFromUnitVectors(upY, dirTmp);
+      aQuat0[i * 4 + 0] = qTmp.x;
+      aQuat0[i * 4 + 1] = qTmp.y;
+      aQuat0[i * 4 + 2] = qTmp.z;
+      aQuat0[i * 4 + 3] = qTmp.w;
+
+      var sx = rng() - 0.5, sy = rng() - 0.5, sz = rng() - 0.5;
+      var slen = Math.sqrt(sx * sx + sy * sy + sz * sz) || 1.0;
+      aSpin[i * 4 + 0] = sx / slen;
+      aSpin[i * 4 + 1] = sy / slen;
+      aSpin[i * 4 + 2] = sz / slen;
+      aSpin[i * 4 + 3] = (2.8 + rng() * 11.5) * (rng() < 0.5 ? 1.0 : -1.0);
+
+      var sizeBase = clamp(R * 0.32, 0.014, 0.16);
+      if (isOuterShell) {
+        var ps = sizeBase * (0.22 + rng() * 0.34);
+        aScale[i * 3 + 0] = ps * (0.8 + rng() * 0.7);
+        aScale[i * 3 + 1] = ps * (0.45 + rng() * 0.45);
+        aScale[i * 3 + 2] = ps * (0.8 + rng() * 0.7);
+      } else {
+        // Elongated interlocking glass needles!
+        var nLen = (0.028 + sizeBase * 0.68) * (0.65 + rng() * 1.05);
+        var nWid = (0.0045 + sizeBase * 0.075) * (0.7 + rng() * 0.75);
+        aScale[i * 3 + 0] = nWid;
+        aScale[i * 3 + 1] = nLen;
+        aScale[i * 3 + 2] = nWid * (0.7 + rng() * 0.6);
+      }
+
+      aOptical[i * 3 + 0] = rng() * Math.PI * 2.0; // Birefringent phase
+      aOptical[i * 3 + 1] = 0.72 + rng() * 0.62;   // Gravitational fall factor
+      aOptical[i * 3 + 2] = 0.065 + rng() * 0.075; // Opaque-white wavefront scatter decay
+    }
+
+    instGeo.setAttribute('aBirth', new THREE.InstancedBufferAttribute(aBirth, 1));
+    instGeo.setAttribute('aOrigin', new THREE.InstancedBufferAttribute(aOrigin, 3));
+    instGeo.setAttribute('aVelWave', new THREE.InstancedBufferAttribute(aVelWave, 3));
+    instGeo.setAttribute('aVelBurst', new THREE.InstancedBufferAttribute(aVelBurst, 3));
+    instGeo.setAttribute('aQuat0', new THREE.InstancedBufferAttribute(aQuat0, 4));
+    instGeo.setAttribute('aSpin', new THREE.InstancedBufferAttribute(aSpin, 4));
+    instGeo.setAttribute('aScale', new THREE.InstancedBufferAttribute(aScale, 3));
+    instGeo.setAttribute('aOptical', new THREE.InstancedBufferAttribute(aOptical, 3));
+
+    var mat = new THREE.ShaderMaterial({
+      uniforms: shardUniforms,
+      vertexShader: shardVertShader,
+      fragmentShader: shardFragShader,
+      transparent: true,
+      depthWrite: true,
+      side: THREE.DoubleSide
+    });
+
+    var mesh = new THREE.InstancedMesh(instGeo, mat, count);
+    var idMat = new THREE.Matrix4();
+    for (var m = 0; m < count; m++) {
+      mesh.setMatrixAt(m, idMat);
+    }
+    mesh.instanceMatrix.needsUpdate = true;
+    mesh.frustumCulled = false;
+    mesh.renderOrder = 3;
+    scene.add(mesh);
+    return mesh;
+  }
+
+  var needleBaseGeo = createAcicularNeedleGeometry();
+  var prismBaseGeo = createShellPrismGeometry();
+
+  // 5,200 Interlocking Core Glass Needles + 1,250 Faceted Outer-Shell Prisms = 6,450 3D Crystal Shards
+  var needleShardMesh = populateShardInstancedMesh(needleBaseGeo, 5200, false);
+  var prismShardMesh = populateShardInstancedMesh(prismBaseGeo, 1250, true);
+
+  // 5,200 Fine Silica Micro-Dust & Sparkling Micro-Crystal Particles Drifting Under Gravity
+  var DUST_COUNT = 5200;
+  var dustUniforms = {
+    uDustTex: { value: dustTexture },
+    uSimTime: { value: 0.0 },
+    uWaveEndTime: { value: T_WAVE_END },
+    uPixelRatio: { value: Math.min(window.devicePixelRatio || 1, 2) }
+  };
+
+  (function buildSilicaDustCloud() {
+    var geo = new THREE.BufferGeometry();
+    var pos = new Float32Array(DUST_COUNT * 3);
+    var aBirth = new Float32Array(DUST_COUNT);
+    var aVel = new Float32Array(DUST_COUNT * 3);
+    var aBurst = new Float32Array(DUST_COUNT * 3);
+    var aMeta = new Float32Array(DUST_COUNT * 4); // x: size, y: gravScale, z: twinklePhase, w: isGlitter
+
+    var radDir = new THREE.Vector3();
+    for (var i = 0; i < DUST_COUNT; i++) {
+      var u = rng();
+      var s = (u < 0.22) ? (0.55 + rng() * 0.445) : Math.pow(rng(), 1.18) * 0.62;
+      sampleSpine(s, tmpSample);
+      var R = tmpSample.radius;
+
+      var th = rng() * Math.PI * 2.0;
+      radDir.set(
+        Math.cos(th) * tmpSample.norm.x + Math.sin(th) * tmpSample.binorm.x,
+        Math.cos(th) * tmpSample.norm.y + Math.sin(th) * tmpSample.binorm.y,
+        Math.cos(th) * tmpSample.norm.z + Math.sin(th) * tmpSample.binorm.z
+      ).normalize();
+
+      var rPos = R * Math.sqrt(rng());
+      pos[i * 3 + 0] = tmpSample.pos.x + radDir.x * rPos;
+      pos[i * 3 + 1] = tmpSample.pos.y + radDir.y * rPos;
+      pos[i * 3 + 2] = tmpSample.pos.z + radDir.z * rPos;
+
+      aBirth[i] = getBirthTimeForS(s, rng() - 0.5);
+
+      var eScale = 0.26 + 1.35 * Math.pow(R / R_BULB_MAX, 0.75);
+      var spd1 = eScale * (0.22 + rng() * 0.85);
+      aVel[i * 3 + 0] = radDir.x * spd1 + (rng() - 0.5) * 0.18;
+      aVel[i * 3 + 1] = radDir.y * spd1 + (rng() - 0.5) * 0.18;
+      aVel[i * 3 + 2] = radDir.z * spd1 + (rng() - 0.5) * 0.18;
+
+      var spd2 = eScale * (0.35 + rng() * 1.45);
+      aBurst[i * 3 + 0] = radDir.x * spd2 + (rng() - 0.5) * 0.42;
+      aBurst[i * 3 + 1] = radDir.y * spd2 + (rng() - 0.45) * 0.38;
+      aBurst[i * 3 + 2] = radDir.z * spd2 + (rng() - 0.5) * 0.42;
+
+      var isGlitter = (rng() < 0.34) ? 1.0 : 0.0;
+      aMeta[i * 4 + 0] = isGlitter > 0.5 ? (3.5 + rng() * 5.5) : (8.0 + rng() * 18.0);
+      aMeta[i * 4 + 1] = isGlitter > 0.5 ? (0.62 + rng() * 0.55) : (0.28 + rng() * 0.44);
+      aMeta[i * 4 + 2] = rng() * 100.0;
+      aMeta[i * 4 + 3] = isGlitter;
+    }
+
+    geo.setAttribute('position', new THREE.BufferAttribute(pos, 3));
+    geo.setAttribute('aBirth', new THREE.BufferAttribute(aBirth, 1));
+    geo.setAttribute('aVel', new THREE.BufferAttribute(aVel, 3));
+    geo.setAttribute('aBurst', new THREE.BufferAttribute(aBurst, 3));
+    geo.setAttribute('aMeta', new THREE.BufferAttribute(aMeta, 4));
+
+    var mat = configureAdditiveBlend(new THREE.ShaderMaterial({
+      uniforms: dustUniforms,
+      vertexShader: [
+        'attribute float aBirth;',
+        'attribute vec3 aVel;',
+        'attribute vec3 aBurst;',
+        'attribute vec4 aMeta;',
+        'uniform float uSimTime;',
+        'uniform float uWaveEndTime;',
+        'uniform float uPixelRatio;',
+        'varying float vAlpha;',
+        'varying vec3 vColor;',
+        'void main() {',
+        '  float age = uSimTime - aBirth;',
+        '  if (age < 0.0) {',
+        '    gl_Position = vec4(2.0, 2.0, 2.0, 1.0);',
+        '    gl_PointSize = 0.0;',
+        '    return;',
+        '  }',
+        '  float drag1 = 1.85;',
+        '  vec3 d1 = aVel * ((1.0 - exp(-drag1 * age)) / drag1);',
+        '  float ageBurst = max(0.0, uSimTime - max(uWaveEndTime, aBirth));',
+        '  float drag2 = 1.35;',
+        '  vec3 d2 = aBurst * ((1.0 - exp(-drag2 * ageBurst)) / drag2);',
+        '',
+        '  // Gentle studio air curl + downward gravitational settling',
+        '  float ph = aMeta.z;',
+        '  vec3 curl = vec3(sin(age * 1.7 + ph), cos(age * 1.3 + ph * 1.3) * 0.4, cos(age * 1.5 + ph)) * (0.06 * age);',
+        '  float gravY = -(0.12 * age * age + 0.21 * ageBurst * ageBurst) * aMeta.y;',
+        '',
+        '  vec3 wp = position + d1 + d2 + curl + vec3(0.0, gravY, 0.0);',
+        '  vec4 mv = modelViewMatrix * vec4(wp, 1.0);',
+        '  gl_Position = projectionMatrix * mv;',
+        '',
+        '  float isGlitter = aMeta.w;',
+        '  if (isGlitter > 0.5) {',
+        '    float twinkle = pow(0.5 + 0.5 * sin(uSimTime * 24.0 + ph), 5.0);',
+        '    vAlpha = (0.28 + 0.72 * twinkle) * smoothstep(0.0, 0.02, age);',
+        '    float hueMix = fract(ph * 0.17);',
+        '    vColor = mix(vec3(0.85, 0.96, 1.0), mix(vec3(0.35, 0.92, 1.0), vec3(1.0, 0.55, 0.88), hueMix), 0.42);',
+        '    gl_PointSize = aMeta.x * uPixelRatio * (10.0 / max(1.0, -mv.z));',
+        '  } else {',
+        '    float puff = exp(-age * 4.5) * 0.45 + 0.11 * (1.0 - smoothstep(1.8, 3.8, age));',
+        '    vAlpha = puff;',
+        '    vColor = vec3(0.76, 0.88, 1.0);',
+        '    gl_PointSize = aMeta.x * (1.0 + 0.55 * smoothstep(0.0, 1.6, age)) * uPixelRatio * (10.0 / max(1.0, -mv.z));',
+        '  }',
+        '}'
+      ].join('\n'),
+      fragmentShader: [
+        'uniform sampler2D uDustTex;',
+        'varying float vAlpha;',
+        'varying vec3 vColor;',
+        'void main() {',
+        '  vec4 tex = texture2D(uDustTex, gl_PointCoord);',
+        '  gl_FragColor = vec4(vColor, tex.a * vAlpha);',
+        '}'
+      ].join('\n')
+    }));
+
+    var pts = new THREE.Points(geo, mat);
+    pts.frustumCulled = false;
+    pts.renderOrder = 6;
+    scene.add(pts);
+  })();
+
+  // =========================================================================
+  // 12. PURE ANALYTICAL SIMULATION EVALUATOR: renderAt(simTime)
+  // =========================================================================
+  var tmpFlexVec = new THREE.Vector3();
+  var tmpClampBasePos = spineCurve.getPointAt(S_CLAMP).clone();
+
+  function renderAt(rawTime) {
+    var t = clamp(rawTime, 0.0, DURATION);
+
+    // 1) Fracture wavefront spine coordinate s_front(t)
+    var fracS = getFractureS(t);
+    var isTipSevered = (t >= T_SNIP_BITE) ? 1.0 : 0.0;
+    var waveActive = (t >= T_SNIP_BITE && t < T_WAVE_END) ? 1.0 : 0.0;
+
+    // 2) Photoelastic stress shock (Phase 2: 1.200s - 2.600s) & stress pulse (Phase 3: 2.600s - 3.800s)
+    var impactShock = 0.0;
+    if (t >= 1.200 && t < 2.850) {
+      var dtImp = t - 1.200;
+      impactShock = Math.exp(-dtImp * 2.4) * (1.0 - smoothstep(2.45, 2.85, t));
+    }
+    var stressPulse = 0.0;
+    if (t >= 2.550 && t < 4.100) {
+      var pulseEnv = smoothstep(2.550, 2.850, t) * (1.0 - smoothstep(3.750, 4.100, t));
+      stressPulse = pulseEnv * (0.65 + 0.35 * Math.sin((t - 2.600) * 9.5));
+    }
+
+    // 3) Tail-snip incandescent triboluminescence flash (Phase 4: 4.050s - 4.400s)
+    var triboInt = 0.0;
+    if (t >= T_SNIP_BITE && t < 4.460) {
+      var dtSnip = t - T_SNIP_BITE;
+      triboInt = Math.exp(-dtSnip * 8.5) * (0.85 + 0.25 * Math.sin(dtSnip * 95.0));
+    }
+
+    // Update intact quenched glass uniforms & visibility
+    var dropVisible = (fracS > 0.0);
+    dropMesh.visible = dropVisible;
+    dropBackMesh.visible = dropVisible;
+    dropUniforms.uSimTime.value = t;
+    dropUniforms.uFractureS.value = fracS;
+    dropUniforms.uSeverTip.value = isTipSevered;
+    dropUniforms.uWaveActive.value = waveActive;
+    dropUniforms.uImpactShock.value = impactShock;
+    dropUniforms.uStressPulse.value = stressPulse;
+    dropUniforms.uTriboFlash.value = triboInt;
+
+    // Update internal vacuum shrinkage micro-bubbles inside the bulb
+    for (var b = 0; b < internalBubbles.length; b++) {
+      var bub = internalBubbles[b];
+      if (bub.s < fracS - 0.015) {
+        bub.mesh.visible = true;
+        getDropFlexOffset(bub.s, t, tmpFlexVec);
+        bub.mesh.position.copy(bub.basePos).add(tmpFlexVec);
+      } else {
+        bub.mesh.visible = false;
+        bub.mesh.position.copy(bub.basePos);
+      }
+    }
+
+    // Update volumetric supersonic fracture cone & traveling wavefront light
+    if (t >= T_SNIP_BITE && t < T_WAVE_END && fracS > 0.004 && fracS < 0.92) {
+      sampleSpine(fracS, tmpSample);
+      fractureConeMesh.visible = true;
+      fractureConeMesh.position.copy(tmpSample.pos);
+      fractureConeMesh.quaternion.setFromUnitVectors(new THREE.Vector3(0, 0, 1), tmpSample.tan);
+      var rCone = Math.max(0.015, tmpSample.radius * 0.94);
+      fractureConeMesh.scale.set(rCone, rCone, Math.max(0.06, rCone * 1.65));
+
+      wavefrontLight.position.copy(tmpSample.pos).add(new THREE.Vector3(0, 0, 0.32));
+      wavefrontLight.intensity = 2.6 + 2.4 * (tmpSample.radius / R_BULB_MAX);
+    } else if (t >= T_WAVE_END && t < 6.35) {
+      fractureConeMesh.visible = false;
+      fractureConeMesh.position.set(0, 0, 0);
+      fractureConeMesh.quaternion.setFromUnitVectors(new THREE.Vector3(0, 0, 1), new THREE.Vector3(0, 0, 1));
+      fractureConeMesh.scale.set(1, 1, 1);
+      wavefrontLight.position.copy(bulbCenter).add(new THREE.Vector3(0, 0, 0.45));
+      wavefrontLight.intensity = 4.8 * Math.exp(-(t - T_WAVE_END) * 6.5);
+    } else {
+      fractureConeMesh.visible = false;
+      fractureConeMesh.position.set(0, 0, 0);
+      fractureConeMesh.quaternion.setFromUnitVectors(new THREE.Vector3(0, 0, 1), new THREE.Vector3(0, 0, 1));
+      fractureConeMesh.scale.set(1, 1, 1);
+      wavefrontLight.position.set(0, 0, 0);
+      wavefrontLight.intensity = 0.0;
+    }
+
+    // Subtle mechanical micro-recoil on the dark anodized clamp during bullet impact
+    if (t >= 1.200 && t < 2.500) {
+      var dtC = t - 1.200;
+      var cOsc = -0.008 * Math.exp(-dtC * 6.0) * Math.sin(dtC * 75.0);
+      clampGroup.position.set(tmpClampBasePos.x + cOsc, tmpClampBasePos.y, tmpClampBasePos.z);
+    } else {
+      clampGroup.position.copy(tmpClampBasePos);
+    }
+
+    // 4) Update Conical Lead Bullet, Mushrooming, Spall & Impact Shock Ring
+    updateBulletAt(t);
+    spallUniforms.uSimTime.value = t;
+    sparkUniforms.uSimTime.value = t;
+
+    if (t >= 1.200 && t < 1.520) {
+      var dtS = t - 1.200;
+      var sProg = dtS / 0.320;
+      impactShockRing.visible = true;
+      var sRad = 0.25 + sProg * 3.8;
+      impactShockRing.scale.set(sRad, sRad, 1.0);
+      shockRingMat.opacity = 0.38 * Math.pow(1.0 - sProg, 2.0);
+
+      var impFlash = Math.exp(-dtS * 18.0);
+      impactFlareMat.opacity = impFlash * 0.92;
+      var fScale = 0.35 + 1.35 * impFlash;
+      impactFlare.scale.set(fScale, fScale, 1.0);
+      impactFlashLight.position.copy(impactPoint).add(new THREE.Vector3(0.18, 0, 0.35));
+      impactFlashLight.intensity = impFlash * 5.2;
+    } else {
+      impactShockRing.visible = false;
+      impactShockRing.scale.set(1, 1, 1);
+      shockRingMat.opacity = 0.0;
+      impactFlareMat.opacity = 0.0;
+      impactFlare.scale.set(1, 1, 1);
+      impactFlashLight.position.copy(impactPoint);
+      impactFlashLight.intensity = 0.0;
+    }
+
+    // 5) Update Articulated Steel Nippers & Tail-Snip Triboluminescence Flash
+    updateNippersAt(t);
+    if (triboInt > 0.002) {
+      triboFlareMat.opacity = clamp(triboInt * 1.15, 0.0, 1.0);
+      var tScale = 0.42 + 1.45 * triboInt;
+      triboFlare.scale.set(tScale, tScale, 1.0);
+      triboFlashLight.position.copy(cutPoint).add(new THREE.Vector3(0, 0, 0.30));
+      triboFlashLight.intensity = triboInt * 6.5;
+    } else {
+      triboFlareMat.opacity = 0.0;
+      triboFlare.scale.set(1, 1, 1);
+      triboFlashLight.position.copy(cutPoint);
+      triboFlashLight.intensity = 0.0;
+    }
+
+    // 6) Terminal Bulb Disintegration Acoustic Ring (5.800s - 6.280s)
+    if (t >= T_WAVE_END && t < 6.280) {
+      var bProg = (t - T_WAVE_END) / 0.480;
+      burstShockRing.visible = true;
+      var bRad = 0.52 + bProg * 4.2;
+      burstShockRing.scale.set(bRad, bRad, 1.0);
+      burstShockMat.opacity = 0.30 * Math.pow(1.0 - bProg, 2.1);
+    } else {
+      burstShockRing.visible = false;
+      burstShockRing.scale.set(1, 1, 1);
+      burstShockMat.opacity = 0.0;
+    }
+
+    // 7) Update Crystalline Glass Shards & Silica Dust GPU Uniforms
+    var shardsActive = (t >= T_SNIP_BITE);
+    needleShardMesh.visible = shardsActive;
+    prismShardMesh.visible = shardsActive;
+    shardUniforms.uSimTime.value = t;
+    dustUniforms.uSimTime.value = t;
+    dustUniforms.uPixelRatio.value = Math.min(window.devicePixelRatio || 1, 2);
+
+    renderer.render(scene, camera);
+  }
+
+  // =========================================================================
+  // 13. 5-STATE PLAYBACK STATE MACHINE & CANONICAL BOTTOM DOCK CONTROLS
+  // =========================================================================
+  var countdownEl = document.getElementById('countdown');
+  var btnRefire = document.getElementById('btn-refire');
+  var btnToggle = document.getElementById('btn-toggle');
+  var iconPause = document.getElementById('icon-pause');
+  var iconPlay = document.getElementById('icon-play');
+  var speedPills = document.querySelectorAll('.speed-pill');
+  var scrubberEl = document.getElementById('scrubber');
+
+  // States: 'COUNTDOWN' | 'PLAYING' | 'PAUSED' | 'REFIRE_HOLD' | 'ENDED'
+  var state = 'COUNTDOWN';
+  var simTime = 0.0;
+  var playbackSpeed = 1.0;
+  var countdownElapsed = 0.0;
+  var holdElapsed = 0.0;
+  var lastFrameTime = null;
+
+  function setToggleButtonMode(showPauseIcon) {
+    if (showPauseIcon) {
+      iconPause.style.display = '';
+      iconPlay.style.display = 'none';
+      btnToggle.setAttribute('aria-label', 'Pause');
+    } else {
+      iconPause.style.display = 'none';
+      iconPlay.style.display = '';
+      btnToggle.setAttribute('aria-label', 'Play');
+    }
+  }
+
+  function hideCountdown() {
+    countdownEl.style.display = 'none';
+    countdownEl.textContent = '';
+  }
+
+  function showCountdownDigit(digitStr) {
+    countdownEl.style.display = 'block';
+    if (countdownEl.textContent !== digitStr) {
+      countdownEl.textContent = digitStr;
+    }
+  }
+
+  // Play / Pause Toggle (#btn-toggle)
+  btnToggle.addEventListener('click', function() {
+    if (state === 'PLAYING') {
+      state = 'PAUSED';
+      setToggleButtonMode(false);
+    } else if (state === 'COUNTDOWN' || state === 'REFIRE_HOLD') {
+      countdownElapsed = 0.0;
+      holdElapsed = 0.0;
+      hideCountdown();
+      simTime = 0.0;
+      scrubberEl.value = '0';
+      state = 'PAUSED';
+      setToggleButtonMode(false);
+      renderAt(0.0);
+    } else if (state === 'PAUSED') {
+      hideCountdown();
+      state = 'PLAYING';
+      setToggleButtonMode(true);
+    } else if (state === 'ENDED') {
+      hideCountdown();
+      simTime = 0.0;
+      scrubberEl.value = '0';
+      state = 'PLAYING';
+      setToggleButtonMode(true);
+      renderAt(0.0);
+    }
+  });
+
+  // Silent Re-Fire (#btn-refire -> REFIRE_HOLD State)
+  btnRefire.addEventListener('click', function() {
+    countdownElapsed = 0.0;
+    holdElapsed = 0.0;
+    hideCountdown();
+    simTime = 0.0;
+    scrubberEl.value = '0';
+    state = 'REFIRE_HOLD';
+    setToggleButtonMode(true);
+    renderAt(0.0);
+  });
+
+  // Speed Selector Pills (.speed-pill)
+  for (var pIdx = 0; pIdx < speedPills.length; pIdx++) {
+    (function(pill) {
+      pill.addEventListener('click', function() {
+        var spd = parseFloat(pill.getAttribute('data-speed'));
+        if (!isNaN(spd) && spd > 0) {
+          playbackSpeed = spd;
+        }
+        for (var j = 0; j < speedPills.length; j++) {
+          var isTarget = (speedPills[j] === pill);
+          if (isTarget) {
+            speedPills[j].classList.add('is-active');
+            speedPills[j].setAttribute('aria-checked', 'true');
+          } else {
+            speedPills[j].classList.remove('is-active');
+            speedPills[j].setAttribute('aria-checked', 'false');
+          }
+        }
+      });
+    })(speedPills[pIdx]);
+  }
+
+  // Scrubbing Slider (#scrubber)
+  scrubberEl.addEventListener('input', function() {
+    countdownElapsed = 0.0;
+    holdElapsed = 0.0;
+    hideCountdown();
+    var val = parseFloat(scrubberEl.value);
+    simTime = isNaN(val) ? 0.0 : clamp(val, 0.0, DURATION);
+    state = 'PAUSED';
+    setToggleButtonMode(false);
+    renderAt(simTime);
+  });
+
+  // Responsive Viewport Resize
+  window.addEventListener('resize', function() {
+    updateCameraFraming();
+    renderAt(simTime);
+  });
+
+  // Pre-compile all shaders and render initial resting scene (simTime = 0.000) BEFORE starting COUNTDOWN rAF
+  renderer.compile(scene, camera);
+  showCountdownDigit('3');
+  scrubberEl.value = '0';
+  setToggleButtonMode(true);
+  renderAt(0.0);
+
+  // Main Animation Loop (COUNTDOWN starts on the first requestAnimationFrame callback after initial render)
+  function onAnimationFrame(nowMs) {
+    requestAnimationFrame(onAnimationFrame);
+
+    if (lastFrameTime === null) {
+      lastFrameTime = nowMs;
+      // First rAF callback after resting scene rendered: countdownElapsed = 0 -> displays "3"
+      if (state === 'COUNTDOWN') {
+        countdownElapsed = 0.0;
+        showCountdownDigit('3');
+      }
+      return;
+    }
+
+    var rawDt = Math.max(0.0, (nowMs - lastFrameTime) * 0.001);
+    lastFrameTime = nowMs;
+    var dt = Math.min(rawDt, 0.1);
+    var TIME_EPS = 1e-7;
+
+    if (state === 'COUNTDOWN') {
+      countdownElapsed += dt;
+      if (countdownElapsed < 1.000 - TIME_EPS) {
+        showCountdownDigit('3');
+        simTime = 0.0;
+        scrubberEl.value = '0';
+      } else if (countdownElapsed < 2.000 - TIME_EPS) {
+        showCountdownDigit('2');
+        simTime = 0.0;
+        scrubberEl.value = '0';
+      } else if (countdownElapsed < 3.000 - TIME_EPS) {
+        showCountdownDigit('1');
+        simTime = 0.0;
+        scrubberEl.value = '0';
+      } else {
+        var overflowDt = Math.max(0.0, countdownElapsed - 3.000);
+        hideCountdown();
+        state = 'PLAYING';
+        setToggleButtonMode(true);
+        simTime = Math.min(DURATION, overflowDt * playbackSpeed);
+        scrubberEl.value = simTime.toFixed(3);
+        renderAt(simTime);
+      }
+    } else if (state === 'REFIRE_HOLD') {
+      hideCountdown();
+      holdElapsed += dt;
+      if (holdElapsed >= 1.000 - TIME_EPS) {
+        var holdOverflow = Math.max(0.0, holdElapsed - 1.000);
+        state = 'PLAYING';
+        setToggleButtonMode(true);
+        simTime = Math.min(DURATION, holdOverflow * playbackSpeed);
+        scrubberEl.value = simTime.toFixed(3);
+        renderAt(simTime);
+      }
+    } else if (state === 'PLAYING') {
+      simTime = Math.min(DURATION, simTime + dt * playbackSpeed);
+      if (simTime >= DURATION - TIME_EPS) {
+        simTime = DURATION;
+        scrubberEl.value = DURATION.toFixed(3);
+        renderAt(DURATION);
+        state = 'ENDED';
+        setToggleButtonMode(false);
+      } else {
+        scrubberEl.value = simTime.toFixed(3);
+        renderAt(simTime);
+      }
+    }
+  }
+
+  requestAnimationFrame(onAnimationFrame);
+})();
+</script>
+</body>
+</html>

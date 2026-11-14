@@ -38,18 +38,19 @@ To measure real-world engineering utility without artificial constraints or huma
 | Category | Benchmark | Domain | Specification | Status |
 | :--- | :--- | :--- | :--- | :--- |
 | **Ballistics** | **[Water Balloon](ballistics/water-balloon/)** | 3D Ballistics Physics & High-Speed Fluid Dynamics | [`prompt.md`](ballistics/water-balloon/prompt.md) | Active Cohort Testing |
+| **Materials** | **[Prince Rupert's Drop](materials/prince-ruperts-drop/)** | Glass Fracture Mechanics & Supersonic Crack Propagation | [`prompt.md`](materials/prince-ruperts-drop/prompt.md) | Active Cohort Testing |
 
 ---
 
 ## 🛡️ Reproducibility Standard
 
-Each benchmark test directory contains:
-- [`prompt.md`](ballistics/water-balloon/prompt.md): Canonical, immutable prompt specification.
-- [`parameters.txt`](ballistics/water-balloon/parameters.txt): Ground-truth CLI execution flags per harness.
-- [`evaluate.py`](ballistics/water-balloon/evaluate.py): Automated 18-point verification suite.
-- [`TELEMETRY.md`](ballistics/water-balloon/TELEMETRY.md): Comprehensive executive comparison matrix and compliance audit.
-- [`telemetry.json`](ballistics/water-balloon/telemetry.json): Machine-readable telemetry array.
-- [`CHECKSUMS.sha256`](ballistics/water-balloon/CHECKSUMS.sha256): Cryptographic signatures for all deliverables.
+Each benchmark test directory (e.g. [`ballistics/water-balloon/`](ballistics/water-balloon/), [`materials/prince-ruperts-drop/`](materials/prince-ruperts-drop/)) contains:
+- `prompt.md`: Canonical, immutable prompt specification.
+- `parameters.txt`: Ground-truth CLI execution flags per harness.
+- `evaluate.py`: Automated 18-point verification suite.
+- `TELEMETRY.md`: Comprehensive executive comparison matrix and compliance audit.
+- `telemetry.json`: Machine-readable telemetry array.
+- `CHECKSUMS.sha256`: Cryptographic signatures for all deliverables.
 
 ---
 
@@ -57,4 +58,8 @@ Each benchmark test directory contains:
 
 | Model | Developer Harness | Verification | Wall-Clock | Deliverable |
 | :--- | :--- | :---: | :---: | :---: |
+| **Gemini 4 Hydrogen (XHigh)** | Antigravity CLI | **PASS (100%)** | 644.4s | [`materials/prince-ruperts-drop/gemini-4-hydrogen/`](materials/prince-ruperts-drop/gemini-4-hydrogen/) |
+| **Gemini 4 Carbon (High)** | Antigravity CLI | **PASS (100%)** | 1999.5s | [`materials/prince-ruperts-drop/gemini-4-carbon/`](materials/prince-ruperts-drop/gemini-4-carbon/) |
+| **Gemini 4 Argon (High)** | Antigravity CLI | **PASS (100%)** | 997.9s | [`materials/prince-ruperts-drop/gemini-4-argon/`](materials/prince-ruperts-drop/gemini-4-argon/) |
 
+*Showing the 3 most recent benchmark deliverables. See [`TELEMETRY.md`](materials/prince-ruperts-drop/TELEMETRY.md) for the complete multi-model leaderboard, full token metrics, cache ratios, and runtime verification logs.*
