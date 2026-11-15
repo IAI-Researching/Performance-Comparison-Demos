@@ -65,8 +65,8 @@ Each benchmark test directory (e.g. [`ballistics/water-balloon/`](ballistics/wat
 
 | Model | Developer Harness | Verification | Wall-Clock | Deliverable |
 | :--- | :--- | :---: | :---: | :---: |
+| **Claude Opus 5.5 (Max)** | Claude Code | **PASS (100%)** | 5030.6s | [`vehicle-dynamics/f1-night-duel/claude-opus-5.5/`](vehicle-dynamics/f1-night-duel/claude-opus-5.5/) |
 | **Claude Haiku 5.5 (Max)** | Claude Code | **PASS (100%)** | 2286.7s | [`vehicle-dynamics/f1-night-duel/claude-haiku-5.5/`](vehicle-dynamics/f1-night-duel/claude-haiku-5.5/) |
 | **MiniMax M3.1 Flash (Max)** | MiniMax Code | **PASS (100%)** | 4047.7s | [`vehicle-dynamics/f1-night-duel/minimax-m3.1-flash/`](vehicle-dynamics/f1-night-duel/minimax-m3.1-flash/) |
-| **Gemini 4 Hydrogen (XHigh)** | Antigravity CLI | **PASS (100%)** | 1284.7s | [`vehicle-dynamics/f1-night-duel/gemini-4-hydrogen/`](vehicle-dynamics/f1-night-duel/gemini-4-hydrogen/) |
 
 *Showing the 3 most recent benchmark deliverables. See [`TELEMETRY.md`](vehicle-dynamics/f1-night-duel/TELEMETRY.md) for the complete multi-model leaderboard, full token metrics, cache ratios, and runtime verification logs.*
