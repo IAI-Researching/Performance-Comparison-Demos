@@ -65,8 +65,8 @@ Each benchmark test directory (e.g. [`ballistics/water-balloon/`](ballistics/wat
 
 | Model | Developer Harness | Verification | Wall-Clock | Deliverable |
 | :--- | :--- | :---: | :---: | :---: |
+| **Qwen 4 Max (Max)** | Qwen Code | **PASS (100%)** | 2833.9s | [`ballistics/water-balloon/qwen-4-max/`](ballistics/water-balloon/qwen-4-max/) |
 | **Codex GPT 6.1 Terra (Max)** | Codex CLI | **PASS (100%)** | 858.8s | [`ballistics/water-balloon/codex-gpt-6.1-terra/`](ballistics/water-balloon/codex-gpt-6.1-terra/) |
 | **MiniMax M3.1 Flash (Max)** | MiniMax Code | **PASS (100%)** | 4078.6s | [`ballistics/water-balloon/minimax-m3.1-flash/`](ballistics/water-balloon/minimax-m3.1-flash/) |
-| **Claude Opus 5.5 (Max)** | Claude Code | **PASS (100%)** | 3667.2s | [`ballistics/water-balloon/claude-opus-5.5/`](ballistics/water-balloon/claude-opus-5.5/) |
 
 *Showing the 3 most recent benchmark deliverables. See [`TELEMETRY.md`](ballistics/water-balloon/TELEMETRY.md) for the complete multi-model leaderboard, full token metrics, cache ratios, and runtime verification logs.*

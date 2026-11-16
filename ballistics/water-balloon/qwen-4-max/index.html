@@ -1,0 +1,1050 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Ballistics — Water Balloon · 15,000 FPS</title>
+<style>
+*, *::before, *::after {
+  box-sizing: border-box;
+}
+html, body {
+  margin: 0;
+  padding: 0;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  background: radial-gradient(circle at center, #161922 0%, #090a0f 100%);
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -webkit-user-select: none;
+  user-select: none;
+}
+#stage {
+  display: block;
+  width: 100vw;
+  height: 100vh;
+}
+
+#countdown {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 50;
+  pointer-events: none;
+  font-size: 96px;
+  font-weight: 700;
+  line-height: 1;
+  color: rgba(255, 255, 255, 0.35);
+  font-variant-numeric: tabular-nums;
+}
+
+#dock {
+  position: fixed;
+  bottom: 24px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 100;
+  width: 536px;
+  height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 0 14px;
+  background: rgba(15, 17, 23, 0.78);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 9999px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.35);
+}
+
+#dock button {
+  font-family: inherit;
+  line-height: 1;
+  margin: 0;
+  flex-shrink: 0;
+  white-space: nowrap;
+  appearance: none;
+  -webkit-appearance: none;
+}
+
+.dock-sep {
+  width: 1px;
+  height: 18px;
+  flex-shrink: 0;
+  background: rgba(255, 255, 255, 0.12);
+}
+
+#btn-refire {
+  width: 78px;
+  height: 28px;
+  padding: 0 10px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 9999px;
+  color: #ffffff;
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+}
+#btn-refire:hover {
+  background: rgba(255, 255, 255, 0.16);
+}
+
+#btn-toggle {
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 9999px;
+  color: #ffffff;
+  cursor: pointer;
+}
+#btn-toggle:hover {
+  background: rgba(255, 255, 255, 0.16);
+}
+
+#speed-group {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  flex-shrink: 0;
+}
+.speed-pill {
+  width: 42px;
+  height: 24px;
+  padding: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 9999px;
+  color: rgba(255, 255, 255, 0.6);
+  font-size: 11px;
+  font-weight: 500;
+  font-variant-numeric: tabular-nums;
+  cursor: pointer;
+}
+.speed-pill:hover {
+  color: #ffffff;
+  background: rgba(255, 255, 255, 0.06);
+}
+.speed-pill.is-active {
+  color: #ffffff;
+  background: rgba(255, 255, 255, 0.18);
+  border-color: rgba(255, 255, 255, 0.2);
+}
+
+#scrubber {
+  width: 157px;
+  height: 4px;
+  margin: 0;
+  padding: 0;
+  flex-shrink: 0;
+  appearance: none;
+  -webkit-appearance: none;
+  background: rgba(255, 255, 255, 0.22);
+  border-radius: 9999px;
+  outline: none;
+  cursor: pointer;
+}
+#scrubber::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: #ffffff;
+  border: none;
+  cursor: pointer;
+}
+#scrubber::-moz-range-thumb {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: #ffffff;
+  border: none;
+  cursor: pointer;
+}
+</style>
+</head>
+<body>
+<canvas id="stage"></canvas>
+<div id="countdown" aria-hidden="true">3</div>
+
+<div id="dock" role="toolbar" aria-label="Simulation Controls">
+  <button id="btn-refire" type="button" aria-label="Re-fire" title="Re-fire">
+    <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+      <path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.19"/>
+    </svg>
+    <span>Re-fire</span>
+  </button>
+  <span class="dock-sep" aria-hidden="true"></span>
+  <button id="btn-toggle" type="button" aria-label="Pause" title="Play / Pause">
+    <svg id="icon-pause" viewBox="0 0 24 24" width="14" height="14" fill="currentColor" aria-hidden="true">
+      <rect x="6" y="4" width="4" height="16" rx="1"/>
+      <rect x="14" y="4" width="4" height="16" rx="1"/>
+    </svg>
+    <svg id="icon-play" viewBox="0 0 24 24" width="14" height="14" fill="currentColor" aria-hidden="true" style="display:none;">
+      <path d="M8 5v14l11-7z"/>
+    </svg>
+  </button>
+  <span class="dock-sep" aria-hidden="true"></span>
+  <div id="speed-group" role="radiogroup" aria-label="Playback Speed">
+    <button class="speed-pill" type="button" role="radio" aria-checked="false" data-speed="0.25">0.25×</button>
+    <button class="speed-pill" type="button" role="radio" aria-checked="false" data-speed="0.5">0.5×</button>
+    <button class="speed-pill is-active" type="button" role="radio" aria-checked="true" data-speed="1.0">1.0×</button>
+    <button class="speed-pill" type="button" role="radio" aria-checked="false" data-speed="2.0">2.0×</button>
+  </div>
+  <span class="dock-sep" aria-hidden="true"></span>
+  <input id="scrubber" type="range" min="0" max="8.000" step="0.001" value="0" aria-label="Timeline Scrubber">
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+(function () {
+'use strict';
+
+/* ---------------- deterministic utilities ---------------- */
+
+function mulberry32(seed) {
+  let a = seed >>> 0;
+  return function () {
+    a |= 0; a = (a + 0x6D2B79F5) | 0;
+    let t = Math.imul(a ^ (a >>> 15), 1 | a);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+const clamp = (x, a, b) => x < a ? a : (x > b ? b : x);
+const lerp = (a, b, u) => a + (b - a) * u;
+const sstep = (a, b, x) => { const u = clamp((x - a) / (b - a), 0, 1); return u * u * (3 - 2 * u); };
+
+const DURATION = 8.000;
+const T_IMPACT = 1.0, T_RETRACT = 1.6, T_CAV = 2.4, T_EXIT = 3.8, T_BREAK = 5.0;
+
+/* world layout: balloon dead-center, bullet flies +X -> -X along y = AXIS_Y */
+const BAL_R = 0.55, BAL_H = 0.616, BAL_CY = 0.02;
+const AXIS_Y = 0.02;
+const ENTRY_X = 0.548, EXIT_X = -0.548;
+const FLOOR_Y = -1.62;
+const G_WATER = 0.5, G_DROP = 1.15;
+const V_IN = (EXIT_X - ENTRY_X) / (T_EXIT - T_IMPACT);   /* inside water */
+const V_OUT = 0.85;                                       /* after exit  */
+
+/* teardrop profile: v = 0 bottom pole .. 1 top pole */
+function balloonRadius(v) {
+  const s = Math.sin(Math.PI * Math.pow(clamp(v, 0, 1), 0.82));
+  return BAL_R * Math.pow(Math.max(s, 0), 0.9) * (1 - 0.22 * sstep(0.55, 1.0, v));
+}
+function profileY(v) { return (v - 0.5) * 2 * BAL_H + BAL_CY; }
+function waterSag(t) { return t > T_RETRACT ? 0.5 * G_WATER * (t - T_RETRACT) * (t - T_RETRACT) : 0; }
+/* explicit, monotone, phase-exact bullet track */
+function bulletPos(t) {
+  if (t <= T_IMPACT) return ENTRY_X + (T_IMPACT - t) * (4.2 - ENTRY_X);
+  if (t <= T_EXIT) return ENTRY_X + (t - T_IMPACT) * V_IN;
+  return EXIT_X - (t - T_EXIT) * V_OUT;
+}
+
+/* ---------------- renderer / scene / camera ---------------- */
+
+const canvas = document.getElementById('stage');
+const renderer = new THREE.WebGLRenderer({ canvas: canvas, antialias: true, alpha: true });
+renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+renderer.setSize(window.innerWidth, window.innerHeight, false);
+renderer.outputEncoding = THREE.sRGBEncoding;
+renderer.setClearColor(0x000000, 0);
+
+const scene = new THREE.Scene();
+const camera = new THREE.PerspectiveCamera(35, window.innerWidth / window.innerHeight, 0.1, 60);
+camera.position.set(0, AXIS_Y, 4.6);
+camera.lookAt(0, AXIS_Y, 0);
+
+/* three-point studio rig: warm key + cool white rim + cyan/magenta tint rim */
+const keyLight = new THREE.DirectionalLight(0xfff1dd, 0.85);
+keyLight.position.set(2.6, 3.2, 4.2);
+scene.add(keyLight);
+const rimCool = new THREE.DirectionalLight(0xe4f2ff, 1.1);
+rimCool.position.set(-4.2, 1.6, -3.0);
+scene.add(rimCool);
+const rimTint = new THREE.DirectionalLight(0xff5fd0, 0.5);
+rimTint.position.set(3.6, -1.2, -4.0);
+scene.add(rimTint);
+const fillCyan = new THREE.PointLight(0x5fd8ff, 0.4, 20);
+fillCyan.position.set(-2.2, -0.6, 2.6);
+scene.add(fillCyan);
+const fillFront = new THREE.DirectionalLight(0xffe6c8, 0.32);
+fillFront.position.set(0.6, 0.5, 5.0);
+scene.add(fillFront);
+scene.add(new THREE.AmbientLight(0x2c3244, 0.6));
+
+/* ---------------- balloon profile geometry ---------------- */
+
+function makeProfilePoints(scaleR, scaleY, n) {
+  const pts = [];
+  for (let j = 0; j <= n; j++) {
+    const v = j / n;
+    pts.push(new THREE.Vector2(Math.max(balloonRadius(v) * scaleR, 0.0001), (v - 0.5) * 2 * BAL_H * scaleY + BAL_CY));
+  }
+  return pts;
+}
+
+/* ---------------- latex membrane (shader tear + retraction) ---------------- */
+
+const latexUniforms = {
+  uT: { value: 0 },
+  uColor: { value: new THREE.Color('#e61c24').convertSRGBToLinear() },
+  uKeyDir: { value: new THREE.Vector3(2.6, 3.2, 4.2).normalize() },
+  uRim1Dir: { value: new THREE.Vector3(-4.2, 1.6, -3.0).normalize() },
+  uRim2Dir: { value: new THREE.Vector3(3.6, -1.2, -4.0).normalize() }
+};
+
+const latexVert = `
+uniform float uT;
+varying vec3 vN;
+varying vec3 vW;
+varying vec3 vP0;
+varying vec2 vUv;
+float tearFront(vec3 p, vec2 uv) {
+  float ang = atan(p.z, p.x);
+  float dAng = abs(atan(sin(ang), cos(ang)));
+  float prog = smoothstep(1.04, 1.60, uT) * 1.14;
+  float front = max(dAng / 3.14159265, abs(uv.y - 0.5) / 0.5);
+  front += (0.05 * sin(ang * 21.0 + uv.y * 55.0) + 0.035 * sin(uv.y * 83.0 + ang * 7.0)) * (0.3 + 0.7 * prog);
+  return front - prog;
+}
+void main() {
+  vUv = uv;
+  vP0 = position;
+  vec3 p = position;
+  /* elastic indentation around the entry point before the tear */
+  float dentAmt = smoothstep(1.0, 1.10, uT) * 0.11 * (1.0 - smoothstep(1.18, 1.45, uT));
+  vec3 ep = vec3(${ENTRY_X.toFixed(4)}, ${AXIS_Y.toFixed(4)}, 0.0);
+  float d2 = dot(p - ep, p - ep);
+  p.x -= dentAmt * exp(-d2 / 0.045);
+  /* curled, fast-retracting torn rim */
+  float e = tearFront(position, uv);
+  float c = (uT > 1.04 && e > 0.0 && e < 0.14) ? (1.0 - e / 0.14) : 0.0;
+  p += normal * (0.055 * c);
+  p.y += 0.11 * c * sign(uv.y - 0.5);
+  p.x *= 1.0 - 0.22 * c;
+  vec4 w = modelMatrix * vec4(p, 1.0);
+  vW = w.xyz;
+  vN = normalize(mat3(modelMatrix) * normal);
+  gl_Position = projectionMatrix * viewMatrix * w;
+}`;
+
+const latexFrag = `
+uniform float uT;
+uniform vec3 uColor;
+uniform vec3 uKeyDir;
+uniform vec3 uRim1Dir;
+uniform vec3 uRim2Dir;
+varying vec3 vN;
+varying vec3 vW;
+varying vec3 vP0;
+varying vec2 vUv;
+void main() {
+  float ang = atan(vP0.z, vP0.x);
+  float dAng = abs(atan(sin(ang), cos(ang)));
+  float prog = smoothstep(1.04, 1.60, uT) * 1.14;
+  float front = max(dAng / 3.14159265, abs(vUv.y - 0.5) / 0.5);
+  front += (0.05 * sin(ang * 21.0 + vUv.y * 55.0) + 0.035 * sin(vUv.y * 83.0 + ang * 7.0)) * (0.3 + 0.7 * prog);
+  float e = front - prog;
+  if (uT > 1.04 && e < 0.0) discard;
+  float c = (uT > 1.04 && e < 0.14) ? (1.0 - e / 0.14) : 0.0;
+
+  vec3 N = normalize(vN);
+  if (!gl_FrontFacing) N = -N;
+  vec3 V = normalize(cameraPosition - vW);
+  vec3 H1 = normalize(uKeyDir + V);
+  vec3 H2 = normalize(uRim1Dir + V);
+  vec3 H3 = normalize(uRim2Dir + V);
+
+  float diff = max(dot(N, uKeyDir), 0.0) * 0.95
+             + max(dot(N, uRim1Dir), 0.0) * 0.50
+             + max(dot(N, uRim2Dir), 0.0) * 0.32;
+  float spec = pow(max(dot(N, H1), 0.0), 140.0) * 1.25
+             + pow(max(dot(N, H2), 0.0), 90.0) * 1.05
+             + pow(max(dot(N, H3), 0.0), 70.0) * 0.55;
+  float fres = pow(1.0 - max(dot(N, V), 0.0), 3.0);
+  float trans = pow(max(dot(V, -uKeyDir), 0.0), 3.0);
+
+  vec3 col = uColor * (0.24 + diff * 0.95);
+  col += vec3(1.0, 0.97, 0.9) * spec;
+  col += vec3(0.85, 0.93, 1.0) * fres * 0.50;
+  col += uColor * fres * 0.85;
+  col += uColor * trans * 0.65;
+  col += vec3(1.0, 0.85, 0.8) * c * 0.9;   /* wet glistening tear edge */
+  float alpha = clamp(0.80 + 0.20 * fres + 0.15 * c, 0.0, 1.0);
+  gl_FragColor = vec4(col, alpha);
+  #include <encodings_fragment>
+}`;
+
+const latexGeo = new THREE.LatheGeometry(makeProfilePoints(1, 1, 72), 96);
+const latexMat = new THREE.ShaderMaterial({
+  uniforms: latexUniforms,
+  vertexShader: latexVert,
+  fragmentShader: latexFrag,
+  transparent: true,
+  depthWrite: true,
+  side: THREE.DoubleSide
+});
+const latex = new THREE.Mesh(latexGeo, latexMat);
+latex.renderOrder = 2;
+scene.add(latex);
+
+/* knot at the neck */
+const knot = new THREE.Mesh(
+  new THREE.SphereGeometry(0.045, 16, 12),
+  new THREE.MeshPhongMaterial({ color: 0xb01218, shininess: 90, specular: 0x884444 })
+);
+knot.position.set(0, profileY(1) + 0.02, 0);
+knot.scale.set(1, 0.75, 1);
+scene.add(knot);
+
+/* tether running off-screen upward, whips after the burst */
+const tetherGroup = new THREE.Group();
+tetherGroup.position.set(0, 3.6, 0);
+const tetherLen = 3.6 - (profileY(1) + 0.04);
+const tether = new THREE.Mesh(
+  new THREE.CylinderGeometry(0.0055, 0.0055, tetherLen, 6, 1),
+  new THREE.MeshBasicMaterial({ color: 0xcdd6e6, transparent: true, opacity: 0.42 })
+);
+tether.position.y = -tetherLen / 2;
+tetherGroup.add(tether);
+scene.add(tetherGroup);
+
+/* ---------------- free-standing water mass ---------------- */
+
+const waterGeo = new THREE.LatheGeometry(makeProfilePoints(0.985, 0.985, 56), 64);
+const waterBase = waterGeo.attributes.position.array.slice();
+const waterMat = new THREE.MeshPhongMaterial({
+  color: 0x9fd4ea,
+  specular: 0xffffff,
+  shininess: 170,
+  emissive: 0x0a2436,
+  transparent: true,
+  opacity: 0.78,
+  depthWrite: false,
+  side: THREE.DoubleSide
+});
+const water = new THREE.Mesh(waterGeo, waterMat);
+water.renderOrder = 1;
+scene.add(water);
+
+function deformWater(t) {
+  const pos = waterGeo.attributes.position.array;
+  const n = pos.length / 3;
+  const sag = waterSag(t);
+  const dentAmt = sstep(1.0, 1.10, t) * 0.115 * (1 - sstep(1.18, 1.5, t));
+  const tunnel = 0.165 * sstep(T_CAV, 3.2, t) * (1 - 0.45 * sstep(5.0, 6.2, t));
+  const coneStretch = 0.13 * sstep(T_EXIT, 4.6, t);
+  const rtAmp = 0.045 * sstep(4.3, 5.2, t) * (1 + 0.9 * sstep(5.0, 6.4, t));
+  const shrink = 1 - 0.94 * sstep(5.2, 7.05, t);
+  const flatten = 1 - 0.06 * sstep(5.0, 7.0, t);
+  for (let i = 0; i < n; i++) {
+    const ix = i * 3;
+    let x = waterBase[ix], y = waterBase[ix + 1], z = waterBase[ix + 2];
+    if (t >= T_IMPACT) {
+      const dx = x - ENTRY_X, dy = y - AXIS_Y;
+      const d2 = dx * dx + dy * dy + z * z;
+      x -= dentAmt * Math.exp(-d2 / 0.05);
+      if (tunnel > 0.0001) {
+        const ry = y - AXIS_Y;
+        const w = Math.exp(-(ry * ry) / 0.034) * Math.exp(-(z * z) / 0.034) * sstep(0.62, 0.45, Math.abs(x));
+        const rho = Math.sqrt(ry * ry + z * z);
+        if (rho > 1e-4) {
+          y += tunnel * w * (ry / rho);
+          z += tunnel * w * (z / rho);
+        } else {
+          y += tunnel * w;
+        }
+      }
+      x -= coneStretch * sstep(-0.28, -0.55, x);
+      if (rtAmp > 0.0001) {
+        const ang = Math.atan2(z, x);
+        const r = Math.sqrt(x * x + z * z);
+        const nz = Math.sin(ang * 7 + y * 9.3) * Math.sin(y * 13.1 - ang * 5.2);
+        const grow = rtAmp * nz * (0.45 + 0.55 * sstep(0.3, -0.5, y));
+        if (r > 1e-4) { x += grow * (x / r); z += grow * (z / r); }
+      }
+      y -= sag * (0.55 + 0.45 * sstep(0.4, -0.6, y));
+      y *= flatten;
+      x *= shrink; z *= shrink;
+      y = AXIS_Y + (y - AXIS_Y) * shrink;
+    }
+    pos[ix] = x; pos[ix + 1] = y; pos[ix + 2] = z;
+  }
+  waterGeo.attributes.position.needsUpdate = true;
+  waterGeo.computeVertexNormals();
+}
+
+/* ---------------- cavitation vapor core ---------------- */
+
+const vaporCore = new THREE.Mesh(
+  new THREE.CylinderGeometry(0.075, 0.105, 1.0, 20, 1, true),
+  new THREE.MeshBasicMaterial({
+    color: 0xbfeaff, transparent: true, opacity: 0,
+    blending: THREE.AdditiveBlending, depthWrite: false, side: THREE.DoubleSide
+  })
+);
+vaporCore.rotation.z = Math.PI / 2;
+vaporCore.position.set(0, AXIS_Y, 0);
+vaporCore.renderOrder = 3;
+scene.add(vaporCore);
+
+/* ---------------- bullet ---------------- */
+
+const bulletProfile = [
+  new THREE.Vector2(0.0001, 0), new THREE.Vector2(0.052, 0),
+  new THREE.Vector2(0.052, 0.095), new THREE.Vector2(0.046, 0.102),
+  new THREE.Vector2(0.046, 0.124), new THREE.Vector2(0.052, 0.131),
+  new THREE.Vector2(0.052, 0.155), new THREE.Vector2(0.0495, 0.19),
+  new THREE.Vector2(0.043, 0.225), new THREE.Vector2(0.032, 0.258),
+  new THREE.Vector2(0.017, 0.284), new THREE.Vector2(0.0001, 0.30)
+];
+const bulletGroup = new THREE.Group();
+const bulletMesh = new THREE.Mesh(
+  new THREE.LatheGeometry(bulletProfile, 40),
+  new THREE.MeshPhongMaterial({ color: 0x8a5a28, specular: 0x6a4a2a, shininess: 42, emissive: 0x1a0d04 })
+);
+bulletGroup.add(bulletMesh);
+bulletGroup.rotation.z = Math.PI / 2;   /* lathe +Y axis -> -X flight direction */
+scene.add(bulletGroup);
+
+/* faint motion streak during the approach */
+const streak = new THREE.Mesh(
+  new THREE.PlaneGeometry(0.9, 0.05),
+  new THREE.MeshBasicMaterial({
+    color: 0xd9a05a, transparent: true, opacity: 0,
+    blending: THREE.AdditiveBlending, depthWrite: false
+  })
+);
+streak.position.z = -0.01;
+streak.renderOrder = 3;
+scene.add(streak);
+
+/* shock rings at entry & exit */
+function makeRing() {
+  const m = new THREE.Mesh(
+    new THREE.RingGeometry(0.92, 1.0, 48),
+    new THREE.MeshBasicMaterial({
+      color: 0xbfe9ff, transparent: true, opacity: 0,
+      blending: THREE.AdditiveBlending, depthWrite: false, side: THREE.DoubleSide
+    })
+  );
+  m.renderOrder = 5;
+  scene.add(m);
+  return m;
+}
+const ringEntry = makeRing();
+const ringExit = makeRing();
+ringEntry.position.set(ENTRY_X, AXIS_Y, 0.02);
+ringExit.position.set(EXIT_X, AXIS_Y, 0.02);
+
+/* ---------------- droplet sprite (detached 2D canvas) ---------------- */
+
+function makeDropTexture() {
+  const c = document.createElement('canvas');
+  c.width = 64; c.height = 64;
+  const g = c.getContext('2d');
+  const rad = g.createRadialGradient(32, 32, 1, 32, 32, 31);
+  rad.addColorStop(0, 'rgba(255,255,255,0.95)');
+  rad.addColorStop(0.32, 'rgba(235,246,255,0.62)');
+  rad.addColorStop(0.68, 'rgba(190,225,255,0.18)');
+  rad.addColorStop(1, 'rgba(160,210,255,0)');
+  g.fillStyle = rad;
+  g.fillRect(0, 0, 64, 64);
+  const hot = g.createRadialGradient(24, 22, 0.5, 24, 22, 7);
+  hot.addColorStop(0, 'rgba(255,255,255,0.95)');
+  hot.addColorStop(1, 'rgba(255,255,255,0)');
+  g.fillStyle = hot;
+  g.fillRect(0, 0, 64, 64);
+  const tex = new THREE.CanvasTexture(c);
+  tex.needsUpdate = true;
+  return tex;
+}
+const dropTex = makeDropTexture();
+
+/* ---------------- particle engine (fully analytic, seed 42) ---------------- */
+
+const N_ENTRY = 750, N_DEW = 250, N_CAV = 850, N_VAPOR = 300,
+      N_WAKE = 450, N_CONE = 1150, N_SHEET = 200, N_BREAK = 1600;
+const N = N_ENTRY + N_DEW + N_CAV + N_VAPOR + N_WAKE + N_CONE + N_SHEET + N_BREAK;
+
+const pT0 = new Float32Array(N), pLife = new Float32Array(N);
+const pX = new Float32Array(N), pY = new Float32Array(N), pZ = new Float32Array(N);
+const pVX = new Float32Array(N), pVY = new Float32Array(N), pVZ = new Float32Array(N);
+const pSize = new Float32Array(N), pSeed = new Float32Array(N), pDrag = new Float32Array(N);
+const pGrav = new Float32Array(N), pAlpha = new Float32Array(N), pTint = new Float32Array(N);
+const pFloor = new Uint8Array(N);
+
+(function buildParticles() {
+  const rng = mulberry32(42);
+  let i = 0;
+  const put = (t0, life, x, y, z, vx, vy, vz, size, drag, grav, alpha, tint, floor) => {
+    pT0[i] = t0; pLife[i] = life;
+    pX[i] = x; pY[i] = y; pZ[i] = z;
+    pVX[i] = vx; pVY[i] = vy; pVZ[i] = vz;
+    pSize[i] = size; pDrag[i] = drag; pGrav[i] = grav;
+    pAlpha[i] = alpha; pTint[i] = tint; pFloor[i] = floor;
+    pSeed[i] = rng();
+    i++;
+  };
+  const gauss = () => (rng() + rng() + rng() - 1.5) * 0.816;
+
+  /* 1. backward entry spray — vents from the right puncture */
+  for (let k = 0; k < N_ENTRY; k++) {
+    const u = rng();
+    const t0 = T_IMPACT + 0.55 * u * u;
+    const sp = 0.7 + 2.7 * Math.pow(rng(), 1.6) + (rng() < 0.06 ? 1.8 : 0);
+    const dy = gauss() * 0.62, dz = gauss() * 0.62;
+    const inv = 1 / Math.sqrt(1 + dy * dy + dz * dz);
+    put(t0, 1.2 + 1.5 * rng(),
+      ENTRY_X + gauss() * 0.03, AXIS_Y + gauss() * 0.045, gauss() * 0.045,
+      sp * inv, sp * dy * inv, sp * dz * inv,
+      0.008 + 0.024 * Math.pow(rng(), 1.7), 0, G_DROP, 0.7, rng() * 0.35, 1);
+  }
+  /* 2. dew shed by the retracting latex rim (skin moves 3-5x faster than fluid) */
+  for (let k = 0; k < N_DEW; k++) {
+    const v = 0.06 + 0.88 * rng(), ang = rng() * Math.PI * 2;
+    const front = Math.max(Math.abs(Math.atan2(Math.sin(ang), Math.cos(ang))) / Math.PI, Math.abs(v - 0.5) / 0.5);
+    const t0 = 1.04 + (front / 1.14) * 0.56 + 0.02;
+    const r = balloonRadius(v);
+    const x = r * Math.cos(ang), z = r * Math.sin(ang), y = profileY(v);
+    const rl = Math.max(Math.sqrt(x * x + z * z), 1e-4);
+    const sp = 0.35 + 0.55 * rng();
+    put(t0, 0.5 + 0.6 * rng(), x, y, z,
+      (x / rl) * sp * 0.6, 0.55 * Math.sign(v - 0.5) + 0.25 * gauss(), (z / rl) * sp * 0.6,
+      0.005 + 0.011 * rng(), 0, G_DROP, 0.8, 0.15, 1);
+  }
+  /* 3. cavitation splash venting backward from the entry hole */
+  for (let k = 0; k < N_CAV; k++) {
+    const u = rng();
+    const t0 = T_CAV + 1.3 * (u < 0.55 ? u * u * 1.4 : u);
+    const sp = 0.5 + 1.9 * Math.pow(rng(), 1.4);
+    const dy = gauss() * 0.85, dz = gauss() * 0.85;
+    const inv = 1 / Math.sqrt(1 + dy * dy + dz * dz);
+    put(t0, 1.4 + 1.5 * rng(),
+      ENTRY_X - 0.05 + gauss() * 0.05, AXIS_Y + gauss() * 0.07, gauss() * 0.07,
+      sp * inv, sp * dy * inv, sp * dz * inv,
+      0.01 + 0.028 * Math.pow(rng(), 1.5), 0, G_DROP, 0.68, rng() * 0.4, 1);
+  }
+  /* 4. soft vapor puffs along the tunnel mouth */
+  for (let k = 0; k < N_VAPOR; k++) {
+    const t0 = T_CAV + 1.5 * rng();
+    const sp = 0.25 + 0.75 * rng();
+    const dy = gauss() * 0.7, dz = gauss() * 0.7;
+    const inv = 1 / Math.sqrt(1 + dy * dy + dz * dz);
+    put(t0, 0.45 + 0.55 * rng(),
+      ENTRY_X - 0.12 * rng(), AXIS_Y + gauss() * 0.09, gauss() * 0.09,
+      sp * inv, sp * dy * inv, sp * dz * inv,
+      0.05 + 0.055 * rng(), 1.6, 0.05, 0.22, 0.75, 0);
+  }
+  /* 5. internal tunnel wake churn (glows through the translucent mass) */
+  for (let k = 0; k < N_WAKE; k++) {
+    const t0 = T_CAV + 1.4 * rng();
+    const x = -0.45 + 0.9 * rng();
+    const sp = 0.2 + 0.5 * rng();
+    put(t0, 0.6 + 0.9 * rng(),
+      x, AXIS_Y + gauss() * 0.08, gauss() * 0.08,
+      -sp * (0.4 + 0.6 * rng()), gauss() * 0.22, gauss() * 0.22,
+      0.01 + 0.017 * rng(), 1.2, 0.04, 0.5, 0.9, 0);
+  }
+  /* 6. forward high-velocity conical plume at exit */
+  for (let k = 0; k < N_CONE; k++) {
+    const u = rng();
+    const t0 = T_EXIT + 0.9 * u * u;
+    const sp = 1.2 + 3.6 * Math.pow(rng(), 1.5);
+    const dy = gauss() * 0.42, dz = gauss() * 0.42;
+    const inv = 1 / Math.sqrt(1 + dy * dy + dz * dz);
+    put(t0, 0.8 + 1.5 * rng(),
+      EXIT_X + gauss() * 0.03, AXIS_Y + gauss() * 0.04, gauss() * 0.04,
+      -sp * inv, sp * dy * inv, sp * dz * inv,
+      0.005 + 0.018 * Math.pow(rng(), 1.6), 0.55, G_DROP * 0.55, 0.75, 0.3 + rng() * 0.5, 0);
+  }
+  /* 7. heavier sheets & blobs torn from the exit rim */
+  for (let k = 0; k < N_SHEET; k++) {
+    const t0 = T_EXIT + 0.8 * rng();
+    const sp = 0.4 + 0.9 * rng();
+    const dy = gauss() * 0.75, dz = gauss() * 0.75;
+    const inv = 1 / Math.sqrt(1 + dy * dy + dz * dz);
+    put(t0, 2.0 + 1.2 * rng(),
+      EXIT_X + gauss() * 0.05, AXIS_Y + gauss() * 0.08, gauss() * 0.08,
+      -sp * inv, sp * dy * inv, sp * dz * inv,
+      0.03 + 0.035 * rng(), 0, G_DROP, 0.85, rng() * 0.25, 1);
+  }
+  /* 8. Rayleigh-Taylor / Plateau-Rayleigh breakup of the whole mass */
+  for (let k = 0; k < N_BREAK; k++) {
+    const u = rng();
+    const t0 = 4.9 + 2.3 * Math.pow(u, 1.4);
+    const v = rng(), ang = rng() * Math.PI * 2;
+    const rr = balloonRadius(v) * Math.sqrt(rng()) * 0.98;
+    let x = rr * Math.cos(ang), z = rr * Math.sin(ang);
+    let y = profileY(v) - waterSag(t0) * (0.55 + 0.45 * sstep(0.3, -0.5, profileY(v)));
+    const rl = Math.max(Math.sqrt(x * x + z * z), 1e-4);
+    const out = 0.08 + 0.5 * Math.pow(rng(), 1.8);
+    const wake = Math.exp(-((y - AXIS_Y) * (y - AXIS_Y) + z * z) / 0.05) * 0.35;
+    const big = rng();
+    const size = big < 0.7 ? 0.01 + 0.02 * rng() : (big < 0.95 ? 0.03 + 0.03 * rng() : 0.06 + 0.04 * rng());
+    put(t0, 2.4 + 2.2 * rng(), x, y, z,
+      (x / rl) * out - wake, (rng() - 0.5) * 0.3, (z / rl) * out,
+      size, 0, G_DROP, 0.95, rng() * 0.3, 1);
+  }
+})();
+
+const partGeo = new THREE.BufferGeometry();
+const partPos = new Float32Array(N * 3);
+const partSize = new Float32Array(N);
+const partAlpha = new Float32Array(N);
+const partTint = new Float32Array(N);
+partGeo.setAttribute('position', new THREE.BufferAttribute(partPos, 3));
+partGeo.setAttribute('aSize', new THREE.BufferAttribute(partSize, 1));
+partGeo.setAttribute('aAlpha', new THREE.BufferAttribute(partAlpha, 1));
+partGeo.setAttribute('aTint', new THREE.BufferAttribute(partTint, 1));
+
+const partUniforms = {
+  uMap: { value: dropTex },
+  uScale: { value: 1 }
+};
+const partMat = new THREE.ShaderMaterial({
+  uniforms: partUniforms,
+  vertexShader: `
+    attribute float aSize;
+    attribute float aAlpha;
+    attribute float aTint;
+    uniform float uScale;
+    varying float vAlpha;
+    varying float vTint;
+    void main() {
+      vAlpha = aAlpha;
+      vTint = aTint;
+      vec4 mv = modelViewMatrix * vec4(position, 1.0);
+      gl_PointSize = clamp(aSize * uScale / max(-mv.z, 0.1), 0.0, 160.0);
+      gl_Position = projectionMatrix * mv;
+      if (aAlpha <= 0.001) gl_Position = vec4(2.0, 2.0, 2.0, 1.0);
+    }`,
+  fragmentShader: `
+    uniform sampler2D uMap;
+    varying float vAlpha;
+    varying float vTint;
+    void main() {
+      vec4 tex = texture2D(uMap, gl_PointCoord);
+      vec3 cool = vec3(0.78, 0.90, 1.0);
+      vec3 warm = vec3(1.0, 0.94, 0.86);
+      vec3 col = mix(warm, cool, vTint);
+      gl_FragColor = vec4(col, tex.a * vAlpha);
+      #include <encodings_fragment>
+    }`,
+  transparent: true,
+  depthWrite: false,
+  depthTest: true,
+  blending: THREE.AdditiveBlending
+});
+const points = new THREE.Points(partGeo, partMat);
+points.renderOrder = 4;
+points.frustumCulled = false;
+scene.add(points);
+
+function updateParticles(t) {
+  for (let i = 0; i < N; i++) {
+    const age = t - pT0[i];
+    const i3 = i * 3;
+    partTint[i] = pTint[i];
+    if (age < 0 || age > pLife[i]) {
+      partAlpha[i] = 0; partSize[i] = 0;
+      partPos[i3] = 0; partPos[i3 + 1] = -10; partPos[i3 + 2] = 0;
+      continue;
+    }
+    const life = pLife[i];
+    let x, y, z, sizeMul = 1, extraFade = 1;
+    const k = pDrag[i], g = pGrav[i];
+    if (k > 0) {
+      const ek = (1 - Math.exp(-k * age)) / k;
+      x = pX[i] + pVX[i] * ek;
+      z = pZ[i] + pVZ[i] * ek;
+      y = pY[i] + (pVY[i] + g / k) * ek - (g / k) * age;
+    } else {
+      x = pX[i] + pVX[i] * age;
+      z = pZ[i] + pVZ[i] * age;
+      y = pY[i] + pVY[i] * age - 0.5 * g * age * age;
+      if (pFloor[i] === 1 && y < FLOOR_Y && g > 0) {
+        /* analytic first impact, rebound, then settle & slide */
+        const vy0 = pVY[i], y0 = pY[i];
+        const disc = vy0 * vy0 + 2 * g * (y0 - FLOOR_Y);
+        const a1 = (vy0 + Math.sqrt(Math.max(disc, 0))) / g;
+        const b = age - a1;
+        const x1 = pX[i] + pVX[i] * a1, z1 = pZ[i] + pVZ[i] * a1;
+        const vy1 = (g * a1 - vy0) * 0.30;
+        const vx1 = pVX[i] * 0.58, vz1 = pVZ[i] * 0.58;
+        const a2 = 2 * vy1 / g;
+        if (b <= a2) {
+          x = x1 + vx1 * b; z = z1 + vz1 * b;
+          y = FLOOR_Y + vy1 * b - 0.5 * g * b * b;
+        } else {
+          const c = b - a2;
+          const slide = (1 - Math.exp(-2.5 * c)) / 2.5;
+          x = x1 + vx1 * a2 + vx1 * slide;
+          z = z1 + vz1 * a2 + vz1 * slide;
+          y = FLOOR_Y;
+          sizeMul = 1 + 0.5 * Math.min(c, 0.4);
+          extraFade = Math.exp(-0.5 * c);
+        }
+      }
+    }
+    const fadeIn = sstep(0, 0.035, age);
+    const fadeOut = 1 - sstep(life - 0.4, life, age);
+    const twinkle = 0.85 + 0.15 * Math.sin(pSeed[i] * 40 + t * (6 + pSeed[i] * 5));
+    partPos[i3] = x; partPos[i3 + 1] = y; partPos[i3 + 2] = z;
+    partSize[i] = pSize[i] * sizeMul;
+    partAlpha[i] = pAlpha[i] * fadeIn * fadeOut * twinkle * extraFade;
+  }
+  partGeo.attributes.position.needsUpdate = true;
+  partGeo.attributes.aSize.needsUpdate = true;
+  partGeo.attributes.aAlpha.needsUpdate = true;
+  partGeo.attributes.aTint.needsUpdate = true;
+}
+
+/* ---------------- pure deterministic scene evaluation ---------------- */
+
+function renderAt(t) {
+  t = clamp(t, 0, DURATION);
+
+  /* latex */
+  latexUniforms.uT.value = t;
+  latex.visible = t < 1.72;
+  const sway = 0.012 * Math.sin(t * 1.7 + 0.5) * (1 - sstep(0.9, 1.05, t));
+  latex.rotation.z = sway;
+  knot.visible = t < 1.62;
+  const knotK = 1 - sstep(1.3, 1.6, t);
+  knot.scale.set(knotK, 0.75 * knotK, knotK);
+
+  /* tether whip after the burst */
+  if (t > 1.5) {
+    const dtw = t - 1.5;
+    tetherGroup.rotation.z = 0.055 * Math.sin(dtw * 17) * Math.exp(-dtw * 2.1);
+    tetherGroup.rotation.x = 0.03 * Math.sin(dtw * 13 + 1.2) * Math.exp(-dtw * 2.4);
+  } else {
+    tetherGroup.rotation.z = 0;
+    tetherGroup.rotation.x = 0;
+  }
+
+  /* water mass */
+  water.visible = t < 7.1;
+  if (water.visible) {
+    deformWater(t);
+    water.rotation.z = sway;
+    waterMat.opacity = 0.78 * (1 - sstep(5.4, 7.0, t)) + 0.04 * sstep(T_RETRACT, T_CAV, t);
+  }
+
+  /* vapor tunnel core */
+  const coreEnv = sstep(T_CAV, 3.1, t) * (1 - sstep(4.4, 5.3, t));
+  vaporCore.visible = coreEnv > 0.002;
+  if (vaporCore.visible) {
+    const grow = sstep(T_CAV, T_EXIT, t);
+    vaporCore.scale.set(1, 0.55 + 0.75 * grow, 1);
+    vaporCore.position.x = lerp(0.18, -0.06, grow);
+    vaporCore.material.opacity = 0.30 * coreEnv * (0.8 + 0.2 * Math.sin(t * 26));
+  }
+
+  /* bullet */
+  const bx = bulletPos(t);
+  bulletGroup.visible = bx > -5.2 && t < 7.5;
+  bulletGroup.position.set(bx, AXIS_Y, 0);
+  bulletMesh.rotation.y = t * 55;
+  if (t < T_IMPACT) {
+    streak.visible = true;
+    streak.position.set(bx + 0.62, AXIS_Y, -0.01);
+    streak.material.opacity = 0.16 * sstep(0.05, 0.4, t);
+  } else {
+    streak.visible = false;
+  }
+
+  /* shock rings */
+  const re = (t - 1.02) / 0.5;
+  ringEntry.visible = re > 0 && re < 1;
+  if (ringEntry.visible) {
+    const s = 0.06 + 0.85 * re;
+    ringEntry.scale.set(s, s, 1);
+    ringEntry.material.opacity = 0.3 * (1 - re);
+  }
+  const rx = (t - T_EXIT) / 0.55;
+  ringExit.visible = rx > 0 && rx < 1;
+  if (ringExit.visible) {
+    const s = 0.06 + 1.0 * rx;
+    ringExit.scale.set(s, s, 1);
+    ringExit.material.opacity = 0.35 * (1 - rx);
+  }
+
+  updateParticles(t);
+  renderer.render(scene, camera);
+}
+
+/* ---------------- resize ---------------- */
+
+function onResize() {
+  const w = window.innerWidth, h = window.innerHeight;
+  camera.aspect = w / h;
+  camera.updateProjectionMatrix();
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+  renderer.setSize(w, h, false);
+  partUniforms.uScale.value = (h * Math.min(window.devicePixelRatio || 1, 2)) / (2 * Math.tan(THREE.MathUtils.degToRad(17.5)));
+  renderAt(simTime);
+}
+window.addEventListener('resize', onResize);
+
+/* ---------------- playback state machine ---------------- */
+
+const cd = document.getElementById('countdown');
+const btnToggle = document.getElementById('btn-toggle');
+const btnRefire = document.getElementById('btn-refire');
+const iconPlay = document.getElementById('icon-play');
+const iconPause = document.getElementById('icon-pause');
+const scrubber = document.getElementById('scrubber');
+const pills = Array.prototype.slice.call(document.querySelectorAll('.speed-pill'));
+
+let state = 'INIT';            /* INIT -> COUNTDOWN -> PLAYING <-> PAUSED -> ENDED; REFIRE_HOLD */
+let simTime = 0;
+let playbackSpeed = 1.0;
+let countdownStart = 0, holdStart = 0;
+let lastNow = null;
+
+function hideCountdown() { cd.style.display = 'none'; cd.textContent = ''; }
+function showCountdown(txt) { cd.style.display = 'block'; cd.textContent = txt; }
+function setPlayingUI() {
+  iconPause.style.display = '';
+  iconPlay.style.display = 'none';
+  btnToggle.setAttribute('aria-label', 'Pause');
+}
+function setPausedUI() {
+  iconPause.style.display = 'none';
+  iconPlay.style.display = '';
+  btnToggle.setAttribute('aria-label', 'Play');
+}
+function syncScrubber() { scrubber.value = simTime.toFixed(3); }
+
+btnToggle.addEventListener('click', function () {
+  if (state === 'PLAYING') {
+    state = 'PAUSED';
+    setPausedUI();
+  } else if (state === 'COUNTDOWN' || state === 'REFIRE_HOLD') {
+    hideCountdown();
+    simTime = 0;
+    syncScrubber();
+    state = 'PAUSED';
+    setPausedUI();
+    renderAt(simTime);
+  } else if (state === 'PAUSED' || state === 'INIT') {
+    hideCountdown();
+    state = 'PLAYING';
+    setPlayingUI();
+  } else if (state === 'ENDED') {
+    hideCountdown();
+    simTime = 0;
+    syncScrubber();
+    state = 'PLAYING';
+    setPlayingUI();
+    renderAt(simTime);
+  }
+});
+
+btnRefire.addEventListener('click', function () {
+  hideCountdown();
+  simTime = 0;
+  scrubber.value = '0';
+  state = 'REFIRE_HOLD';
+  holdStart = performance.now();
+  setPlayingUI();
+  renderAt(0);
+});
+
+scrubber.addEventListener('input', function () {
+  if (state === 'COUNTDOWN' || state === 'REFIRE_HOLD' || state === 'INIT') hideCountdown();
+  simTime = clamp(parseFloat(scrubber.value) || 0, 0, DURATION);
+  state = 'PAUSED';
+  setPausedUI();
+  renderAt(simTime);
+});
+
+pills.forEach(function (pill) {
+  pill.addEventListener('click', function () {
+    playbackSpeed = parseFloat(pill.getAttribute('data-speed'));
+    pills.forEach(function (p) {
+      const active = p === pill;
+      p.classList.toggle('is-active', active);
+      p.setAttribute('aria-checked', active ? 'true' : 'false');
+    });
+  });
+});
+
+function frame(now) {
+  requestAnimationFrame(frame);
+  if (lastNow === null) lastNow = now;
+  let dt = (now - lastNow) / 1000;
+  lastNow = now;
+  if (dt < 0) dt = 0;
+  if (dt > 0.1) dt = 0.1;
+
+  if (state === 'INIT') {
+    /* initial resting scene already rendered; begin the 3 s wall-clock countdown */
+    state = 'COUNTDOWN';
+    countdownStart = now;
+    showCountdown('3');
+    return;
+  }
+
+  if (state === 'COUNTDOWN') {
+    const elapsed = (now - countdownStart) / 1000;
+    if (elapsed >= 3.0) {
+      hideCountdown();
+      state = 'PLAYING';
+      setPlayingUI();
+      simTime = Math.min(DURATION, simTime + dt * playbackSpeed);
+      syncScrubber();
+    } else {
+      showCountdown(elapsed < 1 ? '3' : (elapsed < 2 ? '2' : '1'));
+      simTime = 0;
+    }
+  } else if (state === 'REFIRE_HOLD') {
+    const elapsed = (now - holdStart) / 1000;
+    if (elapsed >= 1.0) {
+      state = 'PLAYING';
+      simTime = Math.min(DURATION, simTime + dt * playbackSpeed);
+      syncScrubber();
+    }
+  } else if (state === 'PLAYING') {
+    simTime = Math.min(DURATION, simTime + dt * playbackSpeed);
+    syncScrubber();
+    if (simTime >= DURATION) {
+      simTime = DURATION;
+      syncScrubber();
+      state = 'ENDED';
+      setPausedUI();
+    }
+  }
+
+  renderAt(simTime);
+}
+
+/* initial resting frame, then start the loop */
+partUniforms.uScale.value = (window.innerHeight * Math.min(window.devicePixelRatio || 1, 2)) / (2 * Math.tan(THREE.MathUtils.degToRad(17.5)));
+renderAt(0);
+requestAnimationFrame(frame);
+
+})();
+</script>
+</body>
+</html>
