@@ -65,8 +65,8 @@ Each benchmark test directory (e.g. [`ballistics/water-balloon/`](ballistics/wat
 
 | Model | Developer Harness | Verification | Wall-Clock | Deliverable |
 | :--- | :--- | :---: | :---: | :---: |
-| **ERNIE 5.5 Flash Preview (High)** | OpenCode | **PASS (100%)** | 1100.7s | [`vehicle-dynamics/f1-night-duel/ernie-5.5-flash-preview/`](vehicle-dynamics/f1-night-duel/ernie-5.5-flash-preview/) |
-| **Claude Sonnet 5.5 (Max)** | Claude Code | **PASS (100%)** | 4637.9s | [`vehicle-dynamics/f1-night-duel/claude-sonnet-5.5/`](vehicle-dynamics/f1-night-duel/claude-sonnet-5.5/) |
-| **Claude Opus 5.5 (Max)** | Claude Code | **PASS (100%)** | 5030.6s | [`vehicle-dynamics/f1-night-duel/claude-opus-5.5/`](vehicle-dynamics/f1-night-duel/claude-opus-5.5/) |
+| **Codex GPT 6.1 Terra (Max)** | Codex CLI | **PASS (100%)** | 858.8s | [`ballistics/water-balloon/codex-gpt-6.1-terra/`](ballistics/water-balloon/codex-gpt-6.1-terra/) |
+| **MiniMax M3.1 Flash (Max)** | MiniMax Code | **PASS (100%)** | 4078.6s | [`ballistics/water-balloon/minimax-m3.1-flash/`](ballistics/water-balloon/minimax-m3.1-flash/) |
+| **Claude Opus 5.5 (Max)** | Claude Code | **PASS (100%)** | 3667.2s | [`ballistics/water-balloon/claude-opus-5.5/`](ballistics/water-balloon/claude-opus-5.5/) |
 
-*Showing the 3 most recent benchmark deliverables. See [`TELEMETRY.md`](vehicle-dynamics/f1-night-duel/TELEMETRY.md) for the complete multi-model leaderboard, full token metrics, cache ratios, and runtime verification logs.*
+*Showing the 3 most recent benchmark deliverables. See [`TELEMETRY.md`](ballistics/water-balloon/TELEMETRY.md) for the complete multi-model leaderboard, full token metrics, cache ratios, and runtime verification logs.*

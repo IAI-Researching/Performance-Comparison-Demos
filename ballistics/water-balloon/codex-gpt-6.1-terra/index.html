@@ -1,0 +1,904 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>
+*, *::before, *::after {
+  box-sizing: border-box;
+}
+html, body {
+  margin: 0;
+  padding: 0;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  background: radial-gradient(circle at center, #161922 0%, #090a0f 100%);
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -webkit-user-select: none;
+  user-select: none;
+}
+#stage {
+  display: block;
+  width: 100vw;
+  height: 100vh;
+}
+
+#countdown {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 50;
+  pointer-events: none;
+  font-size: 96px;
+  font-weight: 700;
+  line-height: 1;
+  color: rgba(255, 255, 255, 0.35);
+  font-variant-numeric: tabular-nums;
+}
+
+#dock {
+  position: fixed;
+  bottom: 24px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 100;
+  width: 536px;
+  height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 0 14px;
+  background: rgba(15, 17, 23, 0.78);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 9999px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.35);
+}
+
+#dock button {
+  font-family: inherit;
+  line-height: 1;
+  margin: 0;
+  flex-shrink: 0;
+  white-space: nowrap;
+  appearance: none;
+  -webkit-appearance: none;
+}
+
+.dock-sep {
+  width: 1px;
+  height: 18px;
+  flex-shrink: 0;
+  background: rgba(255, 255, 255, 0.12);
+}
+
+#btn-refire {
+  width: 78px;
+  height: 28px;
+  padding: 0 10px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 9999px;
+  color: #ffffff;
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+}
+#btn-refire:hover {
+  background: rgba(255, 255, 255, 0.16);
+}
+
+#btn-toggle {
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 9999px;
+  color: #ffffff;
+  cursor: pointer;
+}
+#btn-toggle:hover {
+  background: rgba(255, 255, 255, 0.16);
+}
+
+#speed-group {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  flex-shrink: 0;
+}
+.speed-pill {
+  width: 42px;
+  height: 24px;
+  padding: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 9999px;
+  color: rgba(255, 255, 255, 0.6);
+  font-size: 11px;
+  font-weight: 500;
+  font-variant-numeric: tabular-nums;
+  cursor: pointer;
+}
+.speed-pill:hover {
+  color: #ffffff;
+  background: rgba(255, 255, 255, 0.06);
+}
+.speed-pill.is-active {
+  color: #ffffff;
+  background: rgba(255, 255, 255, 0.18);
+  border-color: rgba(255, 255, 255, 0.2);
+}
+
+#scrubber {
+  width: 157px;
+  height: 4px;
+  margin: 0;
+  padding: 0;
+  flex-shrink: 0;
+  appearance: none;
+  -webkit-appearance: none;
+  background: rgba(255, 255, 255, 0.22);
+  border-radius: 9999px;
+  outline: none;
+  cursor: pointer;
+}
+#scrubber::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: #ffffff;
+  border: none;
+  cursor: pointer;
+}
+#scrubber::-moz-range-thumb {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: #ffffff;
+  border: none;
+  cursor: pointer;
+}
+</style>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+</head>
+<body>
+<canvas id="stage"></canvas>
+<div id="countdown" aria-hidden="true">3</div>
+
+<div id="dock" role="toolbar" aria-label="Simulation Controls">
+  <button id="btn-refire" type="button" aria-label="Re-fire" title="Re-fire">
+    <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+      <path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.19"/>
+    </svg>
+    <span>Re-fire</span>
+  </button>
+  <span class="dock-sep" aria-hidden="true"></span>
+  <button id="btn-toggle" type="button" aria-label="Pause" title="Play / Pause">
+    <svg id="icon-pause" viewBox="0 0 24 24" width="14" height="14" fill="currentColor" aria-hidden="true">
+      <rect x="6" y="4" width="4" height="16" rx="1"/>
+      <rect x="14" y="4" width="4" height="16" rx="1"/>
+    </svg>
+    <svg id="icon-play" viewBox="0 0 24 24" width="14" height="14" fill="currentColor" aria-hidden="true" style="display:none;">
+      <path d="M8 5v14l11-7z"/>
+    </svg>
+  </button>
+  <span class="dock-sep" aria-hidden="true"></span>
+  <div id="speed-group" role="radiogroup" aria-label="Playback Speed">
+    <button class="speed-pill" type="button" role="radio" aria-checked="false" data-speed="0.25">0.25×</button>
+    <button class="speed-pill" type="button" role="radio" aria-checked="false" data-speed="0.5">0.5×</button>
+    <button class="speed-pill is-active" type="button" role="radio" aria-checked="true" data-speed="1.0">1.0×</button>
+    <button class="speed-pill" type="button" role="radio" aria-checked="false" data-speed="2.0">2.0×</button>
+  </div>
+  <span class="dock-sep" aria-hidden="true"></span>
+  <input id="scrubber" type="range" min="0" max="8.000" step="0.001" value="0" aria-label="Timeline Scrubber">
+</div>
+
+<script>
+(() => {
+  'use strict';
+
+  const DURATION = 8.000;
+  const VIEW_HEIGHT = 8.8;
+  const PI = Math.PI;
+  const clamp = (x, a, b) => Math.max(a, Math.min(b, x));
+  const smooth = (a, b, x) => {
+    const v = clamp((x - a) / (b - a), 0, 1);
+    return v * v * (3 - 2 * v);
+  };
+  const mix = (a, b, x) => a + (b - a) * x;
+
+  // All of the irregularities are made once from this fixed seed. Animation
+  // thereafter is a direct function of simulation time, not frame history.
+  function mulberry32(seed) {
+    return function () {
+      let x = seed += 0x6D2B79F5;
+      x = Math.imul(x ^ x >>> 15, x | 1);
+      x ^= x + Math.imul(x ^ x >>> 7, x | 61);
+      return ((x ^ x >>> 14) >>> 0) / 4294967296;
+    };
+  }
+  const random = mulberry32(42);
+  const rand = (a, b) => a + (b - a) * random();
+
+  const renderer = new THREE.WebGLRenderer({ canvas: document.getElementById('stage'), antialias: true, alpha: true });
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+  renderer.setSize(window.innerWidth, window.innerHeight, false);
+  renderer.outputEncoding = THREE.sRGBEncoding;
+  renderer.setClearColor(0x000000, 0);
+
+  const scene = new THREE.Scene();
+  const camera = new THREE.OrthographicCamera(-1, 1, VIEW_HEIGHT / 2, -VIEW_HEIGHT / 2, 0.1, 100);
+  camera.position.set(0, 0, 16);
+  camera.lookAt(0, 0, 0);
+
+  scene.add(new THREE.AmbientLight(0xb7c7d5, 0.55));
+  const key = new THREE.DirectionalLight(0xfff4e9, 1.35);
+  key.position.set(-4, 6, 8);
+  scene.add(key);
+  const coolRim = new THREE.DirectionalLight(0x9eeeff, 1.4);
+  coolRim.position.set(5, 2, -3);
+  scene.add(coolRim);
+  const roseRim = new THREE.DirectionalLight(0xffa5c4, 0.85);
+  roseRim.position.set(-5, 1, -4);
+  scene.add(roseRim);
+
+  function balloonRadius(u) {
+    // A square-root profile rounds the heavy lower pole; the neck tapers more sharply.
+    return 1.55 * Math.pow(Math.max(0, Math.sin(PI * u)), 0.50 + 0.34 * u) * (1.15 - 0.5 * u);
+  }
+
+  // The two coincident surfaces share the same hydrostatic, bottom-heavy shape.
+  function makeBalloonGeometry() {
+    const rings = 96, sides = 144;
+    const positions = [], units = [], indices = [];
+    for (let j = 0; j <= rings; j++) {
+      const u = j / rings;
+      const r = balloonRadius(u);
+      const y = -1.85 + 4.0 * u;
+      for (let i = 0; i <= sides; i++) {
+        const a = 2 * PI * i / sides;
+        positions.push(r * Math.cos(a), y, r * Math.sin(a));
+        units.push(Math.sin(PI * u) * Math.cos(a), -Math.cos(PI * u), Math.sin(PI * u) * Math.sin(a));
+      }
+    }
+    for (let j = 0; j < rings; j++) {
+      for (let i = 0; i < sides; i++) {
+        const a = j * (sides + 1) + i;
+        const b = a + sides + 1;
+        indices.push(a, b, a + 1, b, b + 1, a + 1);
+      }
+    }
+    const geometry = new THREE.BufferGeometry();
+    geometry.setIndex(indices);
+    geometry.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
+    geometry.setAttribute('aUnit', new THREE.Float32BufferAttribute(units, 3));
+    geometry.computeVertexNormals();
+    return geometry;
+  }
+
+  const bodyGeometry = makeBalloonGeometry();
+  const surfaceVertex = `
+    attribute vec3 aUnit;
+    uniform float uTime;
+    uniform float uIndent;
+    uniform float uTear;
+    uniform float uBreakup;
+    uniform float uLatex;
+    varying vec3 vUnit;
+    varying vec3 vPos;
+    varying vec3 vNormalW;
+    void main() {
+      vec3 p = position;
+      float impactDistance = length(p - vec3(1.42, 0.02, 0.0));
+      p.x -= uIndent * exp(-impactDistance * impactDistance * 5.5);
+      float retract = uTear * uLatex;
+      p.y += sign(p.y) * retract * 0.18 * (1.0 - min(abs(p.y) / 2.15, 1.0));
+      float ripple = sin(p.y * 7.0 + p.x * 5.0 - uTime * 3.4)
+                   * sin(p.z * 6.0 - p.y * 3.0 + uTime * 2.0);
+      float waterMotion = (1.0 - uLatex) * (smoothstep(2.25, 4.5, uTime) * 0.025 + uBreakup * 0.11);
+      p += normal * ripple * waterMotion;
+      vUnit = aUnit;
+      vPos = p;
+      vNormalW = normalize(mat3(modelMatrix) * normal);
+      gl_Position = projectionMatrix * modelViewMatrix * vec4(p, 1.0);
+    }
+  `;
+
+  const latexUniforms = {
+    uTime: { value: 0 }, uIndent: { value: 0 }, uTear: { value: 0 },
+    uBreakup: { value: 0 }, uLatex: { value: 1 }
+  };
+  const latexMaterial = new THREE.ShaderMaterial({
+    uniforms: latexUniforms,
+    vertexShader: surfaceVertex,
+    fragmentShader: `
+      uniform float uTear;
+      varying vec3 vUnit;
+      varying vec3 vPos;
+      varying vec3 vNormalW;
+      void main() {
+        vec3 unit = normalize(vUnit);
+        float rag = 0.055 * sin(unit.y * 43.0 + unit.z * 17.0)
+                  + 0.028 * sin(unit.z * 73.0 - unit.y * 29.0);
+        float distanceFromImpact = acos(clamp(unit.x, -1.0, 1.0)) + 0.5 * abs(unit.y) + rag;
+        if (uTear > 0.0 && distanceFromImpact < uTear * 3.85) discard;
+        vec3 n = normalize(vNormalW);
+        vec3 v = vec3(0.0, 0.0, 1.0);
+        vec3 l = normalize(vec3(-3.0, 5.0, 7.0));
+        float diffuse = max(dot(n, l), 0.0);
+        float edge = pow(1.0 - clamp(dot(n, v), 0.0, 1.0), 2.6);
+        vec3 h = normalize(l + v);
+        float shine = pow(max(dot(n, h), 0.0), 64.0);
+        float leftPanel = exp(-pow(abs((vPos.x + 0.53) / 0.22), 4.0) - pow(abs((vPos.y - 0.42) / 0.86), 4.0));
+        float rightPanel = exp(-pow(abs((vPos.x - 0.91) / 0.11), 2.0) - pow(abs((vPos.y - 0.06) / 1.18), 4.0));
+        vec3 color = vec3(0.52, 0.006, 0.014) * (0.37 + 0.75 * diffuse);
+        color += vec3(0.65, 0.12, 0.12) * shine * 0.75;
+        color += vec3(0.50, 0.12, 0.10) * leftPanel * 0.34;
+        color += vec3(0.65, 0.29, 0.23) * rightPanel * 0.2;
+        color += edge * mix(vec3(0.26, 0.025, 0.06), vec3(0.18, 0.19, 0.23), smoothstep(-0.1, 1.2, vPos.x)) * 0.75;
+        gl_FragColor = vec4(color, 0.96);
+        #include <tonemapping_fragment>
+        #include <encodings_fragment>
+      }
+    `,
+    transparent: true,
+    depthWrite: true
+  });
+  const latex = new THREE.Mesh(bodyGeometry, latexMaterial);
+  latex.renderOrder = 2;
+  scene.add(latex);
+
+  const waterUniforms = {
+    uTime: { value: 0 }, uIndent: { value: 0 }, uTear: { value: 0 },
+    uBreakup: { value: 0 }, uLatex: { value: 0 }, uOpacity: { value: 0 }
+  };
+  const waterMaterial = new THREE.ShaderMaterial({
+    uniforms: waterUniforms,
+    vertexShader: surfaceVertex,
+    fragmentShader: `
+      uniform float uTime;
+      uniform float uOpacity;
+      varying vec3 vPos;
+      varying vec3 vNormalW;
+      void main() {
+        vec3 n = normalize(vNormalW);
+        vec3 v = vec3(0.0, 0.0, 1.0);
+        float facing = clamp(dot(n, v), 0.0, 1.0);
+        float rim = pow(1.0 - facing, 2.1);
+        vec3 l = normalize(vec3(-3.0, 5.0, 7.0));
+        float spec = pow(max(dot(n, normalize(l + v)), 0.0), 80.0);
+        float panelA = exp(-pow(abs((vPos.x + 0.55 + 0.06 * sin(vPos.y * 3.0)) / 0.13), 2.0) - pow(abs((vPos.y - 0.25) / 1.12), 4.0));
+        float panelB = exp(-pow(abs((vPos.x - 0.91) / 0.09), 2.0) - pow(abs((vPos.y + 0.05) / 1.0), 4.0));
+        float wave = 0.5 + 0.5 * sin(vPos.y * 18.0 + vPos.x * 10.0 + 0.6 * sin(vPos.x * 19.0) - uTime * 2.0);
+        float contours = pow(wave, 18.0) * smoothstep(2.15, 4.8, uTime);
+        vec3 color = vec3(0.055, 0.15, 0.19) + rim * vec3(0.36, 0.61, 0.68);
+        color += vec3(0.65, 0.85, 0.9) * (spec * 0.55 + panelA * 0.30 + panelB * 0.22 + contours * 0.055);
+        float alpha = (0.29 + rim * 0.48 + panelA * 0.19 + panelB * 0.17 + spec * 0.22) * uOpacity;
+        gl_FragColor = vec4(color, clamp(alpha, 0.0, 0.9));
+        #include <tonemapping_fragment>
+        #include <encodings_fragment>
+      }
+    `,
+    transparent: true,
+    depthWrite: false
+  });
+  const water = new THREE.Mesh(bodyGeometry, waterMaterial);
+  water.scale.setScalar(0.995);
+  water.renderOrder = 1;
+  scene.add(water);
+
+  // The thread and tied neck remain suspended after the elastic skin tears.
+  const threadMat = new THREE.MeshPhongMaterial({ color: 0xaab5bc, shininess: 80 });
+  const thread = new THREE.Mesh(new THREE.CylinderGeometry(0.008, 0.008, 3.5, 8), threadMat);
+  thread.position.set(0, 3.89, -0.03);
+  scene.add(thread);
+  const knotMaterial = new THREE.MeshPhongMaterial({ color: 0xb50b1b, specular: 0xf06a72, shininess: 110 });
+  const neck = new THREE.Mesh(new THREE.CylinderGeometry(0.055, 0.10, 0.20, 24), knotMaterial);
+  neck.position.y = 2.15;
+  scene.add(neck);
+  const knot = new THREE.Mesh(new THREE.SphereGeometry(0.105, 24, 12), knotMaterial);
+  knot.scale.set(1.0, 0.55, 0.8);
+  knot.position.y = 2.26;
+  scene.add(knot);
+
+  // A lathed projectile makes its orientation explicit: its nose points to -X.
+  const bullet = new THREE.Group();
+  const bulletProfile = [
+    [0, -0.46], [0.045, -0.45], [0.09, -0.41], [0.135, -0.34],
+    [0.158, -0.25], [0.165, -0.15], [0.165, 0.28], [0.158, 0.34], [0, 0.34]
+  ].map(p => new THREE.Vector2(p[0], p[1]));
+  const bulletMat = new THREE.MeshStandardMaterial({ color: 0xc57b42, metalness: 0.78, roughness: 0.24 });
+  bullet.add(new THREE.Mesh(new THREE.LatheGeometry(bulletProfile, 48), bulletMat));
+  const bandMat = new THREE.MeshStandardMaterial({ color: 0x824322, metalness: 0.8, roughness: 0.3 });
+  for (const y of [0.19, 0.27]) {
+    const band = new THREE.Mesh(new THREE.TorusGeometry(0.165, 0.009, 8, 40), bandMat);
+    band.rotation.x = PI / 2;
+    band.position.y = y;
+    bullet.add(band);
+  }
+  bullet.rotation.z = -PI / 2;
+  bullet.position.z = 0.25;
+  scene.add(bullet);
+
+  // A cutaway-like vapor channel sits along the projectile's wake.
+  const tunnelUniforms = { uOpacity: { value: 0 }, uTime: { value: 0 } };
+  const tunnelMaterial = new THREE.ShaderMaterial({
+    uniforms: tunnelUniforms,
+    vertexShader: `
+      uniform float uTime;
+      varying vec3 vN;
+      varying vec3 vLocal;
+      void main() {
+        vec3 p = position;
+        float waviness = 1.0 + 0.11 * sin(p.y * 24.0 + uTime * 4.0) + 0.045 * sin(p.y * 53.0 - uTime * 3.0);
+        p.xz *= waviness;
+        vLocal = p;
+        vN = normalize(mat3(modelMatrix) * normal);
+        gl_Position = projectionMatrix * modelViewMatrix * vec4(p, 1.0);
+      }
+    `,
+    fragmentShader: `
+      uniform float uOpacity;
+      uniform float uTime;
+      varying vec3 vN;
+      varying vec3 vLocal;
+      void main() {
+        float edge = pow(1.0 - abs(dot(normalize(vN), vec3(0.0, 0.0, 1.0))), 1.7);
+        float mottling = 0.5 + 0.5 * sin(vLocal.y * 48.0 + vLocal.x * 9.0 - uTime * 5.0);
+        float ends = 1.0 - smoothstep(0.40, 0.50, abs(vLocal.y));
+        vec3 c = mix(vec3(0.025, 0.065, 0.085), vec3(0.42, 0.69, 0.74), edge);
+        c += vec3(0.13, 0.20, 0.22) * mottling * edge;
+        gl_FragColor = vec4(c, (0.28 + edge * 0.45) * (0.82 + 0.18 * mottling) * ends * uOpacity);
+        #include <tonemapping_fragment>
+        #include <encodings_fragment>
+      }
+    `,
+    transparent: true, depthWrite: false, depthTest: false, side: THREE.DoubleSide
+  });
+  const tunnel = new THREE.Mesh(new THREE.CylinderGeometry(1, 1, 1, 40, 1, true), tunnelMaterial);
+  tunnel.rotation.z = -PI / 2;
+  tunnel.position.set(0, 0.02, 1.6);
+  tunnel.renderOrder = 4;
+  scene.add(tunnel);
+
+  // The point sprites are actual ballistic parcels: each has a fixed launch
+  // position, velocity, birth time and size, evaluated analytically on the GPU.
+  const PARTICLES = 4000;
+  const origins = [], velocities = [], births = [], lives = [], sizes = [], seeds = [];
+  function addParticle(origin, velocity, birth, life, size) {
+    origins.push(...origin);
+    velocities.push(...velocity);
+    births.push(birth);
+    lives.push(life);
+    sizes.push(size);
+    seeds.push(random());
+  }
+  for (let i = 0; i < 720; i++) {
+    const angle = rand(0, 2 * PI), speed = rand(0.15, 1.5);
+    addParticle([rand(1.27, 1.43), rand(-0.10, 0.12), rand(-0.3, 0.75)],
+      [rand(0.35, 1.9), Math.sin(angle) * speed, Math.cos(angle) * speed * 0.55],
+      rand(1.12, 1.62), rand(1.8, 3.4), rand(0.012, 0.055));
+  }
+  for (let i = 0; i < 480; i++) {
+    const angle = rand(0, 2 * PI), speed = rand(0.12, 1.1);
+    addParticle([rand(1.28, 1.43), rand(-0.12, 0.14), rand(-0.25, 0.6)],
+      [rand(0.55, 2.0), Math.sin(angle) * speed, Math.cos(angle) * speed * 0.6],
+      rand(2.4, 3.65), rand(1.6, 3.0), rand(0.009, 0.045));
+  }
+  for (let i = 0; i < 1000; i++) {
+    const angle = rand(0, 2 * PI), spread = Math.pow(random(), 0.7) * rand(0.25, 1.45);
+    addParticle([rand(-1.48, -1.30), rand(-0.12, 0.12), rand(-0.3, 0.8)],
+      [-rand(1.2, 3.8), Math.sin(angle) * spread, Math.cos(angle) * spread * 0.7],
+      rand(3.8, 4.55), rand(1.8, 3.4), rand(0.008, 0.052));
+  }
+  for (let i = 0; i < 1800; i++) {
+    const u = rand(0.025, 0.975), a = rand(0, 2 * PI);
+    const r = balloonRadius(u) * Math.sqrt(random());
+    const x = r * Math.cos(a), z = r * Math.sin(a), y = -1.85 + 4 * u;
+    addParticle([x, y, z], [x * rand(0.15, 0.62) + rand(-0.48, 0.48),
+      y * rand(0.02, 0.22) + rand(-0.32, 0.48), z * rand(0.1, 0.5) + rand(-0.2, 0.2)],
+      rand(5.0, 6.0), rand(3.0, 4.5), rand(0.015, 0.067));
+  }
+  const particleGeometry = new THREE.BufferGeometry();
+  particleGeometry.setAttribute('position', new THREE.Float32BufferAttribute(origins, 3));
+  particleGeometry.setAttribute('aVelocity', new THREE.Float32BufferAttribute(velocities, 3));
+  particleGeometry.setAttribute('aBirth', new THREE.Float32BufferAttribute(births, 1));
+  particleGeometry.setAttribute('aLife', new THREE.Float32BufferAttribute(lives, 1));
+  particleGeometry.setAttribute('aSize', new THREE.Float32BufferAttribute(sizes, 1));
+  particleGeometry.setAttribute('aSeed', new THREE.Float32BufferAttribute(seeds, 1));
+  const particleUniforms = { uTime: { value: 0 }, uPixelScale: { value: 1 } };
+  const particleMaterial = new THREE.ShaderMaterial({
+    uniforms: particleUniforms,
+    vertexShader: `
+      attribute vec3 aVelocity;
+      attribute float aBirth;
+      attribute float aLife;
+      attribute float aSize;
+      attribute float aSeed;
+      uniform float uTime;
+      uniform float uPixelScale;
+      varying float vFade;
+      varying float vSeed;
+      void main() {
+        float age = uTime - aBirth;
+        vSeed = aSeed;
+        vFade = smoothstep(0.0, 0.12, age) * (1.0 - smoothstep(aLife - 0.55, aLife, age));
+        vec3 p = position + aVelocity * max(age, 0.0);
+        p.y -= 0.5 * 0.62 * max(age, 0.0) * max(age, 0.0);
+        gl_Position = projectionMatrix * modelViewMatrix * vec4(p, 1.0);
+        gl_PointSize = max(1.0, aSize * uPixelScale);
+        if (age < 0.0 || age > aLife) {
+          gl_Position = vec4(3.0, 3.0, 3.0, 1.0);
+          gl_PointSize = 1.0;
+        }
+      }
+    `,
+    fragmentShader: `
+      varying float vFade;
+      varying float vSeed;
+      void main() {
+        vec2 p = gl_PointCoord * 2.0 - 1.0;
+        float r = length(p);
+        if (r > 1.0) discard;
+        float edge = smoothstep(0.42, 0.93, r);
+        float glint = exp(-dot(p - vec2(-0.32, -0.34), p - vec2(-0.32, -0.34)) * 24.0);
+        float core = sqrt(max(0.0, 1.0 - r * r));
+        vec3 color = mix(vec3(0.22, 0.38, 0.43), vec3(0.58, 0.84, 0.9), edge * 0.54 + core * 0.25);
+        color += glint * vec3(0.9, 0.95, 1.0);
+        float alpha = (1.0 - smoothstep(0.72, 1.0, r)) * (0.58 + edge * 0.22 + glint * 0.45) * vFade;
+        gl_FragColor = vec4(color * (0.85 + 0.3 * vSeed), alpha);
+        #include <tonemapping_fragment>
+        #include <encodings_fragment>
+      }
+    `,
+    transparent: true, depthWrite: false
+  });
+  const drops = new THREE.Points(particleGeometry, particleMaterial);
+  drops.frustumCulled = false;
+  drops.renderOrder = 5;
+  scene.add(drops);
+
+  // Narrow, deforming sheets bridge the intact volume and the separated drops.
+  const sheetUniforms = { uOpacity: { value: 0 } };
+  const sheetMaterial = new THREE.ShaderMaterial({
+    uniforms: sheetUniforms,
+    vertexShader: `
+      varying vec2 vUv;
+      void main() {
+        vUv = uv;
+        gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+      }
+    `,
+    fragmentShader: `
+      uniform float uOpacity;
+      varying vec2 vUv;
+      void main() {
+        float edge = pow(abs(vUv.y * 2.0 - 1.0), 3.0);
+        float taper = smoothstep(0.0, 0.12, vUv.x) * (1.0 - smoothstep(0.78, 1.0, vUv.x));
+        float ripples = 0.5 + 0.5 * sin(vUv.x * 45.0 + vUv.y * 8.0);
+        vec3 c = vec3(0.16, 0.35, 0.4) + vec3(0.44, 0.58, 0.60) * (edge * 0.8 + ripples * 0.12);
+        gl_FragColor = vec4(c, (0.15 + edge * 0.50) * taper * uOpacity);
+        #include <tonemapping_fragment>
+        #include <encodings_fragment>
+      }
+    `,
+    side: THREE.DoubleSide, transparent: true, depthWrite: false
+  });
+  function ribbonGeometry(segments) {
+    const vertices = new Float32Array((segments + 1) * 2 * 3);
+    const uvs = [], indices = [];
+    for (let i = 0; i <= segments; i++) {
+      uvs.push(i / segments, 0, i / segments, 1);
+      if (i < segments) {
+        const n = i * 2;
+        indices.push(n, n + 1, n + 2, n + 1, n + 3, n + 2);
+      }
+    }
+    const geometry = new THREE.BufferGeometry();
+    geometry.setAttribute('position', new THREE.BufferAttribute(vertices, 3));
+    geometry.setAttribute('uv', new THREE.Float32BufferAttribute(uvs, 2));
+    geometry.setIndex(indices);
+    return geometry;
+  }
+  const sheets = [];
+  for (let i = 0; i < 32; i++) {
+    const angle = (i + rand(-0.35, 0.35)) / 32 * PI * 2;
+    const mesh = new THREE.Mesh(ribbonGeometry(18), sheetMaterial);
+    mesh.frustumCulled = false;
+    mesh.renderOrder = 3;
+    scene.add(mesh);
+    sheets.push({ mesh, angle, birth: rand(4.95, 5.65), length: rand(0.38, 1.15),
+      width: rand(0.035, 0.13), speed: rand(0.25, 0.8), z: rand(0.5, 1.4), phase: rand(0, 6.28) });
+  }
+
+  // Small strips of red rubber recoil toward the upper knot and lower pole.
+  const rubberUniforms = { uOpacity: { value: 0 }, uTime: { value: 0 } };
+  const rubberMaterial = new THREE.ShaderMaterial({
+    uniforms: rubberUniforms,
+    vertexShader: `
+      varying vec2 vUv;
+      void main() {
+        vUv = uv;
+        gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+      }
+    `,
+    fragmentShader: `
+      uniform float uOpacity;
+      uniform float uTime;
+      varying vec2 vUv;
+      void main() {
+        float fold = 0.5 + 0.5 * sin(vUv.x * 28.0 + vUv.y * 4.0 + uTime * 3.0);
+        float highlight = pow(1.0 - abs(vUv.y * 2.0 - 1.0), 4.0);
+        vec3 color = vec3(0.42, 0.004, 0.012) * (0.6 + 0.4 * fold)
+                   + vec3(0.28, 0.025, 0.03) * highlight;
+        gl_FragColor = vec4(color, uOpacity);
+        #include <tonemapping_fragment>
+        #include <encodings_fragment>
+      }
+    `,
+    side: THREE.DoubleSide, transparent: true, depthWrite: false
+  });
+  const rubber = [];
+  for (let i = 0; i < 20; i++) {
+    const mesh = new THREE.Mesh(ribbonGeometry(12), rubberMaterial);
+    mesh.frustumCulled = false;
+    mesh.renderOrder = 6;
+    scene.add(mesh);
+    rubber.push({ mesh, sign: i % 2 ? 1 : -1, endX: rand(-0.55, 0.38),
+      endY: rand(1.58, 2.14), width: rand(0.025, 0.085), length: rand(0.25, 0.65),
+      z: rand(0.5, 1.15), phase: rand(0, PI * 2), delay: rand(0, 0.12) });
+  }
+
+  function updateSheets(t) {
+    sheetUniforms.uOpacity.value = 1 - smooth(6.9, 7.9, t);
+    for (const s of sheets) {
+      const age = Math.max(0, t - s.birth);
+      s.mesh.visible = t >= s.birth && t < 7.9;
+      if (!s.mesh.visible) continue;
+      const grow = smooth(0, 0.6, age);
+      const dx = Math.cos(s.angle), dy = Math.sin(s.angle);
+      const startX = dx * (1.1 + s.speed * age);
+      const startY = dy * (1.43 + s.speed * age * 0.7) - 0.31 * age * age;
+      const pos = s.mesh.geometry.attributes.position;
+      for (let i = 0; i <= 18; i++) {
+        const u = i / 18;
+        const wobble = Math.sin(u * 8 + s.phase + age * 2) * 0.07 * grow;
+        const cx = startX + dx * s.length * u * grow - dy * wobble;
+        const cy = startY + dy * s.length * u * grow + dx * wobble - 0.1 * u * age;
+        const width = s.width * Math.sin(PI * u) * (0.7 + 0.3 * Math.sin(u * 14 + s.phase));
+        pos.setXYZ(i * 2, cx - dy * width, cy + dx * width, s.z + 0.05 * Math.sin(u * 7 + s.phase));
+        pos.setXYZ(i * 2 + 1, cx + dy * width, cy - dx * width, s.z - 0.05 * Math.sin(u * 7 + s.phase));
+      }
+      pos.needsUpdate = true;
+    }
+  }
+
+  function updateRubber(t) {
+    rubberUniforms.uOpacity.value = 0.94 * (1 - smooth(2.1, 3.1, t));
+    rubberUniforms.uTime.value = t;
+    for (const r of rubber) {
+      const p = smooth(1.10 + r.delay, 1.62 + r.delay, t);
+      r.mesh.visible = t >= 1.10 + r.delay && t < 3.1;
+      if (!r.mesh.visible) continue;
+      const fall = Math.max(0, t - 1.85);
+      const cx = mix(1.35, r.endX, p);
+      const cy = mix(0.02, r.sign * r.endY, p) - fall * fall * (r.sign < 0 ? 0.6 : 0.15);
+      const vx = -0.62, vy = r.sign * 0.8;
+      const pos = r.mesh.geometry.attributes.position;
+      for (let i = 0; i <= 12; i++) {
+        const u = i / 12;
+        const flutter = Math.sin(u * 13 + r.phase + t * 7) * 0.035 * p;
+        const x = cx + (u - 0.5) * r.length * vx + flutter * vy;
+        const y = cy + (u - 0.5) * r.length * vy - flutter * vx;
+        const w = r.width * Math.sin(PI * u) * (0.65 + 0.35 * Math.sin(u * 9 + r.phase));
+        pos.setXYZ(i * 2, x - vy * w, y + vx * w, r.z);
+        pos.setXYZ(i * 2 + 1, x + vy * w, y - vx * w, r.z + 0.025 * Math.sin(u * 10 + t * 5));
+      }
+      pos.needsUpdate = true;
+    }
+  }
+
+  function projectileX(t) {
+    if (t <= 1) return mix(camera.right + 1.15, 1.88, t);
+    if (t <= 3.8) return mix(1.88, -1.62, (t - 1) / 2.8);
+    return mix(-1.62, -9.2, clamp((t - 3.8) / 1.25, 0, 1));
+  }
+
+  function renderAt(t) {
+    t = clamp(t, 0, DURATION);
+    const tear = smooth(1.10, 1.60, t);
+    const indent = 0.24 * smooth(0.98, 1.10, t) * (1 - smooth(1.16, 1.39, t));
+    const breakup = smooth(4.8, 7.0, t);
+    latexUniforms.uTime.value = t;
+    latexUniforms.uIndent.value = indent;
+    latexUniforms.uTear.value = tear;
+    latex.visible = t < 1.62;
+
+    waterUniforms.uTime.value = t;
+    waterUniforms.uIndent.value = indent * 0.7;
+    waterUniforms.uBreakup.value = breakup;
+    waterUniforms.uOpacity.value = smooth(1.08, 1.28, t) * (1 - smooth(5.55, 7.05, t));
+    water.visible = t >= 1.08 && t < 7.05;
+    water.scale.set(0.995 - 0.22 * breakup, 0.995 - 0.12 * breakup, 0.995 - 0.22 * breakup);
+    water.position.y = -0.35 * breakup * breakup;
+
+    const bx = projectileX(t);
+    bullet.position.x = bx;
+    bullet.position.y = 0.02;
+    bullet.visible = t < 5.1;
+
+    const tunnelFade = smooth(2.38, 2.72, t) * (1 - smooth(4.75, 5.35, t));
+    const tunnelLeft = clamp(bx + 0.1, -1.4, 1.37);
+    const tunnelLength = Math.max(0.01, 1.4 - tunnelLeft);
+    const tunnelRadius = 0.09 + 0.16 * smooth(2.4, 3.8, t);
+    tunnel.visible = tunnelFade > 0;
+    tunnel.position.x = (tunnelLeft + 1.4) / 2;
+    tunnel.scale.set(tunnelRadius, tunnelLength, tunnelRadius);
+    tunnelUniforms.uOpacity.value = tunnelFade;
+    tunnelUniforms.uTime.value = t;
+    particleUniforms.uTime.value = t;
+    updateSheets(t);
+    updateRubber(t);
+    renderer.render(scene, camera);
+  }
+
+  const countdown = document.getElementById('countdown');
+  const scrubber = document.getElementById('scrubber');
+  const toggle = document.getElementById('btn-toggle');
+  const refire = document.getElementById('btn-refire');
+  const iconPlay = document.getElementById('icon-play');
+  const iconPause = document.getElementById('icon-pause');
+  const speedPills = Array.from(document.querySelectorAll('.speed-pill'));
+  const COUNTDOWN = 'COUNTDOWN', PLAYING = 'PLAYING', PAUSED = 'PAUSED';
+  const REFIRE_HOLD = 'REFIRE_HOLD', ENDED = 'ENDED';
+  let state = COUNTDOWN;
+  let simTime = 0;
+  let playbackSpeed = 1;
+  let lastFrame = null;
+  let countdownStart = null;
+  let holdStart = null;
+
+  function hideCountdown() {
+    countdown.style.display = 'none';
+    countdown.textContent = '';
+  }
+  function setState(next) {
+    state = next;
+    const active = state === PLAYING || state === COUNTDOWN || state === REFIRE_HOLD;
+    iconPause.style.display = active ? 'block' : 'none';
+    iconPlay.style.display = active ? 'none' : 'block';
+    toggle.setAttribute('aria-label', active ? 'Pause' : 'Play');
+  }
+  function resetFrameClock() {
+    lastFrame = performance.now();
+  }
+  function resize() {
+    const aspect = window.innerWidth / Math.max(1, window.innerHeight);
+    camera.left = -VIEW_HEIGHT * aspect / 2;
+    camera.right = VIEW_HEIGHT * aspect / 2;
+    camera.top = VIEW_HEIGHT / 2;
+    camera.bottom = -VIEW_HEIGHT / 2;
+    camera.updateProjectionMatrix();
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+    renderer.setSize(window.innerWidth, window.innerHeight, false);
+    particleUniforms.uPixelScale.value = window.innerHeight * Math.min(window.devicePixelRatio || 1, 2) / VIEW_HEIGHT;
+    renderAt(simTime);
+  }
+  window.addEventListener('resize', resize);
+
+  toggle.addEventListener('click', () => {
+    if (state === PLAYING) {
+      setState(PAUSED);
+    } else if (state === COUNTDOWN || state === REFIRE_HOLD) {
+      hideCountdown();
+      countdownStart = null;
+      holdStart = null;
+      simTime = 0;
+      scrubber.value = '0';
+      setState(PAUSED);
+      renderAt(simTime);
+    } else if (state === PAUSED) {
+      setState(PLAYING);
+    } else if (state === ENDED) {
+      hideCountdown();
+      simTime = 0;
+      scrubber.value = '0';
+      renderAt(simTime);
+      setState(PLAYING);
+    }
+    resetFrameClock();
+  });
+
+  speedPills.forEach(pill => pill.addEventListener('click', () => {
+    playbackSpeed = parseFloat(pill.dataset.speed);
+    speedPills.forEach(item => {
+      const selected = item === pill;
+      item.classList.toggle('is-active', selected);
+      item.setAttribute('aria-checked', selected ? 'true' : 'false');
+    });
+  }));
+
+  scrubber.addEventListener('input', () => {
+    hideCountdown();
+    countdownStart = null;
+    holdStart = null;
+    simTime = clamp(parseFloat(scrubber.value) || 0, 0, DURATION);
+    setState(PAUSED);
+    renderAt(simTime);
+    resetFrameClock();
+  });
+
+  refire.addEventListener('click', () => {
+    hideCountdown();
+    countdownStart = null;
+    simTime = 0;
+    scrubber.value = '0';
+    renderAt(simTime);
+    holdStart = performance.now();
+    setState(REFIRE_HOLD);
+    resetFrameClock();
+  });
+
+  // Render the resting frame before the first animation callback starts the clock.
+  resize();
+  setState(COUNTDOWN);
+  requestAnimationFrame(function frame(now) {
+    if (lastFrame === null) lastFrame = now;
+    const dt = Math.min(Math.max(0, (now - lastFrame) / 1000), 0.1);
+    lastFrame = now;
+    if (state === COUNTDOWN) {
+      if (countdownStart === null) countdownStart = now;
+      const elapsed = (now - countdownStart) / 1000;
+      if (elapsed < 3) {
+        countdown.style.display = 'block';
+        countdown.textContent = String(3 - Math.floor(elapsed));
+      } else {
+        hideCountdown();
+        setState(PLAYING);
+        simTime = Math.min(DURATION, Math.min(elapsed - 3, 0.1) * playbackSpeed);
+        scrubber.value = simTime.toFixed(3);
+        renderAt(simTime);
+      }
+    } else if (state === REFIRE_HOLD) {
+      const elapsed = (now - holdStart) / 1000;
+      if (elapsed >= 1) {
+        setState(PLAYING);
+        simTime = Math.min(DURATION, Math.min(elapsed - 1, 0.1) * playbackSpeed);
+        scrubber.value = simTime.toFixed(3);
+        renderAt(simTime);
+      }
+    } else if (state === PLAYING) {
+      simTime = Math.min(DURATION, simTime + dt * playbackSpeed);
+      scrubber.value = simTime.toFixed(3);
+      renderAt(simTime);
+      if (simTime >= DURATION) {
+        simTime = DURATION;
+        scrubber.value = DURATION.toFixed(3);
+        setState(ENDED);
+      }
+    }
+    requestAnimationFrame(frame);
+  });
+})();
+</script>
+</body>
+</html>
