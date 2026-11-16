@@ -19,6 +19,7 @@
 | **Gemini 4 Argon (High)** | Antigravity CLI 1.5.8 | `High` | **PASS (100.0%)** | 997.9s | 17 | 16 | 135,106 | 1,321,407 | 19,564 | 95,263 | 85,195 B | 2,318 | `ded50d19cd8e...` |
 | **Gemini 4 Carbon (High)** | Antigravity CLI 1.5.8 | `High` | **PASS (100.0%)** | 1999.5s | 45 | 44 | 533,849 | 5,309,450 | 58,294 | 136,271 | 103,857 B | 2,690 | `7e39ceef690f...` |
 | **Gemini 4 Hydrogen (XHigh)** | Antigravity CLI 1.5.8 | `Xhigh` | **PASS (100.0%)** | 644.4s | 37 | 36 | 205,362 | 4,043,760 | 56,600 | 116,786 | 79,685 B | 2,186 | `09a3cf635ff7...` |
+| **Qwen 4 Max (Max)** | Qwen Code 1.0.0-preview.1 | `Max` | **PASS (100.0%)** | 996.1s | 22 | 24 | 866,703 | 817,152 | 0 | 38,138 | 39,054 B | 1,118 | `fd98c069efc7...` |
 
 ---
 
