@@ -65,8 +65,8 @@ Each benchmark test directory (e.g. [`ballistics/water-balloon/`](ballistics/wat
 
 | Model | Developer Harness | Verification | Wall-Clock | Deliverable |
 | :--- | :--- | :---: | :---: | :---: |
-| **Qwen 4 Max (Max)** | Qwen Code | **PASS (100%)** | 996.1s | [`materials/prince-ruperts-drop/qwen-4-max/`](materials/prince-ruperts-drop/qwen-4-max/) |
-| **Gemini 4 Hydrogen (XHigh)** | Antigravity CLI | **PASS (100%)** | 644.4s | [`materials/prince-ruperts-drop/gemini-4-hydrogen/`](materials/prince-ruperts-drop/gemini-4-hydrogen/) |
-| **Gemini 4 Carbon (High)** | Antigravity CLI | **PASS (100%)** | 1999.5s | [`materials/prince-ruperts-drop/gemini-4-carbon/`](materials/prince-ruperts-drop/gemini-4-carbon/) |
+| **Qwen 4 Max (Max)** | Qwen Code | **PASS (100%)** | 2702.7s | [`vehicle-dynamics/f1-night-duel/qwen-4-max/`](vehicle-dynamics/f1-night-duel/qwen-4-max/) |
+| **ERNIE 5.5 Flash Preview (High)** | OpenCode | **PASS (100%)** | 1100.7s | [`vehicle-dynamics/f1-night-duel/ernie-5.5-flash-preview/`](vehicle-dynamics/f1-night-duel/ernie-5.5-flash-preview/) |
+| **Claude Sonnet 5.5 (Max)** | Claude Code | **PASS (100%)** | 4637.9s | [`vehicle-dynamics/f1-night-duel/claude-sonnet-5.5/`](vehicle-dynamics/f1-night-duel/claude-sonnet-5.5/) |
 
-*Showing the 3 most recent benchmark deliverables. See [`TELEMETRY.md`](materials/prince-ruperts-drop/TELEMETRY.md) for the complete multi-model leaderboard, full token metrics, cache ratios, and runtime verification logs.*
+*Showing the 3 most recent benchmark deliverables. See [`TELEMETRY.md`](vehicle-dynamics/f1-night-duel/TELEMETRY.md) for the complete multi-model leaderboard, full token metrics, cache ratios, and runtime verification logs.*
