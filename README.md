@@ -65,8 +65,8 @@ Each benchmark test directory (e.g. [`ballistics/water-balloon/`](ballistics/wat
 
 | Model | Developer Harness | Verification | Wall-Clock | Deliverable |
 | :--- | :--- | :---: | :---: | :---: |
-| **Codex GPT 6.1 Sol (Max)** | Codex CLI | **PASS (100%)** | 1203.9s | [`ballistics/water-balloon/codex-gpt-6.1-sol/`](ballistics/water-balloon/codex-gpt-6.1-sol/) |
-| **Codex GPT 6.2 Sol (Max)** | Codex CLI | **PASS (100%)** | 1535.8s | [`ballistics/water-balloon/codex-gpt-6.2-sol/`](ballistics/water-balloon/codex-gpt-6.2-sol/) |
-| **Qwen 4 Max (XHigh) via OpenCode** | OpenCode | **PASS (100%)** | 1528.3s | [`ballistics/water-balloon/qwen-4-max-opencode/`](ballistics/water-balloon/qwen-4-max-opencode/) |
+| **Codex GPT 6.1 Sol (Max)** | Codex CLI | **PASS (100%)** | 909.1s | [`materials/prince-ruperts-drop/codex-gpt-6.1-sol/`](materials/prince-ruperts-drop/codex-gpt-6.1-sol/) |
+| **Codex GPT 6.2 Sol (Max)** | Codex CLI | **PASS (100%)** | 1428.0s | [`materials/prince-ruperts-drop/codex-gpt-6.2-sol/`](materials/prince-ruperts-drop/codex-gpt-6.2-sol/) |
+| **Qwen 4 Max (XHigh) via OpenCode** | OpenCode | **PASS (100%)** | 1593.9s | [`materials/prince-ruperts-drop/qwen-4-max-opencode/`](materials/prince-ruperts-drop/qwen-4-max-opencode/) |
 
-*Showing the 3 most recent benchmark deliverables. See [`TELEMETRY.md`](ballistics/water-balloon/TELEMETRY.md) for the complete multi-model leaderboard, full token metrics, cache ratios, and runtime verification logs.*
+*Showing the 3 most recent benchmark deliverables. See [`TELEMETRY.md`](materials/prince-ruperts-drop/TELEMETRY.md) for the complete multi-model leaderboard, full token metrics, cache ratios, and runtime verification logs.*
