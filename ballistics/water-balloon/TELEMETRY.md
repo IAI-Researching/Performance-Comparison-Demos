@@ -10,6 +10,7 @@
 | :--- | :--- | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :--- |
 | **Codex GPT 6 Astra (Max)** | Codex CLI 0.167.1 | `Max` | **PASS (100.0%)** | 861.6s | 38 | 32 | 1,483,498 | 1,444,352 | 11,157 | 35,564 | 40,291 B | 1,068 | `d72c7f93f657...` |
 | **Codex GPT 6.1 Sol (Max)** | Codex CLI 0.167.1 | `Max` | **PASS (100.0%)** | 1250.4s | 26 | 20 | 1,247,049 | 1,204,480 | 21,468 | 49,066 | 46,100 B | 1,168 | `3a0695baa191...` |
+| **Codex GPT 6.2 Sol (Max)** | Codex CLI 0.169.0 | `Max` | **PASS (100.0%)** | 1535.8s | 79 | 74 | 3,992,941 | 3,884,032 | 29,022 | 65,175 | 59,350 B | 1,520 | `703f1793997a...` |
 | **Codex GPT 6.1 Terra (Max)** | Codex CLI 0.169.0 | `Max` | **PASS (100.0%)** | 858.8s | 36 | 31 | 2,963,555 | 2,917,376 | 19,777 | 41,342 | 33,417 B | 904 | `b6f6b35f923e...` |
 | **Claude Fable 5.1 (Max)** | Claude Code 2.1.322 | `Max` | **PASS (100.0%)** | 4423.1s | 51 | 48 | 746 | 3,495,006 | 213,245 | 255,903 | 45,889 B | 1,066 | `48744707d064...` |
 | **Claude Fable 5.2 (Max)** | Claude Code 2.1.322 | `Max` | **PASS (100.0%)** | 5835.3s | 282 | 281 | 254 | 59,948,939 | 323,212 | 491,384 | 100,339 B | 2,178 | `e181ef5272d3...` |
@@ -30,6 +31,6 @@
 ## 🔬 Methodology & Enforced Constraints
 
 - **Benchmark ID**: `ballistics/water-balloon`
-- **Protocol**: Autonomous, first passing attempt (zero human-in-the-loop, sandboxed). Rows are tagged v1.0 or v1.1 in `telemetry.json` (`protocol_version`); v1.0 and v1.1 rows are not strictly comparable, see ../../PROTOCOL.md. Failed attempts are re-run, not published.
+- **Protocol**: Autonomous, first passing attempt, protocol v1.1 (zero human-in-the-loop, sandboxed). See PROTOCOL.md; failed attempts are re-run, not published.
 - **Unobstructed Viewport Constraint**: Strict negative constraint forbidding extraneous headers, mastheads, annotation overlays, and phase description panels. Viewport contains exclusively Three.js canvas, center countdown, and bottom dock.
-- **Mixed protocol versions**: this table contains v1.0 and v1.1 rows. v1.1 rows: Codex GPT 6.1 Terra (Max), Claude Sonnet 5.5 (Max), Qwen 4 Max (Max), Qwen 4 Max (XHigh) via OpenCode. All other rows are v1.0 (shared host, some runs overlapped; wall-clock approximate). Harness versions and effort levels vary between rows; see ../../PROTOCOL.md.
+- **Mixed protocol versions**: this table contains v1.0 and v1.1 rows. v1.1 rows: Codex GPT 6.2 Sol (Max), Codex GPT 6.1 Terra (Max), Claude Sonnet 5.5 (Max), Qwen 4 Max (Max), Qwen 4 Max (XHigh) via OpenCode. All other rows are v1.0 (shared host, some runs overlapped; wall-clock approximate). Harness versions and effort levels vary between rows; see ../../PROTOCOL.md.

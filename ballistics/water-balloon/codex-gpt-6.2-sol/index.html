@@ -1,0 +1,1520 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Water Balloon Slow Motion</title>
+<style>
+*, *::before, *::after {
+  box-sizing: border-box;
+}
+html, body {
+  margin: 0;
+  padding: 0;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  background: radial-gradient(circle at center, #161922 0%, #090a0f 100%);
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -webkit-user-select: none;
+  user-select: none;
+}
+#stage {
+  display: block;
+  width: 100vw;
+  height: 100vh;
+}
+
+#countdown {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 50;
+  pointer-events: none;
+  font-size: 96px;
+  font-weight: 700;
+  line-height: 1;
+  color: rgba(255, 255, 255, 0.35);
+  font-variant-numeric: tabular-nums;
+}
+
+#dock {
+  position: fixed;
+  bottom: 24px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 100;
+  width: 536px;
+  height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 0 14px;
+  background: rgba(15, 17, 23, 0.78);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 9999px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.35);
+}
+
+#dock button {
+  font-family: inherit;
+  line-height: 1;
+  margin: 0;
+  flex-shrink: 0;
+  white-space: nowrap;
+  appearance: none;
+  -webkit-appearance: none;
+}
+
+.dock-sep {
+  width: 1px;
+  height: 18px;
+  flex-shrink: 0;
+  background: rgba(255, 255, 255, 0.12);
+}
+
+#btn-refire {
+  width: 78px;
+  height: 28px;
+  padding: 0 10px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 9999px;
+  color: #ffffff;
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+}
+#btn-refire:hover {
+  background: rgba(255, 255, 255, 0.16);
+}
+
+#btn-toggle {
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 9999px;
+  color: #ffffff;
+  cursor: pointer;
+}
+#btn-toggle:hover {
+  background: rgba(255, 255, 255, 0.16);
+}
+
+#speed-group {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  flex-shrink: 0;
+}
+.speed-pill {
+  width: 42px;
+  height: 24px;
+  padding: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 9999px;
+  color: rgba(255, 255, 255, 0.6);
+  font-size: 11px;
+  font-weight: 500;
+  font-variant-numeric: tabular-nums;
+  cursor: pointer;
+}
+.speed-pill:hover {
+  color: #ffffff;
+  background: rgba(255, 255, 255, 0.06);
+}
+.speed-pill.is-active {
+  color: #ffffff;
+  background: rgba(255, 255, 255, 0.18);
+  border-color: rgba(255, 255, 255, 0.2);
+}
+
+#scrubber {
+  width: 157px;
+  height: 4px;
+  margin: 0;
+  padding: 0;
+  flex-shrink: 0;
+  appearance: none;
+  -webkit-appearance: none;
+  background: rgba(255, 255, 255, 0.22);
+  border-radius: 9999px;
+  outline: none;
+  cursor: pointer;
+}
+#scrubber::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: #ffffff;
+  border: none;
+  cursor: pointer;
+}
+#scrubber::-moz-range-thumb {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: #ffffff;
+  border: none;
+  cursor: pointer;
+}
+
+#countdown {
+  display: none;
+}
+</style>
+</head>
+<body>
+<canvas id="stage"></canvas>
+<div id="countdown" aria-hidden="true">3</div>
+
+<div id="dock" role="toolbar" aria-label="Simulation Controls">
+  <button id="btn-refire" type="button" aria-label="Re-fire" title="Re-fire">
+    <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+      <path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.19"/>
+    </svg>
+    <span>Re-fire</span>
+  </button>
+  <span class="dock-sep" aria-hidden="true"></span>
+  <button id="btn-toggle" type="button" aria-label="Pause" title="Play / Pause">
+    <svg id="icon-pause" viewBox="0 0 24 24" width="14" height="14" fill="currentColor" aria-hidden="true">
+      <rect x="6" y="4" width="4" height="16" rx="1"/>
+      <rect x="14" y="4" width="4" height="16" rx="1"/>
+    </svg>
+    <svg id="icon-play" viewBox="0 0 24 24" width="14" height="14" fill="currentColor" aria-hidden="true" style="display:none;">
+      <path d="M8 5v14l11-7z"/>
+    </svg>
+  </button>
+  <span class="dock-sep" aria-hidden="true"></span>
+  <div id="speed-group" role="radiogroup" aria-label="Playback Speed">
+    <button class="speed-pill" type="button" role="radio" aria-checked="false" data-speed="0.25">0.25×</button>
+    <button class="speed-pill" type="button" role="radio" aria-checked="false" data-speed="0.5">0.5×</button>
+    <button class="speed-pill is-active" type="button" role="radio" aria-checked="true" data-speed="1.0">1.0×</button>
+    <button class="speed-pill" type="button" role="radio" aria-checked="false" data-speed="2.0">2.0×</button>
+  </div>
+  <span class="dock-sep" aria-hidden="true"></span>
+  <input id="scrubber" type="range" min="0" max="8.000" step="0.001" value="0" aria-label="Timeline Scrubber">
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+(() => {
+  'use strict';
+
+  const DURATION = 8.000;
+  const CONTACT = 1.000;
+  const BURST_END = 1.600;
+  const CAVITATION = 2.400;
+  const EXIT = 3.800;
+  const BREAKUP = 5.000;
+  const FLOOR = -2.79;
+  const IMPACT_Y = -0.115;
+  const TAU = 2 * Math.PI;
+
+  function mulberry32(seed) {
+    return () => {
+      let bits = seed = (seed + 0x6D2B79F5) | 0;
+      bits = Math.imul(bits ^ (bits >>> 15), bits | 1);
+      bits ^= bits + Math.imul(bits ^ (bits >>> 7), bits | 61);
+      return ((bits ^ (bits >>> 14)) >>> 0) / 4294967296;
+    };
+  }
+
+  const random = mulberry32(42);
+  const rand = (a, b) => a + (b - a) * random();
+  const clamp = (x, a, b) => Math.max(a, Math.min(b, x));
+  const mix = (a, b, x) => a + (b - a) * x;
+
+  function smooth(a, b, x) {
+    const u = clamp((x - a) / (b - a), 0, 1);
+    return u * u * (3 - 2 * u);
+  }
+
+  const renderer = new THREE.WebGLRenderer({ canvas: document.getElementById('stage'), antialias: true, alpha: true });
+  renderer.outputEncoding = THREE.sRGBEncoding;
+  renderer.setClearColor(0x000000, 0);
+
+  const scene = new THREE.Scene();
+  const camera = new THREE.OrthographicCamera(-6, 6, 3.4, -3.4, 0.1, 40);
+  camera.position.set(0, 0, 14);
+  const capture = new THREE.WebGLRenderTarget(1, 1, {
+    minFilter: THREE.LinearFilter,
+    magFilter: THREE.LinearFilter,
+    generateMipmaps: false
+  });
+  const viewport = { value: new THREE.Vector2() };
+  const pixelsPerUnit = { value: 1 };
+  const opticalTime = { value: 0 };
+  const fieldSeed = { value: rand(0.25, 2.75) };
+  const linear = color => new THREE.Color(color).convertSRGBToLinear();
+
+  function addLight(color, intensity, x, y, z) {
+    const light = new THREE.DirectionalLight(color, intensity);
+    light.position.set(x, y, z);
+    scene.add(light);
+  }
+
+  addLight(0xffe6df, 2.0, -3, 4.5, 6);
+  addLight(0xd3f4ff, 2.3, -4.5, 1, -2.4);
+  addLight(0xffbdd9, 1.65, 5, 1.4, -2.8);
+
+  // The same studio panels light the latex, metal, and liquid interfaces.
+  const studio = `
+    float panel(vec3 ray, vec3 dir, vec2 size, float feather) {
+      dir = normalize(dir);
+      vec3 across = normalize(vec3(dir.z, 0.0, -dir.x));
+      vec3 up = cross(dir, across);
+      float facing = dot(ray, dir);
+      vec2 uv = abs(vec2(dot(ray, across), dot(ray, up))) / max(facing, 0.001);
+      vec2 light = 1.0 - smoothstep(size * (1.0 - feather), size, uv);
+      return step(0.0, facing) * light.x * light.y;
+    }
+
+    vec3 studioReflection(vec3 ray) {
+      float key = panel(ray, vec3(-0.72, 0.76, 1.0), vec2(0.23, 0.54), 0.43);
+      float keySeam = panel(ray, vec3(-1.03, 0.74, 1.0), vec2(0.034, 0.44), 0.39);
+      float rim = panel(ray, vec3(-1.0, 0.08, -0.39), vec2(0.31, 0.88), 0.42);
+      float strip = panel(ray, vec3(0.92, 0.21, 0.22), vec2(0.11, 0.77), 0.44);
+      float kicker = panel(ray, vec3(1.0, 0.30, -0.69), vec2(0.32, 0.67), 0.52);
+      float bounce = panel(ray, vec3(0.32, -0.83, 0.52), vec2(0.59, 0.12), 0.73);
+      return key * vec3(1.29, 1.14, 1.07)
+           + keySeam * vec3(0.31, 0.41, 0.48)
+           + rim * vec3(0.70, 1.12, 1.44)
+           + strip * vec3(0.92, 1.03, 1.22)
+           + kicker * vec3(1.10, 0.48, 0.69)
+           + bounce * vec3(0.09, 0.16, 0.25);
+    }
+
+    vec3 faceNormal(vec3 n) {
+      return normalize(gl_FrontFacing ? n : -n);
+    }
+  `;
+
+  const surfaceVertex = `
+    attribute vec3 rest;
+    attribute float lip;
+    varying vec3 vNormal;
+    varying vec3 vRest;
+    varying vec3 vPlace;
+    varying float vLip;
+
+    void main() {
+      vNormal = normalMatrix * normal;
+      vRest = rest;
+      vPlace = (modelMatrix * vec4(position, 1.0)).xyz;
+      vLip = lip;
+      gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+    }
+  `;
+
+  const latexMaterial = new THREE.ShaderMaterial({
+    vertexShader: surfaceVertex,
+    uniforms: {
+      time: opticalTime,
+      seed: fieldSeed,
+      pigment: { value: linear('#e61c24') },
+      opacity: { value: 1 },
+      puncture: { value: 1 },
+      impact: { value: new THREE.Vector3() }
+    },
+    transparent: true,
+    side: THREE.DoubleSide,
+    fragmentShader: studio + `
+      uniform float time;
+      uniform float seed;
+      uniform vec3 pigment;
+      uniform float opacity;
+      uniform float puncture;
+      uniform vec3 impact;
+      varying vec3 vNormal;
+      varying vec3 vPlace;
+      varying vec3 vRest;
+      varying float vLip;
+
+      void main() {
+        vec3 p = vRest - impact;
+        float fiber = sin(vRest.y * 108.0 + sin(vRest.z * 67.0 + seed));
+        float hole = length(p * vec3(0.75, 0.99, 1.0)) + fiber * 0.008;
+        float radius = smoothstep(1.065, 1.26, time) * 0.30;
+        if (puncture > 0.5 && radius > 0.0 && hole < radius) discard;
+        float edge = puncture * step(0.008, radius) * (1.0 - smoothstep(0.0, 0.027, hole - radius));
+        vec3 n = faceNormal(vNormal);
+        n = normalize(n + 0.0018 * vec3(fiber, sin(vRest.x * 136.0 + seed), 0.0));
+        vec3 view = vec3(0.0, 0.0, 1.0);
+        float fresnel = pow(1.0 - max(dot(n, view), 0.0), 3.2);
+        float key = max(dot(n, normalize(vec3(-0.44, 0.61, 0.78))), 0.0);
+        float fill = max(dot(n, normalize(vec3(0.78, 0.06, 0.5))), 0.0);
+        float rim = abs(n.x) * (0.50 + 0.50 * smoothstep(-1.4, 1.4, vPlace.y));
+        vec3 soft = studioReflection(reflect(-view, n));
+        vec3 color = pigment * (0.083 + key * 0.65 + fill * 0.17 + 0.009 * fiber);
+        color += vec3(0.58, 0.022, 0.038) * (0.64 * fresnel * rim + 0.30 * vLip);
+        color += soft * (0.25 + 0.65 * fresnel + 0.12 * vLip);
+        color += vec3(0.38, 0.055, 0.043) * edge;
+        gl_FragColor = vec4(color, opacity * (0.965 + 0.033 * fresnel));
+        #include <encodings_fragment>
+      }
+    `
+  });
+
+  const liquidFragment = studio + `
+    uniform sampler2D layer;
+    uniform vec2 viewport;
+    uniform float time;
+    uniform float seed;
+    uniform vec3 backdropCenter;
+    uniform vec3 backdropEdge;
+    uniform float thin;
+    varying vec3 vNormal;
+    varying vec3 vPlace;
+    varying vec3 vRest;
+    varying float vLip;
+
+    void main() {
+      float folds = sin(vRest.x * 13.0 + vRest.y * 7.0 + sin(vRest.z * 14.0 + seed))
+                  * cos(vRest.z * 17.0 - vRest.y * 9.0 + seed);
+      float cells = 0.61 * sin(vRest.x * 19.0 + vRest.z * 15.0 + 1.76 * folds)
+                  * cos(vRest.z * 16.0 - vRest.y * 6.0 + seed)
+                  + 0.26 * sin(vRest.y * 15.0 - vRest.x * 21.0 + sin(vRest.z * 13.0))
+                  + 0.13 * cos(vRest.z * 32.0 + vRest.x * 18.0);
+      float breakup = smoothstep(4.91, 5.92, time);
+      float level = mix(-1.16, 1.19, breakup);
+      float gap = cells - level - 0.53 * vRest.y * breakup;
+      if (thin < 0.5 && gap < 0.0) discard;
+      if (thin > 0.5 && vLip < 0.44) discard;
+      if (thin < 0.5 && vPlace.y < -2.80) discard;
+
+      vec3 n = faceNormal(vNormal);
+      float caustic = sin(vPlace.y * 23.0 - vPlace.x * 9.0 + 4.1 * folds
+                         + 2.3 * sin(vPlace.x * 17.0 + vPlace.z * 11.0 + seed));
+      float wake = exp(-10.0 * (vRest.y + 0.12) * (vRest.y + 0.12))
+                 * smoothstep(2.40, 3.28, time);
+      float ripples = smoothstep(1.10, 1.60, time) * (0.41 + 0.59 * max(wake, breakup));
+      n = normalize(n + vec3(0.016 * folds, 0.016 * caustic, 0.004 * folds) * ripples);
+      vec3 view = vec3(0.0, 0.0, 1.0);
+      float facing = max(0.0, dot(n, view));
+      float fresnel = pow(1.0 - facing, 3.4);
+      vec3 reflection = studioReflection(reflect(-view, n));
+      float edge = pow(1.0 - facing, 5.0);
+      float capillary = thin > 0.5 ? 1.0 - smoothstep(0.58, 0.74, vLip)
+                                   : (1.0 - smoothstep(0.0, 0.18, gap)) * smoothstep(4.92, 5.21, time);
+
+      vec2 uv = gl_FragCoord.xy / viewport;
+      vec2 aspect = vec2(viewport.y / viewport.x, 1.0);
+      vec2 refracted = uv + n.xy * aspect * (0.027 + 0.018 * fresnel);
+      vec4 under = texture2D(layer, clamp(refracted, 0.0, 1.0));
+      float falloff = length((refracted - 0.5) * vec2(viewport.x / viewport.y, 1.0))
+                    / length(vec2(0.5 * viewport.x / viewport.y, 0.5));
+      vec3 background = mix(backdropCenter, backdropEdge, clamp(falloff, 0.0, 1.0));
+      vec3 transmitted = background * (1.0 - under.a) + under.rgb;
+      float silver = pow(max(0.0, caustic), 12.0) * (0.10 * wake + 0.74 * fresnel);
+      float lightSide = 0.36 + 0.64 * smoothstep(-1.0, 0.35, -n.x + n.y * 0.40);
+      vec3 color = transmitted * vec3(0.72, 0.89, 0.94) * (1.0 - 0.49 * fresnel);
+      color += vec3(0.007, 0.015, 0.025) * (facing + 0.28 + folds * 0.17);
+      color += reflection * (0.38 + 0.91 * fresnel + 0.22 * capillary);
+      color += vec3(0.22, 0.43, 0.57) * (edge * lightSide * 0.86 + 0.32 * capillary + 0.14 * silver);
+      color += vec3(0.064, 0.11, 0.16) * thin * (0.22 + 0.58 * fresnel);
+      color += vec3(0.23, 0.16, 0.21) * edge * smoothstep(0.1, 1.0, n.x) * 0.53;
+      float alpha = thin > 0.5 ? clamp((0.47 + 0.38 * fresnel + 0.17 * capillary) * vLip, 0.0, 1.0) : 1.0;
+      gl_FragColor = vec4(color, alpha);
+      #include <encodings_fragment>
+    }
+  `;
+
+  const liquidUniforms = {
+    layer: { value: capture.texture },
+    viewport,
+    time: opticalTime,
+    seed: fieldSeed,
+    backdropCenter: { value: linear('#161922') },
+    backdropEdge: { value: linear('#090a0f') }
+  };
+
+  const waterMaterial = new THREE.ShaderMaterial({
+    vertexShader: surfaceVertex,
+    fragmentShader: liquidFragment,
+    uniforms: { ...liquidUniforms, thin: { value: 0 } }
+  });
+
+  const sheetMaterial = new THREE.ShaderMaterial({
+    vertexShader: surfaceVertex,
+    fragmentShader: liquidFragment,
+    uniforms: { ...liquidUniforms, thin: { value: 1 } },
+    side: THREE.DoubleSide,
+    transparent: true,
+    depthWrite: false
+  });
+
+
+  function surface(rows, columns, closed, material, reverse = false) {
+    const count = (rows + 1) * columns;
+    const geometry = new THREE.BufferGeometry();
+    const xyz = new Float32Array(count * 3);
+    const rest = new Float32Array(count * 3);
+    const lip = new Float32Array(count);
+    const indices = [];
+    const step = closed ? columns : columns - 1;
+    for (let row = 0; row < rows; row++) {
+      for (let col = 0; col < step; col++) {
+        const a = row * columns + col;
+        const b = row * columns + (col + 1) % columns;
+        const c = b + columns;
+        const d = a + columns;
+        if (reverse) indices.push(a, d, c, a, c, b);
+        else indices.push(a, b, c, a, c, d);
+      }
+    }
+    geometry.setIndex(indices);
+    geometry.setAttribute('position', new THREE.BufferAttribute(xyz, 3).setUsage(THREE.DynamicDrawUsage));
+    geometry.setAttribute('rest', new THREE.BufferAttribute(rest, 3).setUsage(THREE.DynamicDrawUsage));
+    geometry.setAttribute('lip', new THREE.BufferAttribute(lip, 1).setUsage(THREE.DynamicDrawUsage));
+    geometry.setAttribute('normal', new THREE.BufferAttribute(new Float32Array(count * 3), 3).setUsage(THREE.DynamicDrawUsage));
+    const mesh = new THREE.Mesh(geometry, material);
+    mesh.frustumCulled = false;
+    scene.add(mesh);
+    return { geometry, mesh, xyz, rest, lip, rows, columns };
+  }
+
+  function upload(surface, updateRest = false, updateLip = false) {
+    surface.geometry.attributes.position.needsUpdate = true;
+    if (updateRest) surface.geometry.attributes.rest.needsUpdate = true;
+    if (updateLip) surface.geometry.attributes.lip.needsUpdate = true;
+    surface.geometry.computeVertexNormals();
+  }
+
+  // A hydrostatic profile with a narrow throat and a broad, sagging base.
+  const profile = new THREE.SplineCurve([
+    [0.0001, 1.560], [0.083, 1.507], [0.135, 1.366], [0.299, 1.165],
+    [0.554, 0.962], [0.815, 0.712], [1.030, 0.387], [1.169, 0.035],
+    [1.236, -0.358], [1.227, -0.731], [1.093, -1.065], [0.858, -1.328],
+    [0.476, -1.478], [0.0001, -1.527]
+  ].map(([r, y]) => new THREE.Vector2(r, y)));
+
+  const profileSamples = 1024;
+  const profileRadius = new Float32Array(profileSamples + 1);
+  const profileY = new Float32Array(profileSamples + 1);
+  const section = new THREE.Vector2();
+  for (let i = 0; i <= profileSamples; i++) {
+    profile.getPoint(i / profileSamples, section);
+    profileRadius[i] = section.x;
+    profileY[i] = section.y;
+  }
+
+  let impactIndex = 0;
+  while (profileY[impactIndex] > IMPACT_Y) impactIndex++;
+  const impactU = impactIndex / profileSamples;
+  const entryX = profileRadius[impactIndex];
+  const exitX = -entryX - 0.058;
+  latexMaterial.uniforms.impact.value.set(entryX, IMPACT_Y, 0);
+
+  function latexVariant(puncture) {
+    const material = latexMaterial.clone();
+    material.uniforms.time = opticalTime;
+    material.uniforms.seed = fieldSeed;
+    material.uniforms.puncture.value = puncture;
+    material.defaultAttributeValues.rest = [0, 0, 0];
+    material.defaultAttributeValues.lip = [0];
+    return material;
+  }
+
+  const looseLatex = latexVariant(1);
+  const knotLatex = latexVariant(0);
+  const stripLatex = latexVariant(0);
+  stripLatex.depthWrite = false;
+
+  const azimuths = 112;
+  const sinTheta = new Float32Array(azimuths);
+  const cosTheta = new Float32Array(azimuths);
+  const tearDelay = new Float32Array(azimuths);
+  const tearEdge = new Float32Array(azimuths);
+  const tearPhase = rand(0, TAU);
+  for (let i = 0; i < azimuths; i++) {
+    const theta = i * TAU / azimuths;
+    sinTheta[i] = Math.sin(theta);
+    cosTheta[i] = Math.cos(theta);
+    tearDelay[i] = 0.122 * (1 - cosTheta[i]) * 0.5 + rand(-0.007, 0.007);
+    tearEdge[i] = 0.54 * Math.sin(9 * theta + tearPhase)
+                + 0.28 * Math.sin(17 * theta - tearPhase) + rand(-0.18, 0.18);
+  }
+
+  function envelope(rows, from, to, material) {
+    const model = surface(rows, azimuths, true, material);
+    for (let row = 0; row <= rows; row++) {
+      profile.getPoint(mix(from, to, row / rows), section);
+      for (let col = 0; col < azimuths; col++) {
+        const i = 3 * (row * azimuths + col);
+        model.rest[i] = section.x * cosTheta[col];
+        model.rest[i + 1] = section.y;
+        model.rest[i + 2] = section.x * sinTheta[col];
+      }
+    }
+    model.xyz.set(model.rest);
+    upload(model, true);
+    return model;
+  }
+
+  const core = envelope(80, 0, 1, waterMaterial);
+  const intactSkin = envelope(76, 0, 1, latexMaterial);
+  intactSkin.mesh.scale.setScalar(1.009);
+  intactSkin.mesh.renderOrder = 4;
+  const upperSkin = envelope(43, 0, impactU, latexMaterial);
+  const lowerSkin = envelope(36, impactU, 1, looseLatex);
+  upperSkin.mesh.renderOrder = 4;
+  lowerSkin.mesh.renderOrder = 4;
+
+  function waterPhase(time) {
+    const suspended = Math.max(0, time - 1.39);
+    const fall = Math.max(0, time - 4.64);
+    return {
+      time,
+      sag: 0.026 * suspended * suspended + 0.53 * fall * fall,
+      indent: 0.168 * smooth(CONTACT, 1.102, time) * (1 - smooth(1.131, 1.27, time)),
+      wake: smooth(CAVITATION, 3.06, time) * (1 - smooth(4.28, 5.18, time)),
+      collapse: smooth(4.68, 5.87, time)
+    };
+  }
+
+  function waterPoint(x, y, z, phase, out, i) {
+    const relativeX = entryX - x;
+    const pathY = y - IMPACT_Y;
+    const offAxis = pathY * pathY + z * z;
+    const arrival = phase.time - 1.079 - 0.26 * relativeX;
+    const pulseAge = Math.max(0, arrival);
+    const wave = 0.053 * Math.sin(pulseAge * 22) * Math.exp(-3.9 * pulseAge - 2.6 * offAxis);
+    const dent = phase.indent * Math.exp(-6.5 * relativeX * relativeX - 10.0 * offAxis);
+    const bulge = phase.wake * Math.exp(-7.0 * pathY * pathY) * (0.058 + 0.035 * Math.sin(8 * z + 3 * x));
+    const scallop = Math.sin(x * 7 + z * 4 + fieldSeed.value) * Math.cos(y * 5 + z * 8);
+    const spill = (0.38 + 0.62 * smooth(-0.05, 1.48, -y));
+    const stretch = 0.16 + spill * (0.11 + 0.36 * scallop);
+    const spread = phase.collapse * (0.16 + spill * 0.13 * scallop);
+    out[i] = x * (1 + spread + wave + bulge) - dent;
+    out[i + 1] = y - phase.sag + wave * pathY - phase.collapse * stretch;
+    out[i + 2] = z * (1 + wave + bulge + 0.6 * spread);
+  }
+
+  function deformEnvelope(model, phase) {
+    for (let i = 0; i < model.xyz.length; i += 3) {
+      waterPoint(model.rest[i], model.rest[i + 1], model.rest[i + 2], phase, model.xyz, i);
+    }
+    upload(model);
+  }
+
+  function retractSkin(model, phase, upper) {
+    const time = phase.time;
+    for (let col = 0; col < azimuths; col++) {
+      // The tear travels around the circumference before the rear of the skin lets go.
+      const progress = smooth(1.077 + tearDelay[col], BURST_END, time);
+      const p = Math.pow(progress, 0.76);
+      const ragged = tearEdge[col] * Math.sin(Math.PI * p * 0.86);
+      const remaining = upper ? 0.063 + 0.011 * tearEdge[col] : 0.937 + 0.023 * tearEdge[col];
+      const split = mix(impactU, remaining, p) + ragged * 0.029;
+      const flapAge = Math.max(0, time - 1.16 - tearDelay[col]);
+      const flutter = Math.sin(30 * flapAge + col * TAU / azimuths * 5 + tearPhase) * Math.exp(-1.6 * flapAge);
+      for (let row = 0; row <= model.rows; row++) {
+        const v = row / model.rows;
+        const u = upper ? split * v : mix(split, 1, v);
+        const rim = Math.pow(upper ? v : 1 - v, 6) * p;
+        const sample = clamp(u, 0, 1) * profileSamples;
+        const j = Math.min(profileSamples - 1, Math.floor(sample));
+        const y = mix(profileY[j], profileY[j + 1], sample - j);
+        const r = mix(profileRadius[j], profileRadius[j + 1], sample - j);
+        const edge = Math.sin(p * Math.PI) * 0.094 + 0.028 * p + flutter * 0.032;
+        const radius = r * 1.012 + edge * rim;
+        const k = row * azimuths + col;
+        const i = 3 * k;
+        if (upper) {
+          const x = radius * cosTheta[col];
+          const z = radius * sinTheta[col];
+          waterPoint(x, y, z, phase, model.xyz, i);
+          model.xyz[i] = mix(model.xyz[i], x, p);
+          model.xyz[i + 1] = mix(model.xyz[i + 1], y, p) + rim * (edge * 0.34 + ragged * 0.056);
+          model.xyz[i + 2] = mix(model.xyz[i + 2], z, p);
+        } else {
+          const descent = 0.67 * Math.pow(Math.max(0, time - 1.265), 1.45);
+          model.xyz[i] = radius * cosTheta[col];
+          model.xyz[i + 1] = y - descent + rim * (0.15 * Math.sin(p * Math.PI) + ragged * 0.055);
+          model.xyz[i + 2] = radius * sinTheta[col];
+        }
+        model.lip[k] = rim;
+      }
+    }
+    upload(model, false, true);
+  }
+
+  const cordMaterial = new THREE.MeshStandardMaterial({
+    color: linear('#a4a09e'),
+    roughness: 0.88
+  });
+  const cordCore = new THREE.Mesh(new THREE.CylinderGeometry(0.008, 0.010, 9.8, 12), cordMaterial);
+  cordCore.position.set(-0.018, 6.46, -0.025);
+  scene.add(cordCore);
+  const cordFiber = new THREE.MeshStandardMaterial({ color: linear('#c1bcb7'), roughness: 0.72 });
+  const fiberPoints = [];
+  for (let i = 0; i <= 370; i++) {
+    fiberPoints.push(new THREE.Vector3(
+      -0.018 + 0.008 * Math.cos(i * 0.68),
+      1.57 + i * 0.0265,
+      -0.025 + 0.008 * Math.sin(i * 0.68)
+    ));
+  }
+  const cordTwist = new THREE.Mesh(new THREE.TubeGeometry(
+    new THREE.CatmullRomCurve3(fiberPoints), 440, 0.0027, 5, false
+  ), cordFiber);
+  scene.add(cordTwist);
+
+  const knot = new THREE.Group();
+  knot.position.set(-0.012, 1.557, 0.006);
+  knot.renderOrder = 4;
+  const lobe = new THREE.SphereGeometry(1, 36, 20);
+  for (const [x, y, z, sx, sy, sz, angle] of [
+    [-0.008, 0.000, 0.004, 0.090, 0.067, 0.072, 0.31],
+    [0.034, 0.023, 0.011, 0.052, 0.031, 0.058, -0.49],
+    [-0.054, 0.039, 0.011, 0.043, 0.035, 0.050, 0.54],
+    [0.000, 0.055, -0.018, 0.039, 0.028, 0.045, 0.20]
+  ]) {
+    const part = new THREE.Mesh(lobe, knotLatex);
+    part.position.set(x, y, z);
+    part.scale.set(sx, sy, sz);
+    part.rotation.z = angle;
+    knot.add(part);
+  }
+  scene.add(knot);
+
+  const metal = new THREE.ShaderMaterial({
+    vertexShader: surfaceVertex,
+    uniforms: { seed: fieldSeed },
+    fragmentShader: studio + `
+      uniform float seed;
+      varying vec3 vNormal;
+      varying vec3 vRest;
+      void main() {
+        vec3 n = normalize(vNormal);
+        vec3 ray = reflect(vec3(0.0, 0.0, -1.0), n);
+        float groove = smoothstep(0.395, 0.401, vRest.x) * (1.0 - smoothstep(0.429, 0.437, vRest.x));
+        float turned = sin(vRest.x * 1670.0 + seed) * 0.023;
+        float angle = atan(vRest.y, vRest.z);
+        float polish = 0.45 + 0.55 * pow(max(0.0, n.y * 0.75 + 0.51 * n.z), 2.0);
+        float amber = pow(max(0.0, dot(n, normalize(vec3(-0.48, 0.72, 0.82)))), 2.0);
+        vec3 copper = mix(vec3(0.39, 0.124, 0.043), vec3(0.56, 0.269, 0.093), smoothstep(0.23, 0.48, vRest.x));
+        vec3 env = 0.46 * studioReflection(ray) + vec3(0.38, 0.25, 0.20) * amber;
+        vec3 color = copper * (polish * 0.53 + turned + 0.009 * sin(19.0 * angle)) + env * vec3(1.0, 0.74, 0.48);
+        color *= 1.0 - 0.53 * groove;
+        gl_FragColor = vec4(color, 1.0);
+        #include <encodings_fragment>
+      }
+    `
+  });
+
+  const bulletGeometry = new THREE.LatheGeometry([
+    [0.0001, 0.0], [0.021, 0.009], [0.041, 0.026], [0.066, 0.059],
+    [0.091, 0.110], [0.111, 0.170], [0.125, 0.235], [0.128, 0.285],
+    [0.128, 0.391], [0.121, 0.401], [0.121, 0.428], [0.128, 0.437],
+    [0.128, 0.501], [0.120, 0.537], [0.105, 0.549], [0.0001, 0.549]
+  ].map(([r, axis]) => new THREE.Vector2(r, axis)), 80);
+  bulletGeometry.rotateZ(-Math.PI / 2);
+  bulletGeometry.setAttribute('rest', bulletGeometry.attributes.position);
+  const bullet = new THREE.Mesh(bulletGeometry, metal);
+  bullet.layers.enable(1);
+  scene.add(bullet);
+
+  function projectileX(time) {
+    if (time < CONTACT) return mix(Math.max(7.85, camera.right + 0.58), entryX, time / CONTACT);
+    if (time < 1.24) {
+      const t = (time - CONTACT) / 0.24;
+      return entryX - 0.19 * t - 0.19 * (1 - (1 - t) ** 3);
+    }
+    if (time < EXIT) return mix(entryX - 0.38, exitX, (time - 1.24) / (EXIT - 1.24));
+    const flight = time - EXIT;
+    return exitX - 0.82 * flight - 3.05 * flight * flight;
+  }
+
+  function updateProjectile(time) {
+    bullet.position.set(projectileX(time), IMPACT_Y, 0);
+    bullet.rotation.set(time * 9.5, 0, 0);
+    bullet.visible = bullet.position.x > camera.left - 0.58 && bullet.position.x < camera.right + 0.02;
+  }
+
+  const tunnelMaterial = new THREE.ShaderMaterial({
+    vertexShader: surfaceVertex,
+    uniforms: { time: opticalTime, seed: fieldSeed },
+    transparent: true,
+    depthWrite: false,
+    fragmentShader: studio + `
+      uniform float time;
+      uniform float seed;
+      varying vec3 vNormal;
+      varying vec3 vRest;
+      varying vec3 vPlace;
+      void main() {
+        vec3 n = normalize(vNormal);
+        float rim = pow(1.0 - max(0.0, n.z), 3.2);
+        float rib = 0.5 + 0.5 * sin(vRest.x * 78.0 + 4.0 * sin(vRest.y * 27.0 + seed) + time * 11.0);
+        float ridges = pow(rib, 7.0) * (0.24 + 0.76 * rim);
+        float neck = 1.0 - smoothstep(0.76, 1.0, vRest.x);
+        vec3 reflection = studioReflection(reflect(vec3(0.0, 0.0, -1.0), n));
+        vec3 color = vec3(0.018, 0.030, 0.046) + reflection * (0.36 + 0.65 * rim);
+        color += vec3(0.40, 0.56, 0.69) * (0.94 * rim + 0.34 * ridges);
+        float alpha = (0.39 + 0.55 * rim + 0.12 * ridges) * (0.74 + 0.26 * neck);
+        alpha *= smoothstep(2.4, 2.57, time) * (1.0 - smoothstep(4.49, 5.12, time));
+        gl_FragColor = vec4(color, alpha);
+        #include <encodings_fragment>
+      }
+    `
+  });
+
+  const tunnel = surface(58, 40, true, tunnelMaterial, true);
+  tunnel.mesh.layers.enable(1);
+  tunnel.mesh.renderOrder = 1;
+  const tunnelSection = new Float64Array(4);
+
+  function cavitationSection(time, u, out) {
+    const start = entryX + 0.015;
+    const tip = Math.max(exitX, projectileX(time) + 0.023);
+    const travel = smooth(CAVITATION, 2.92, time);
+    const shape = Math.pow(Math.sin(Math.PI * u), 0.66);
+    const pinch = 1 - 0.985 * smooth(0.80, 1, u);
+    const expansion = travel * (1 - 0.59 * smooth(4.51, 5.12, time));
+    const ruffle = Math.sin(u * 28 - time * 4 + fieldSeed.value) + 0.39 * Math.sin(u * 55 + time * 9);
+    out[0] = mix(start, tip, u) + 0.013 * shape * Math.sin(u * 25 - time * 5);
+    out[1] = IMPACT_Y - 0.022 + shape * (0.041 * Math.sin(u * 10 - time * 4) - 0.024);
+    out[2] = 0.020 * shape * Math.sin(u * 17 + time * 3);
+    out[3] = (0.047 + (0.198 * shape + 0.023 * ruffle) * expansion) * pinch;
+  }
+
+  const tunnelSin = Array.from({ length: tunnel.columns }, (_, i) => Math.sin(i * TAU / tunnel.columns));
+  const tunnelCos = Array.from({ length: tunnel.columns }, (_, i) => Math.cos(i * TAU / tunnel.columns));
+  function updateTunnel(time) {
+    tunnel.mesh.visible = time > CAVITATION && time < 5.12;
+    if (!tunnel.mesh.visible) return;
+    for (let row = 0; row <= tunnel.rows; row++) {
+      const u = row / tunnel.rows;
+      cavitationSection(time, u, tunnelSection);
+      const [x, y, z, radius] = tunnelSection;
+      for (let col = 0; col < tunnel.columns; col++) {
+        const theta = col * TAU / tunnel.columns;
+        const ruffle = radius * (1 + 0.11 * Math.sin(theta * 6 + u * 23 - time * 7)
+                                   + 0.09 * Math.sin(theta * 3 - u * 20 + time * 4));
+        const i = 3 * (row * tunnel.columns + col);
+        tunnel.xyz[i] = x + ruffle * 0.19 * tunnelSin[col];
+        tunnel.xyz[i + 1] = y + ruffle * tunnelCos[col];
+        tunnel.xyz[i + 2] = z + ruffle * tunnelSin[col];
+        tunnel.rest[i] = u;
+        tunnel.rest[i + 1] = ruffle * tunnelCos[col];
+        tunnel.rest[i + 2] = ruffle * tunnelSin[col];
+      }
+    }
+    upload(tunnel, true);
+  }
+
+
+  function dropSprite() {
+    const tile = document.createElement('canvas');
+    tile.width = tile.height = 96;
+    const context = tile.getContext('2d');
+    const image = context.createImageData(tile.width, tile.height);
+    for (let row = 0; row < tile.height; row++) {
+      const y = 1 - 2 * (row + 0.5) / tile.height;
+      for (let col = 0; col < tile.width; col++) {
+        const x = 2 * (col + 0.5) / tile.width - 1;
+        const r2 = x * x + y * y;
+        if (r2 >= 1) continue;
+        const r = Math.sqrt(r2);
+        const rim = (1 - Math.sqrt(1 - r2)) ** 2.1;
+        const key = Math.exp(-((x + 0.33) ** 2 * 19 + (y - 0.41) ** 2 * 11));
+        const pin = Math.exp(-((x + 0.46) ** 2 * 105 + (y - 0.46) ** 2 * 86));
+        const bounce = Math.exp(-((x - 0.13) ** 2 * 9 + (y + 0.68) ** 2 * 38));
+        const side = 0.45 + 0.55 * smooth(-0.80, 0.55, -x + 0.32 * y);
+        const body = 0.062 + 0.81 * key + 0.66 * pin + 0.37 * bounce;
+        const i = (row * tile.width + col) * 4;
+        image.data[i] = 255 * (body * 0.83 + rim * side * 0.46);
+        image.data[i + 1] = 255 * (body * 0.94 + rim * side * 0.67);
+        image.data[i + 2] = 255 * (body + rim * side * 0.82);
+        image.data[i + 3] = 255 * (1 - smooth(0.91, 1, r)) * clamp(
+          0.29 + 0.63 * rim + 0.68 * key + 0.50 * bounce, 0, 1
+        );
+      }
+    }
+    context.putImageData(image, 0, 0);
+    const texture = new THREE.CanvasTexture(tile);
+    texture.minFilter = THREE.LinearFilter;
+    texture.generateMipmaps = false;
+    return texture;
+  }
+
+  const pointMaterial = new THREE.ShaderMaterial({
+    uniforms: {
+      sprite: { value: dropSprite() },
+      pixelsPerUnit
+    },
+    transparent: true,
+    depthWrite: false,
+    vertexShader: `
+      attribute vec4 properties;
+      attribute vec2 direction;
+      uniform float pixelsPerUnit;
+      varying vec3 vShape;
+      varying vec2 vLook;
+      void main() {
+        vShape = vec3(direction, properties.z);
+        vLook = properties.yw;
+        gl_PointSize = clamp(properties.x * pixelsPerUnit * properties.z, 1.1, 96.0);
+        gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+      }
+    `,
+    fragmentShader: `
+      uniform sampler2D sprite;
+      varying vec3 vShape;
+      varying vec2 vLook;
+      void main() {
+        vec2 p = vec2(gl_PointCoord.x, 1.0 - gl_PointCoord.y) - 0.5;
+        vec2 uv = vec2(dot(p, vShape.xy), dot(p, vec2(-vShape.y, vShape.x)) * vShape.z) + 0.5;
+        if (any(lessThan(uv, vec2(0.0))) || any(greaterThan(uv, vec2(1.0)))) discard;
+        vec4 drop = texture2D(sprite, uv);
+        vec3 tint = mix(vec3(0.74, 0.91, 1.13), vec3(1.13, 0.97, 0.88), vLook.y);
+        gl_FragColor = vec4(drop.rgb * tint, drop.a * vLook.x);
+        #include <encodings_fragment>
+      }
+    `
+  });
+
+  function pointCloud(capacity, layers, order) {
+    const geometry = new THREE.BufferGeometry();
+    const xyz = new Float32Array(capacity * 3);
+    const properties = new Float32Array(capacity * 4);
+    const direction = new Float32Array(capacity * 2);
+    geometry.setAttribute('position', new THREE.BufferAttribute(xyz, 3).setUsage(THREE.DynamicDrawUsage));
+    geometry.setAttribute('properties', new THREE.BufferAttribute(properties, 4).setUsage(THREE.DynamicDrawUsage));
+    geometry.setAttribute('direction', new THREE.BufferAttribute(direction, 2).setUsage(THREE.DynamicDrawUsage));
+    const points = new THREE.Points(geometry, pointMaterial);
+    points.layers.set(layers);
+    points.renderOrder = order;
+    points.frustumCulled = false;
+    scene.add(points);
+    return { geometry, points, xyz, properties, direction };
+  }
+
+  function placeDrop(cloud, i, x, y, z, diameter, alpha, vx, vy, stretch, tint) {
+    cloud.xyz[i * 3] = x;
+    cloud.xyz[i * 3 + 1] = y;
+    cloud.xyz[i * 3 + 2] = z;
+    cloud.properties[i * 4] = diameter;
+    cloud.properties[i * 4 + 1] = alpha;
+    cloud.properties[i * 4 + 2] = stretch;
+    cloud.properties[i * 4 + 3] = tint;
+    const length = Math.sqrt(vx * vx + vy * vy);
+    cloud.direction[i * 2] = length > 0.001 ? vx / length : 1;
+    cloud.direction[i * 2 + 1] = length > 0.001 ? vy / length : 0;
+  }
+
+  function uploadPoints(cloud, count) {
+    cloud.points.visible = count > 0;
+    if (!count) return;
+    cloud.geometry.setDrawRange(0, count);
+    for (const attribute of Object.values(cloud.geometry.attributes)) {
+      attribute.updateRange.count = count * attribute.itemSize;
+      attribute.needsUpdate = true;
+    }
+  }
+
+  function distanceWithDrag(t, drag) {
+    return (1 - Math.exp(-t * drag)) / drag;
+  }
+
+  function dropHeight(t, drop) {
+    const travel = distanceWithDrag(t, drop.drag);
+    return drop.y + drop.vy * travel - drop.gravity / drop.drag * (t - travel);
+  }
+
+  // Each droplet has a closed-form trajectory under linear drag and gravity.
+  // Solve its first floor intersection once, then derive a damped rebound from it.
+  const droplets = [];
+  function addDrop(drop) {
+    if (dropHeight(drop.life, drop) <= FLOOR) {
+      let lo = 0;
+      let hi = drop.life;
+      for (let step = 0; step < 15; step++) {
+        const mid = (lo + hi) * 0.5;
+        if (dropHeight(mid, drop) > FLOOR) lo = mid;
+        else hi = mid;
+      }
+      drop.impact = (lo + hi) * 0.5;
+      const travel = distanceWithDrag(drop.impact, drop.drag);
+      const velocity = Math.exp(-drop.impact * drop.drag);
+      const rebound = Math.min(0.75, -(drop.vy * velocity - drop.gravity * travel) * drop.bounce);
+      drop.rebound = {
+        x: drop.x + drop.vx * travel,
+        z: drop.z + drop.vz * travel,
+        vx: drop.vx * velocity * 0.49,
+        vz: drop.vz * velocity * 0.58,
+        vy: rebound,
+        life: 2 * rebound / drop.gravity
+      };
+    } else {
+      drop.impact = Infinity;
+    }
+    droplets.push(drop);
+  }
+
+  const spawn = new Float64Array(3);
+  for (let i = 0; i < 180; i++) {
+    const theta = rand(-0.38, TAU);
+    profile.getPoint(rand(0.22, 0.91), section);
+    const birth = rand(1.117, 1.67);
+    const c = Math.cos(theta);
+    const s = Math.sin(theta);
+    addDrop({
+      birth, x: section.x * c, y: section.y, z: section.x * s,
+      vx: c * rand(0.07, 0.52), vy: rand(-0.06, 0.34), vz: s * rand(0.08, 0.36),
+      diameter: rand(0.008, 0.028), alpha: rand(0.48, 0.92), tint: rand(0.10, 0.46),
+      life: rand(0.73, 2.17), drag: rand(0.4, 1.2), gravity: rand(0.25, 0.48), bounce: 0.1,
+      phase: rand(0, TAU), sway: 0.013
+    });
+  }
+
+  function seedCone(sign, count, start) {
+    for (let i = 0; i < count; i++) {
+      const mist = random() < (sign < 0 ? 0.70 : 0.53);
+      const burst = random();
+      const birth = start + (sign < 0 ? 1.04 : 1.37) * burst ** 1.76;
+      const theta = rand(0, TAU);
+      const ring = Math.pow(random(), 0.63);
+      const coherent = (0.65 + 0.35 * Math.cos(theta * 4 + fieldSeed.value) ** 2);
+      const power = (sign < 0 ? rand(1.05, 6.25) : rand(0.68, 3.75)) * (1 - 0.35 * burst);
+      const radial = power * ring * coherent * (sign < 0 ? 0.46 : 0.36);
+      const r0 = 0.14 * ring;
+      let diameter = mist ? rand(0.004, 0.015) : rand(0.016, 0.049) * rand(0.63, 1.22);
+      if (!mist && random() < 0.045) diameter *= 1.53;
+      addDrop({
+        birth,
+        x: (sign < 0 ? exitX + 0.036 : entryX - 0.036) + rand(-0.07, 0.09),
+        y: IMPACT_Y - 0.034 + Math.cos(theta) * r0 + rand(-0.043, 0.045),
+        z: Math.sin(theta) * r0 + rand(-0.078, 0.101),
+        vx: sign * power, vy: Math.cos(theta) * radial + rand(-0.115, 0.23), vz: Math.sin(theta) * radial,
+        diameter, alpha: mist ? rand(0.27, 0.75) : rand(0.66, 1),
+        tint: rand(0.03, 0.52), life: mist ? rand(0.71, 2.24) : rand(1.18, 3.19),
+        drag: mist ? rand(0.66, 2.04) : rand(0.27, 0.84),
+        gravity: mist ? rand(0.30, 0.66) : rand(0.54, 0.94), bounce: rand(0.12, 0.28),
+        phase: rand(0, TAU), sway: mist ? rand(0.019, 0.056) : rand(0.004, 0.023)
+      });
+    }
+  }
+  seedCone(1, 1030, CAVITATION);
+  seedCone(-1, 1690, EXIT);
+
+  for (let i = 0; i < 1910; i++) {
+    const u = rand(0.12, 0.995);
+    profile.getPoint(u, section);
+    const birth = BREAKUP - 0.17 + rand(0, 0.91) + 0.17 * (1 - u);
+    const theta = rand(0, TAU);
+    const r = section.x * Math.sqrt(rand(0.28, 1));
+    const c = Math.cos(theta);
+    const s = Math.sin(theta);
+    waterPoint(r * c, section.y, r * s, waterPhase(birth), spawn, 0);
+    const fine = random() < 0.56;
+    addDrop({
+      birth,
+      x: spawn[0], y: Math.max(FLOOR + 0.022, spawn[1]), z: spawn[2],
+      vx: c * rand(0.07, 0.74) + rand(-0.19, 0.08),
+      vy: -0.22 - (birth - 4.8) * 1.25 + rand(-0.38, 0.15),
+      vz: s * rand(0.04, 0.74),
+      diameter: fine ? rand(0.007, 0.024) : rand(0.027, 0.066) * rand(0.55, 1.26),
+      alpha: fine ? rand(0.44, 0.78) : rand(0.74, 1), tint: rand(0.0, 0.49),
+      life: rand(1.16, 2.51), drag: rand(0.18, 0.74), gravity: rand(0.87, 1.56),
+      bounce: rand(0.11, 0.39), phase: rand(0, TAU), sway: rand(0, 0.013)
+    });
+  }
+
+  for (let i = 0; i < 616; i++) {
+    const theta = rand(0, TAU);
+    const radial = rand(0.12, 1.85);
+    const birth = 5.51 + random() ** 1.39 * 1.25;
+    addDrop({
+      birth, x: Math.cos(theta) * radial, y: FLOOR + rand(0.016, 0.041), z: Math.sin(theta) * radial * 0.67,
+      vx: Math.cos(theta) * rand(0.28, 1.19), vy: rand(0.20, 1.23) * (1 - 0.32 * (birth - 5.51)),
+      vz: Math.sin(theta) * rand(0.22, 0.75),
+      diameter: rand(0.008, 0.050) * rand(0.47, 1.13), alpha: rand(0.47, 0.92), tint: rand(0.0, 0.51),
+      life: rand(0.67, 1.62), drag: rand(0.48, 1.24), gravity: rand(1.06, 1.74), bounce: 0,
+      phase: rand(0, TAU), sway: 0.011
+    });
+  }
+  function updateSpray(time) {
+    let count = 0;
+    for (const drop of droplets) {
+      const age = time - drop.birth;
+      if (age <= 0 || age >= drop.life) continue;
+      if (age >= drop.impact) {
+        const bounce = drop.rebound;
+        const t = age - drop.impact;
+        if (t >= bounce.life) continue;
+        const y = FLOOR + 0.009 + bounce.vy * t - 0.5 * drop.gravity * t * t;
+        placeDrop(spray, count++, bounce.x + bounce.vx * t, y, bounce.z + bounce.vz * t,
+          drop.diameter * (0.61 - 0.29 * t / bounce.life),
+          drop.alpha * (1 - t / bounce.life), bounce.vx, bounce.vy - drop.gravity * t, 1.24, drop.tint);
+        continue;
+      }
+      const travel = distanceWithDrag(age, drop.drag);
+      const speed = Math.exp(-age * drop.drag);
+      const sway = drop.sway * (Math.sin(age * 12 + drop.phase) - Math.sin(drop.phase));
+      const x = drop.x + drop.vx * travel;
+      const y = drop.y + drop.vy * travel - drop.gravity / drop.drag * (age - travel) + sway * 0.69;
+      const z = drop.z + drop.vz * travel + sway;
+      if (x < camera.left - 0.15 || x > camera.right + 0.15 || y < FLOOR - 0.055) continue;
+      const vx = drop.vx * speed;
+      const vy = drop.vy * speed - drop.gravity * travel;
+      const alpha = drop.alpha * smooth(0, 0.10, age) * (1 - smooth(0.68 * drop.life, drop.life, age));
+      const stretch = 1 + Math.min(0.46, 0.14 * (Math.abs(vx) + Math.abs(vy))) * (0.69 + 0.31 * Math.sin(age * 17 + drop.phase));
+      placeDrop(spray, count++, x, y, z, drop.diameter, alpha, vx, vy, stretch, drop.tint);
+    }
+    uploadPoints(spray, count);
+  }
+
+  const bubbles = Array.from({ length: 310 }, () => ({
+    u: random(), angle: rand(0, TAU), factor: rand(0.24, 1.33),
+    onset: rand(0.02, 0.77), speed: rand(0.03, 0.28),
+    size: rand(0.010, 0.058) * rand(0.45, 1.0), alpha: rand(0.38, 0.94)
+  }));
+  const foam = pointCloud(bubbles.length, 1, 2);
+
+  function updateBubbles(time) {
+    const age = time - CAVITATION;
+    let count = 0;
+    if (age > 0 && time < 5.15) {
+      const fade = 1 - smooth(4.40, 5.15, time);
+      for (const bubble of bubbles) {
+        if (age < bubble.onset) continue;
+        const lift = age - bubble.onset;
+        const u = ((bubble.u + lift * bubble.speed) % 1);
+        cavitationSection(time, u, tunnelSection);
+        const theta = bubble.angle + lift * 1.83;
+        const radius = (tunnelSection[3] + 0.10) * bubble.factor;
+        placeDrop(foam, count++, tunnelSection[0], tunnelSection[1] + Math.cos(theta) * radius + lift * 0.035,
+          tunnelSection[2] + Math.sin(theta) * radius, bubble.size,
+          bubble.alpha * fade * smooth(0, 0.22, lift), 1, 0, 1, 0.26);
+      }
+    }
+    uploadPoints(foam, count);
+  }
+
+
+  const sheets = [];
+  function addSheet(parameters) {
+    const model = surface(25, 10, false, sheetMaterial);
+    model.mesh.renderOrder = 3;
+    sheets.push({ ...parameters, model, phase: rand(0, TAU), pitch: rand(-1.05, 1.05) });
+  }
+
+  for (const sign of [1, -1]) {
+    const start = sign > 0 ? CAVITATION : EXIT;
+    const count = sign > 0 ? 9 : 14;
+    for (let i = 0; i < count; i++) {
+      const angle = i * TAU / count + rand(-0.26, 0.26);
+      const power = (sign > 0 ? rand(1.40, 2.78) : rand(2.55, 5.05));
+      addSheet({
+        birth: start + rand(0.01, 0.19) + 0.16 * (i / count) ** 2,
+        x: sign < 0 ? exitX + 0.033 : entryX - 0.033,
+        y: IMPACT_Y + 0.087 * Math.cos(angle) - 0.023, z: Math.sin(angle) * 0.12,
+        vx: sign * power, vy: 0.37 * power * Math.cos(angle), vz: 0.37 * power * Math.sin(angle),
+        width: rand(0.058, 0.223) * (i < 5 ? 1.24 : 0.77), life: rand(0.51, 1.11),
+        gravity: sign > 0 ? 0.48 : 0.71, drag: rand(0.33, 0.62), porosity: rand(0.17, 0.36)
+      });
+    }
+  }
+
+  for (let i = 0; i < 23; i++) {
+    const u = rand(0.26, 0.98);
+    const theta = rand(0, TAU);
+    const birth = BREAKUP - 0.16 + rand(0.00, 0.42) + 0.22 * (1 - u);
+    profile.getPoint(u, section);
+    const c = Math.cos(theta);
+    const s = Math.sin(theta);
+    waterPoint(section.x * c, section.y, section.x * s, waterPhase(birth), spawn, 0);
+    const sheet = {
+      birth, x: spawn[0], y: spawn[1], z: spawn[2],
+      vx: c * rand(0.04, 0.48), vy: rand(-0.87, -0.37), vz: s * rand(0.12, 0.51),
+      width: rand(0.11, 0.31), life: rand(0.68, 1.17),
+      gravity: rand(1.06, 1.68), drag: rand(0.20, 0.51), porosity: rand(0.17, 0.37)
+    };
+    addSheet(sheet);
+
+    // The capillary necks shed a train of beads that inherit the falling sheet's velocity.
+    for (let bead = 0; bead < 8; bead++) {
+      const along = (bead + 1) / 8;
+      const split = sheet.life * (0.43 + 0.21 * along);
+      const age = split * (0.41 + 0.58 * along);
+      const travel = distanceWithDrag(age, sheet.drag);
+      const velocity = Math.exp(-age * sheet.drag);
+      const y = dropHeight(age, sheet);
+      if (y <= FLOOR) continue;
+      addDrop({
+        birth: birth + split,
+        x: sheet.x + sheet.vx * travel + rand(-0.034, 0.034),
+        y, z: sheet.z + sheet.vz * travel + rand(-0.031, 0.031),
+        vx: sheet.vx * velocity + rand(-0.11, 0.11),
+        vy: sheet.vy * velocity - sheet.gravity * travel,
+        vz: sheet.vz * velocity + rand(-0.09, 0.09),
+        diameter: sheet.width * rand(0.10, 0.24), alpha: rand(0.67, 0.96), tint: rand(0.10, 0.49),
+        life: rand(0.83, 1.73), drag: sheet.drag, gravity: sheet.gravity,
+        bounce: rand(0.18, 0.36), phase: rand(0, TAU), sway: 0.008
+      });
+    }
+  }
+  const spray = pointCloud(droplets.length, 0, 6);
+
+  for (let i = 0; i < 12; i++) {
+    const angle = i * TAU / 12 + rand(-0.20, 0.20);
+    const c = Math.cos(angle);
+    const s = Math.sin(angle);
+    addSheet({
+      birth: rand(5.54, 5.96), x: c * rand(0.39, 0.92), y: FLOOR + rand(0.015, 0.045), z: s * rand(0.20, 0.65),
+      vx: c * rand(0.51, 1.23), vy: rand(0.72, 1.23), vz: s * rand(0.39, 0.87),
+      width: rand(0.068, 0.19), life: rand(0.38, 0.73),
+      gravity: rand(1.44, 1.98), drag: rand(0.37, 0.61), porosity: 0.18
+    });
+  }
+
+  function updateSheets(time) {
+    for (const sheet of sheets) {
+      const { model, birth, life, gravity, drag, phase, pitch } = sheet;
+      const age = time - birth;
+      model.mesh.visible = age > 0.015 && age < life;
+      if (!model.mesh.visible) continue;
+      const tail = age * 0.81 * smooth(life * 0.29, life, age);
+      const widthScale = smooth(0, 0.16, age) * (1 - 0.88 * smooth(life * 0.48, life, age));
+      const opacity = smooth(0.005, 0.101, age) * (1 - smooth(life * 0.60, life, age));
+      for (let row = 0; row <= model.rows; row++) {
+        const u = row / model.rows;
+        const t = mix(tail, age, u);
+        const d = distanceWithDrag(t, drag);
+        const vx = sheet.vx * Math.exp(-drag * t);
+        const vy = sheet.vy * Math.exp(-drag * t) - gravity * d;
+        const speed = Math.max(0.015, Math.sqrt(vx * vx + vy * vy));
+        const curl = Math.sin(u * 8 + age * 8 + phase);
+        const sideX = -vy / speed;
+        const sideY = vx / speed;
+        const bend = 0.055 * u * curl * widthScale;
+        const x = sheet.x + sheet.vx * d + sideX * bend;
+        const y = sheet.y + sheet.vy * d - gravity / drag * (t - d) + sideY * bend;
+        const z = sheet.z + sheet.vz * d + bend * 0.83;
+        const twist = pitch + 0.64 * Math.sin(u * 5.2 + phase + age * 3.8);
+        const width = sheet.width * widthScale
+          * (0.15 + 0.85 * Math.pow(Math.sin(Math.PI * u), 0.63))
+          * (0.73 + 0.24 * Math.sin(u * 12 + phase) + 0.12 * Math.sin(u * 38 + age * 11 + phase));
+        for (let col = 0; col < model.columns; col++) {
+          const v = 2 * col / (model.columns - 1) - 1;
+          const edge = Math.sin(u * 38 + v * 12 + phase + age * 10);
+          const lobe = v * width * (0.91 + 0.09 * edge);
+          const warp = 0.037 * Math.sin(v * Math.PI + u * 6 + age * 8 + phase) * widthScale;
+          const k = row * model.columns + col;
+          const i = 3 * k;
+          model.xyz[i] = x + sideX * Math.cos(twist) * lobe;
+          model.xyz[i + 1] = y + sideY * Math.cos(twist) * lobe;
+          model.xyz[i + 2] = z + Math.sin(twist) * lobe + warp;
+          model.rest[i] = x + v * 0.09;
+          model.rest[i + 1] = y - u * 0.02;
+          model.rest[i + 2] = z;
+          const thinning = sheet.porosity * (0.5 + 0.5 * edge) ** 3 * smooth(0.22, 0.99, u);
+          const stage = smooth(FLOOR - 0.018, FLOOR + 0.048, model.xyz[i + 1]);
+          model.lip[k] = opacity * stage * (1.06 - 0.16 * Math.abs(v) - thinning);
+        }
+      }
+      upload(model, true, true);
+    }
+  }
+
+  const strips = [];
+  for (let i = 0; i < 34; i++) {
+    const angle = rand(-0.32, TAU);
+    const u = rand(impactU - 0.13, impactU + 0.19);
+    profile.getPoint(u, section);
+    const c = Math.cos(angle);
+    const s = Math.sin(angle);
+    const model = surface(10, 5, false, stripLatex);
+    model.mesh.renderOrder = 5;
+    strips.push({
+      model, birth: rand(1.16, 1.55), life: rand(0.69, 1.53), phase: rand(0, TAU),
+      x: section.x * c, y: section.y, z: section.x * s,
+      vx: c * rand(0.83, 2.65), vy: rand(-0.69, 1.23), vz: s * rand(0.47, 1.19),
+      length: rand(0.049, 0.21), width: rand(0.018, 0.068), spin: rand(-17, 17)
+    });
+  }
+
+  function updateStrips(time) {
+    for (const strand of strips) {
+      const { model, birth, life, phase } = strand;
+      const age = time - birth;
+      model.mesh.visible = age > 0.014 && age < life;
+      if (!model.mesh.visible) continue;
+      const travel = distanceWithDrag(age, 0.86);
+      const x = strand.x + strand.vx * travel;
+      const y = strand.y + strand.vy * travel - 0.50 * age * age;
+      const z = strand.z + strand.vz * travel;
+      const angle = phase + strand.spin * age;
+      const c = Math.cos(angle);
+      const s = Math.sin(angle);
+      const fade = 1 - smooth(life * 0.67, life, age);
+      const release = smooth(0, 0.13, age);
+      for (let row = 0; row <= model.rows; row++) {
+        const u = row / model.rows;
+        const length = strand.length * (u - 0.5) * release * fade;
+        const fold = strand.width * 0.66 * Math.sin(u * 9 + age * 16 + phase) * release * fade;
+        const width = strand.width * (0.18 + 0.82 * Math.sin(Math.PI * u)) * release * fade;
+        for (let col = 0; col < model.columns; col++) {
+          const v = 2 * col / (model.columns - 1) - 1;
+          const taper = (0.80 + 0.2 * Math.sin(u * 33 + v * 6 + phase));
+          const w = width * v * taper;
+          const k = row * model.columns + col;
+          const i = 3 * k;
+          model.xyz[i] = x + length * c - w * s;
+          model.xyz[i + 1] = y + length * s + w * c;
+          model.xyz[i + 2] = z + fold + w * Math.sin(angle * 0.83 + u * 4.3);
+          model.lip[k] = 0.51 * (Math.abs(v) + 0.13);
+        }
+      }
+      upload(model, false, true);
+    }
+  }
+
+  // The shallow catch surface is seen edge-on through its reflected ripples.
+  const poolMaterial = new THREE.ShaderMaterial({
+    uniforms: { time: opticalTime, seed: fieldSeed },
+    transparent: true,
+    depthWrite: false,
+    vertexShader: `
+      varying vec2 vUv;
+      void main() {
+        vUv = uv;
+        gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+      }
+    `,
+    fragmentShader: `
+      uniform float time;
+      uniform float seed;
+      varying vec2 vUv;
+      void main() {
+        vec2 p = 2.0 * vUv - 1.0;
+        float age = max(0.0, time - 5.41);
+        float spread = 1.0 - exp(-0.98 * age);
+        float skew = abs(p.x) * 0.08 * sin(p.x * 17.0 + seed);
+        vec2 ellipse = vec2((p.x + 0.022) / (0.17 + 0.51 * spread), (p.y + skew) / (0.15 + 0.44 * spread));
+        float radius = length(ellipse);
+        float border = 1.0 + 0.047 * sin(ellipse.x * 37.0 + ellipse.y * 18.0 + seed)
+                           + 0.062 * cos(ellipse.x * 17.0 - ellipse.y * 11.0);
+        float mask = 1.0 - smoothstep(border - 0.045, border + 0.013, radius);
+        float glint = exp(-36.0 * abs(radius - border + 0.037));
+        float ripples = pow(0.5 + 0.5 * cos(52.0 * radius - 18.0 * age + 0.95 * sin(ellipse.x * 15.0)), 12.0);
+        ripples *= exp(-0.9 * age) * smoothstep(0.11, 0.46, radius) * (1.0 - smoothstep(0.76, 1.0, radius));
+        float streak = exp(-23.0 * abs(ellipse.y + 0.19 + 0.28 * sin(ellipse.x * 4.0)));
+        float side = (0.30 + 0.70 * smoothstep(0.02, 0.78, abs(ellipse.y))) * (1.0 - 0.49 * smoothstep(0.1, 1.0, p.x));
+        vec3 color = vec3(0.016, 0.029, 0.041) * (0.72 + 0.34 * sin(ellipse.x * 6.0));
+        color += vec3(0.16, 0.29, 0.42) * side * (0.21 * glint + 0.33 * ripples + 0.10 * streak);
+        float alpha = smoothstep(0.0, 0.35, age) * mask * (0.67 + 0.27 * glint);
+        gl_FragColor = vec4(color, alpha);
+        #include <encodings_fragment>
+      }
+    `
+  });
+  const pool = new THREE.Mesh(new THREE.PlaneGeometry(8.2, 0.58), poolMaterial);
+  pool.position.set(-0.07, FLOOR - 0.012, -3.9);
+  pool.renderOrder = 2;
+  scene.add(pool);
+
+  let intactPose = 0;
+
+  // No frame history is needed: each object is posed directly from the playhead.
+  function renderAt(time) {
+    opticalTime.value = time;
+    updateProjectile(time);
+    const phase = waterPhase(time);
+    intactSkin.mesh.visible = time <= 1.064;
+    upperSkin.mesh.visible = !intactSkin.mesh.visible;
+    lowerSkin.mesh.visible = upperSkin.mesh.visible && time < 2.07;
+    core.mesh.visible = time > 1.064 && time < 5.96;
+    pool.visible = time > 5.41;
+
+    if (intactSkin.mesh.visible) {
+      const pose = time > CONTACT ? time : 0;
+      if (intactPose !== pose) {
+        deformEnvelope(intactSkin, phase);
+        intactPose = pose;
+      }
+    }
+    if (upperSkin.mesh.visible) retractSkin(upperSkin, phase, true);
+    if (lowerSkin.mesh.visible) {
+      looseLatex.uniforms.opacity.value = 1 - smooth(1.77, 2.07, time);
+      retractSkin(lowerSkin, phase, false);
+    }
+    if (core.mesh.visible) deformEnvelope(core, phase);
+    updateTunnel(time);
+    updateSpray(time);
+    updateBubbles(time);
+    updateSheets(time);
+    updateStrips(time);
+
+    renderer.setRenderTarget(capture);
+    if (time > 1.064 && time < 5.15) {
+      camera.layers.set(1);
+      renderer.render(scene, camera);
+      camera.layers.set(0);
+    } else {
+      renderer.clear();
+    }
+    renderer.setRenderTarget(null);
+    renderer.render(scene, camera);
+  }
+
+  function sizeStage() {
+    const aspect = window.innerWidth / window.innerHeight;
+    const halfHeight = Math.max(3.37, 5.12 / aspect);
+    camera.left = -halfHeight * aspect;
+    camera.right = halfHeight * aspect;
+    camera.top = halfHeight;
+    camera.bottom = -halfHeight;
+    camera.updateProjectionMatrix();
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+    renderer.setSize(window.innerWidth, window.innerHeight, false);
+    renderer.getDrawingBufferSize(viewport.value);
+    pixelsPerUnit.value = viewport.value.y / (2 * halfHeight);
+    capture.setSize(Math.max(1, Math.round(viewport.value.x * 0.57)),
+                    Math.max(1, Math.round(viewport.value.y * 0.57)));
+  }
+
+  const State = Object.freeze({
+    COUNTDOWN: 'COUNTDOWN',
+    PLAYING: 'PLAYING',
+    PAUSED: 'PAUSED',
+    REFIRE_HOLD: 'REFIRE_HOLD',
+    ENDED: 'ENDED'
+  });
+  const countdown = document.getElementById('countdown');
+  const scrubber = document.getElementById('scrubber');
+  const toggle = document.getElementById('btn-toggle');
+  const play = document.getElementById('icon-play');
+  const pause = document.getElementById('icon-pause');
+  const pills = [...document.querySelectorAll('.speed-pill')];
+
+  let state = State.COUNTDOWN;
+  let simTime = 0;
+  let playbackSpeed = 1;
+  let lastFrame = null;
+  let countdownStart = null;
+  let holdStart = null;
+  let playingAfter = 0;
+
+  function hideCountdown() {
+    countdown.style.display = 'none';
+    countdown.textContent = '';
+  }
+
+  function setState(next) {
+    state = next;
+    if (state !== State.COUNTDOWN) hideCountdown();
+    const canPause = state === State.COUNTDOWN || state === State.REFIRE_HOLD || state === State.PLAYING;
+    play.style.display = canPause ? 'none' : 'block';
+    pause.style.display = canPause ? 'block' : 'none';
+    toggle.setAttribute('aria-label', canPause ? 'Pause' : 'Play');
+  }
+
+  function resetFrame() {
+    simTime = 0;
+    scrubber.value = '0';
+    renderAt(simTime);
+  }
+
+  function tick(now) {
+    const previous = lastFrame ?? now;
+    lastFrame = now;
+
+    if (state === State.COUNTDOWN) {
+      if (countdownStart === null) countdownStart = now;
+      const countdownElapsed = (now - countdownStart) * 0.001;
+      if (countdownElapsed < 3.000) {
+        countdown.style.display = 'block';
+        const digit = String(3 - Math.floor(countdownElapsed));
+        if (countdown.textContent !== digit) countdown.textContent = digit;
+      } else {
+        playingAfter = countdownStart + 3000;
+        setState(State.PLAYING);
+      }
+    } else if (state === State.REFIRE_HOLD) {
+      const holdElapsed = (now - holdStart) * 0.001;
+      if (holdElapsed >= 1.000) {
+        playingAfter = holdStart + 1000;
+        setState(State.PLAYING);
+      }
+    }
+
+    if (state === State.PLAYING) {
+      const dt = clamp((now - Math.max(previous, playingAfter)) * 0.001, 0, 0.1);
+      simTime = Math.min(DURATION, simTime + dt * playbackSpeed);
+      scrubber.value = simTime.toFixed(3);
+      renderAt(simTime);
+      if (simTime >= DURATION) setState(State.ENDED);
+    }
+    requestAnimationFrame(tick);
+  }
+
+  toggle.addEventListener('click', () => {
+    if (state === State.PLAYING || state === State.COUNTDOWN || state === State.REFIRE_HOLD) {
+      setState(State.PAUSED);
+      return;
+    }
+    playingAfter = performance.now();
+    if (state === State.ENDED) resetFrame();
+    setState(State.PLAYING);
+  });
+
+  for (const pill of pills) {
+    pill.addEventListener('click', () => {
+      playbackSpeed = Number(pill.dataset.speed);
+      for (const option of pills) {
+        const active = option === pill;
+        option.classList.toggle('is-active', active);
+        option.setAttribute('aria-checked', String(active));
+      }
+    });
+  }
+
+  scrubber.addEventListener('input', () => {
+    simTime = parseFloat(scrubber.value);
+    setState(State.PAUSED);
+    renderAt(simTime);
+  });
+
+  document.getElementById('btn-refire').addEventListener('click', () => {
+    holdStart = performance.now();
+    setState(State.REFIRE_HOLD);
+    resetFrame();
+  });
+
+  window.addEventListener('resize', () => {
+    sizeStage();
+    renderAt(simTime);
+  });
+
+  hideCountdown();
+  sizeStage();
+  renderAt(0);
+  requestAnimationFrame(tick);
+})();
+</script>
+</body>
+</html>

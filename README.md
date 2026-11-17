@@ -65,8 +65,8 @@ Each benchmark test directory (e.g. [`ballistics/water-balloon/`](ballistics/wat
 
 | Model | Developer Harness | Verification | Wall-Clock | Deliverable |
 | :--- | :--- | :---: | :---: | :---: |
-| **Qwen 4 Max (XHigh) via OpenCode** | OpenCode | **PASS (100%)** | 1593.9s | [`materials/prince-ruperts-drop/qwen-4-max-opencode/`](materials/prince-ruperts-drop/qwen-4-max-opencode/) |
-| **Kimi Code K3.1 Pro (Max)** | Kimi Code | **PASS (100%)** | 2122.7s | [`materials/prince-ruperts-drop/kimi-k3.1-pro/`](materials/prince-ruperts-drop/kimi-k3.1-pro/) |
-| **Qwen 4 Max (Max)** | Qwen Code | **PASS (100%)** | 996.1s | [`materials/prince-ruperts-drop/qwen-4-max/`](materials/prince-ruperts-drop/qwen-4-max/) |
+| **Codex GPT 6.2 Sol (Max)** | Codex CLI | **PASS (100%)** | 1535.8s | [`ballistics/water-balloon/codex-gpt-6.2-sol/`](ballistics/water-balloon/codex-gpt-6.2-sol/) |
+| **Qwen 4 Max (XHigh) via OpenCode** | OpenCode | **PASS (100%)** | 1528.3s | [`ballistics/water-balloon/qwen-4-max-opencode/`](ballistics/water-balloon/qwen-4-max-opencode/) |
+| **Claude Sonnet 5.5 (Max)** | Claude Code | **PASS (100%)** | 4205.5s | [`ballistics/water-balloon/claude-sonnet-5.5/`](ballistics/water-balloon/claude-sonnet-5.5/) |
 
-*Showing the 3 most recent benchmark deliverables. See [`TELEMETRY.md`](materials/prince-ruperts-drop/TELEMETRY.md) for the complete multi-model leaderboard, full token metrics, cache ratios, and runtime verification logs.*
+*Showing the 3 most recent benchmark deliverables. See [`TELEMETRY.md`](ballistics/water-balloon/TELEMETRY.md) for the complete multi-model leaderboard, full token metrics, cache ratios, and runtime verification logs.*
