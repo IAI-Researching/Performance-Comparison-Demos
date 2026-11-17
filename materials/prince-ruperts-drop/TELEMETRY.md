@@ -1,4 +1,4 @@
-# Autonomous Pass@1 Benchmark Telemetry: materials/prince-ruperts-drop
+# Autonomous Benchmark Telemetry (first passing attempt): materials/prince-ruperts-drop
 
 > Autonomous evaluation under hardened Unobstructed Viewport specification enforcement.
 
@@ -28,5 +28,6 @@
 ## 🔬 Methodology & Enforced Constraints
 
 - **Benchmark ID**: `materials/prince-ruperts-drop`
-- **Protocol**: Autonomous Pass@1 (Zero human-in-the-loop, isolated ephemeral sandbox).
+- **Protocol**: Autonomous, first passing attempt (zero human-in-the-loop, sandboxed). Rows are tagged v1.0 or v1.1 in `telemetry.json` (`protocol_version`); v1.0 and v1.1 rows are not strictly comparable, see ../../PROTOCOL.md. Failed attempts are re-run, not published.
 - **Unobstructed Viewport Constraint**: Strict negative constraint forbidding extraneous headers, mastheads, annotation overlays, and phase description panels. Viewport contains exclusively Three.js canvas, center countdown, and bottom dock.
+- **Mixed protocol versions**: this table contains v1.0 and v1.1 rows. v1.1 rows: Qwen 4 Max (Max), Qwen 4 Max (XHigh) via OpenCode, Kimi Code K3.1 Pro (Max). All other rows are v1.0 (shared host, some runs overlapped; wall-clock approximate). Harness versions and effort levels vary between rows; see ../../PROTOCOL.md.

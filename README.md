@@ -8,7 +8,7 @@
 
 This repository houses reproducible evaluations comparing frontier AI models across their native developer harnesses—or dedicated agentic orchestrators when no first-party CLI exists—on demanding single-file 3D applications and physics simulations. Specific harness versions and runtime environments are dynamically captured at execution time and preserved in the benchmark telemetry.
 
-### The Autonomous Pass@1 Benchmark Protocol
+### The Autonomous Benchmark Protocol (first passing attempt)
 
 To measure real-world engineering utility without artificial constraints or human bias:
 
@@ -49,7 +49,7 @@ To measure real-world engineering utility without artificial constraints or huma
 
 ## 🛡️ Reproducibility Standard
 
-> **Protocol versions:** results are only directly comparable within one protocol version. See [`PROTOCOL.md`](PROTOCOL.md) for the version history and lessons learned from running benchmarks in parallel on a shared host.
+> **Protocol versions:** results are only directly comparable within one protocol version. Each row of `telemetry.json` carries a `protocol_version`; Water Balloon and Prince Rupert's Drop contain both v1.0 and v1.1 rows. Effort level and harness version also vary between some rows (recorded per row; see the confounds list in [`PROTOCOL.md`](PROTOCOL.md) and the version history and lessons learned from running benchmarks in parallel on a shared host.
 
 Each benchmark test directory (e.g. [`ballistics/water-balloon/`](ballistics/water-balloon/), [`materials/prince-ruperts-drop/`](materials/prince-ruperts-drop/)) contains:
 - `prompt.md`: Canonical, immutable prompt specification.

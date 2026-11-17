@@ -11,7 +11,7 @@
     "harness_name": "Codex CLI",
     "harness_version": "0.167.1",
     "harness": "Codex CLI 0.167.1",
-    "protocol": "Autonomous Pass@1 (Hardened / Unobstructed Viewport)",
+    "protocol": "Autonomous, first passing attempt (Hardened / Unobstructed Viewport)",
     "status": "COMPLETED",
     "wall_clock_s": 1166.95,
     "agent_turns": 42,
@@ -29,7 +29,9 @@
     "eval_score": 100.0,
     "eval_passed_checks": 18,
     "eval_total_checks": 18,
-    "eval_verdict": "PASS"
+    "eval_verdict": "PASS",
+    "protocol_version": "v1.0",
+    "started_at": "2026-11-13T02:05:21.010745+00:00"
   },
   {
     "benchmark": "materials/prince-ruperts-drop",
@@ -43,7 +45,7 @@
     "harness_name": "Codex CLI",
     "harness_version": "0.167.1",
     "harness": "Codex CLI 0.167.1",
-    "protocol": "Autonomous Pass@1 (Hardened / Unobstructed Viewport)",
+    "protocol": "Autonomous, first passing attempt (Hardened / Unobstructed Viewport)",
     "status": "COMPLETED",
     "wall_clock_s": 1361.01,
     "agent_turns": 42,
@@ -61,7 +63,9 @@
     "eval_score": 100.0,
     "eval_passed_checks": 18,
     "eval_total_checks": 18,
-    "eval_verdict": "PASS"
+    "eval_verdict": "PASS",
+    "protocol_version": "v1.0",
+    "started_at": "2026-11-13T01:32:17.267846+00:00"
   },
   {
     "benchmark": "materials/prince-ruperts-drop",
@@ -75,7 +79,7 @@
     "harness_name": "Codex CLI",
     "harness_version": "0.168.0",
     "harness": "Codex CLI 0.168.0",
-    "protocol": "Autonomous Pass@1 (Hardened / Unobstructed Viewport)",
+    "protocol": "Autonomous, first passing attempt (Hardened / Unobstructed Viewport)",
     "status": "COMPLETED",
     "wall_clock_s": 1332.93,
     "agent_turns": 68,
@@ -93,7 +97,9 @@
     "eval_score": 100.0,
     "eval_passed_checks": 18,
     "eval_total_checks": 18,
-    "eval_verdict": "PASS"
+    "eval_verdict": "PASS",
+    "protocol_version": "v1.0",
+    "started_at": "2026-11-13T19:03:02.601787+00:00"
   },
   {
     "benchmark": "materials/prince-ruperts-drop",
@@ -107,7 +113,7 @@
     "harness_name": "Claude Code",
     "harness_version": "2.1.322",
     "harness": "Claude Code 2.1.322",
-    "protocol": "Autonomous Pass@1 (Hardened / Unobstructed Viewport)",
+    "protocol": "Autonomous, first passing attempt (Hardened / Unobstructed Viewport)",
     "status": "COMPLETED",
     "wall_clock_s": 4621.85,
     "agent_turns": 134,
@@ -125,7 +131,9 @@
     "eval_score": 100.0,
     "eval_passed_checks": 18,
     "eval_total_checks": 18,
-    "eval_verdict": "PASS"
+    "eval_verdict": "PASS",
+    "protocol_version": "v1.0",
+    "started_at": "2026-11-13T15:06:55.647396+00:00"
   },
   {
     "benchmark": "materials/prince-ruperts-drop",
@@ -139,7 +147,7 @@
     "harness_name": "Claude Code",
     "harness_version": "2.1.322",
     "harness": "Claude Code 2.1.322",
-    "protocol": "Autonomous Pass@1 (Hardened / Unobstructed Viewport)",
+    "protocol": "Autonomous, first passing attempt (Hardened / Unobstructed Viewport)",
     "status": "COMPLETED",
     "wall_clock_s": 5467.28,
     "agent_turns": 166,
@@ -157,7 +165,9 @@
     "eval_score": 100.0,
     "eval_passed_checks": 18,
     "eval_total_checks": 18,
-    "eval_verdict": "PASS"
+    "eval_verdict": "PASS",
+    "protocol_version": "v1.0",
+    "started_at": "2026-11-13T05:13:17.979374+00:00"
   },
   {
     "benchmark": "materials/prince-ruperts-drop",
@@ -171,7 +181,7 @@
     "harness_name": "Claude Code",
     "harness_version": "2.1.322",
     "harness": "Claude Code 2.1.322",
-    "protocol": "Autonomous Pass@1 (Hardened / Unobstructed Viewport)",
+    "protocol": "Autonomous, first passing attempt (Hardened / Unobstructed Viewport)",
     "status": "COMPLETED",
     "wall_clock_s": 2981.05,
     "agent_turns": 92,
@@ -189,7 +199,9 @@
     "eval_score": 100.0,
     "eval_passed_checks": 18,
     "eval_total_checks": 18,
-    "eval_verdict": "PASS"
+    "eval_verdict": "PASS",
+    "protocol_version": "v1.0",
+    "started_at": "2026-11-13T14:14:51.913270+00:00"
   },
   {
     "benchmark": "materials/prince-ruperts-drop",
@@ -203,7 +215,7 @@
     "harness_name": "Claude Code",
     "harness_version": "2.1.322",
     "harness": "Claude Code 2.1.322",
-    "protocol": "Autonomous Pass@1 (Hardened / Unobstructed Viewport)",
+    "protocol": "Autonomous, first passing attempt (Hardened / Unobstructed Viewport)",
     "status": "COMPLETED",
     "wall_clock_s": 5065.94,
     "agent_turns": 233,
@@ -221,7 +233,9 @@
     "eval_score": 100.0,
     "eval_passed_checks": 18,
     "eval_total_checks": 18,
-    "eval_verdict": "PASS"
+    "eval_verdict": "PASS",
+    "protocol_version": "v1.0",
+    "started_at": "2026-11-13T16:52:38.546389+00:00"
   },
   {
     "benchmark": "materials/prince-ruperts-drop",
@@ -235,7 +249,7 @@
     "harness_name": "Claude Code",
     "harness_version": "2.1.322",
     "harness": "Claude Code 2.1.322",
-    "protocol": "Autonomous Pass@1 (Hardened / Unobstructed Viewport)",
+    "protocol": "Autonomous, first passing attempt (Hardened / Unobstructed Viewport)",
     "status": "COMPLETED",
     "wall_clock_s": 1942.21,
     "agent_turns": 99,
@@ -253,7 +267,9 @@
     "eval_score": 100.0,
     "eval_passed_checks": 18,
     "eval_total_checks": 18,
-    "eval_verdict": "PASS"
+    "eval_verdict": "PASS",
+    "protocol_version": "v1.0",
+    "started_at": "2026-11-13T17:58:18.230790+00:00"
   },
   {
     "benchmark": "materials/prince-ruperts-drop",
@@ -267,7 +283,7 @@
     "harness_name": "Antigravity CLI",
     "harness_version": "1.5.8",
     "harness": "Antigravity CLI 1.5.8",
-    "protocol": "Autonomous Pass@1 (Hardened / Unobstructed Viewport)",
+    "protocol": "Autonomous, first passing attempt (Hardened / Unobstructed Viewport)",
     "status": "COMPLETED",
     "wall_clock_s": 997.92,
     "agent_turns": 17,
@@ -285,7 +301,9 @@
     "eval_score": 100.0,
     "eval_passed_checks": 18,
     "eval_total_checks": 18,
-    "eval_verdict": "PASS"
+    "eval_verdict": "PASS",
+    "protocol_version": "v1.0",
+    "started_at": "2026-11-14T04:56:13.092449+00:00"
   },
   {
     "benchmark": "materials/prince-ruperts-drop",
@@ -299,7 +317,7 @@
     "harness_name": "Antigravity CLI",
     "harness_version": "1.5.8",
     "harness": "Antigravity CLI 1.5.8",
-    "protocol": "Autonomous Pass@1 (Hardened / Unobstructed Viewport)",
+    "protocol": "Autonomous, first passing attempt (Hardened / Unobstructed Viewport)",
     "status": "COMPLETED",
     "wall_clock_s": 1999.53,
     "agent_turns": 45,
@@ -317,7 +335,9 @@
     "eval_score": 100.0,
     "eval_passed_checks": 18,
     "eval_total_checks": 18,
-    "eval_verdict": "PASS"
+    "eval_verdict": "PASS",
+    "protocol_version": "v1.0",
+    "started_at": "2026-11-14T05:13:01.169407+00:00"
   },
   {
     "benchmark": "materials/prince-ruperts-drop",
@@ -331,7 +351,7 @@
     "harness_name": "Antigravity CLI",
     "harness_version": "1.5.8",
     "harness": "Antigravity CLI 1.5.8",
-    "protocol": "Autonomous Pass@1 (Hardened / Unobstructed Viewport)",
+    "protocol": "Autonomous, first passing attempt (Hardened / Unobstructed Viewport)",
     "status": "COMPLETED",
     "wall_clock_s": 644.38,
     "agent_turns": 37,
@@ -349,7 +369,9 @@
     "eval_score": 100.0,
     "eval_passed_checks": 18,
     "eval_total_checks": 18,
-    "eval_verdict": "PASS"
+    "eval_verdict": "PASS",
+    "protocol_version": "v1.0",
+    "started_at": "2026-11-14T05:46:32.165582+00:00"
   },
   {
     "benchmark": "materials/prince-ruperts-drop",
@@ -363,7 +385,7 @@
     "harness_name": "Qwen Code",
     "harness_version": "1.0.0-preview.1",
     "harness": "Qwen Code 1.0.0-preview.1",
-    "protocol": "Autonomous Pass@1 (Hardened / Unobstructed Viewport)",
+    "protocol": "Autonomous, first passing attempt (Hardened / Unobstructed Viewport)",
     "status": "COMPLETED",
     "wall_clock_s": 996.13,
     "agent_turns": 22,
@@ -381,7 +403,9 @@
     "eval_score": 100.0,
     "eval_passed_checks": 18,
     "eval_total_checks": 18,
-    "eval_verdict": "PASS"
+    "eval_verdict": "PASS",
+    "protocol_version": "v1.1",
+    "started_at": "2026-11-16T20:28:47.950315+00:00"
   },
   {
     "benchmark": "materials/prince-ruperts-drop",
@@ -395,7 +419,7 @@
     "harness_name": "OpenCode",
     "harness_version": "2.3.0",
     "harness": "OpenCode 2.3.0",
-    "protocol": "Autonomous Pass@1 (Hardened / Unobstructed Viewport)",
+    "protocol": "Autonomous, first passing attempt (Hardened / Unobstructed Viewport)",
     "status": "COMPLETED",
     "wall_clock_s": 1593.91,
     "agent_turns": 29,
@@ -413,7 +437,9 @@
     "eval_score": 100.0,
     "eval_passed_checks": 18,
     "eval_total_checks": 18,
-    "eval_verdict": "PASS"
+    "eval_verdict": "PASS",
+    "protocol_version": "v1.1",
+    "started_at": "2026-11-17T16:53:56.216122+00:00"
   },
   {
     "benchmark": "materials/prince-ruperts-drop",
@@ -427,7 +453,7 @@
     "harness_name": "Kimi Code",
     "harness_version": "2.6.0",
     "harness": "Kimi Code 2.6.0",
-    "protocol": "Autonomous Pass@1 (Hardened / Unobstructed Viewport)",
+    "protocol": "Autonomous, first passing attempt (Hardened / Unobstructed Viewport)",
     "status": "COMPLETED",
     "wall_clock_s": 2122.74,
     "agent_turns": 2,
@@ -445,6 +471,8 @@
     "eval_score": 100.0,
     "eval_passed_checks": 18,
     "eval_total_checks": 18,
-    "eval_verdict": "PASS"
+    "eval_verdict": "PASS",
+    "protocol_version": "v1.1",
+    "started_at": "2026-11-17T15:25:21.645732+00:00"
   }
 ]

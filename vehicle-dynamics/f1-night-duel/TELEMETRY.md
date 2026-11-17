@@ -1,4 +1,4 @@
-# Autonomous Pass@1 Benchmark Telemetry: vehicle-dynamics/f1-night-duel
+# Autonomous Benchmark Telemetry (first passing attempt): vehicle-dynamics/f1-night-duel
 
 > Autonomous evaluation under hardened Unobstructed Viewport specification enforcement.
 
@@ -30,5 +30,5 @@
 ## 🔬 Methodology & Enforced Constraints
 
 - **Benchmark ID**: `vehicle-dynamics/f1-night-duel`
-- **Protocol**: Autonomous Pass@1 (Zero human-in-the-loop, isolated ephemeral sandbox).
+- **Protocol**: Autonomous, first passing attempt (zero human-in-the-loop, sandboxed). Rows are tagged v1.0 or v1.1 in `telemetry.json` (`protocol_version`); v1.0 and v1.1 rows are not strictly comparable, see ../../PROTOCOL.md. Failed attempts are re-run, not published.
 - **Unobstructed Viewport Constraint**: Strict negative constraint forbidding extraneous headers, mastheads, annotation overlays, and phase description panels. Viewport contains exclusively Three.js canvas, center countdown, and bottom dock.

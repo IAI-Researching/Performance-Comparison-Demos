@@ -11,7 +11,7 @@
     "harness_name": "Codex CLI",
     "harness_version": "0.167.1",
     "harness": "Codex CLI 0.167.1",
-    "protocol": "Autonomous Pass@1 (Hardened / Unobstructed Viewport)",
+    "protocol": "Autonomous, first passing attempt (Hardened / Unobstructed Viewport)",
     "status": "COMPLETED",
     "wall_clock_s": 861.61,
     "agent_turns": 38,
@@ -29,7 +29,9 @@
     "eval_score": 100.0,
     "eval_passed_checks": 18,
     "eval_total_checks": 18,
-    "eval_verdict": "PASS"
+    "eval_verdict": "PASS",
+    "protocol_version": "v1.0",
+    "started_at": "2026-11-11T22:49:03.670330+00:00"
   },
   {
     "benchmark": "ballistics/water-balloon",
@@ -43,7 +45,7 @@
     "harness_name": "Codex CLI",
     "harness_version": "0.167.1",
     "harness": "Codex CLI 0.167.1",
-    "protocol": "Autonomous Pass@1 (Hardened / Unobstructed Viewport)",
+    "protocol": "Autonomous, first passing attempt (Hardened / Unobstructed Viewport)",
     "status": "COMPLETED",
     "wall_clock_s": 1250.38,
     "agent_turns": 26,
@@ -61,7 +63,9 @@
     "eval_score": 100.0,
     "eval_passed_checks": 18,
     "eval_total_checks": 18,
-    "eval_verdict": "PASS"
+    "eval_verdict": "PASS",
+    "protocol_version": "v1.0",
+    "started_at": "2026-11-11T22:49:07.264272+00:00"
   },
   {
     "benchmark": "ballistics/water-balloon",
@@ -75,7 +79,7 @@
     "harness_name": "Codex CLI",
     "harness_version": "0.169.0",
     "harness": "Codex CLI 0.169.0",
-    "protocol": "Autonomous Pass@1 (Hardened / Unobstructed Viewport)",
+    "protocol": "Autonomous, first passing attempt (Hardened / Unobstructed Viewport)",
     "status": "COMPLETED",
     "wall_clock_s": 858.81,
     "agent_turns": 36,
@@ -93,7 +97,9 @@
     "eval_score": 100.0,
     "eval_passed_checks": 18,
     "eval_total_checks": 18,
-    "eval_verdict": "PASS"
+    "eval_verdict": "PASS",
+    "protocol_version": "v1.1",
+    "started_at": "2026-11-16T17:27:34.919955+00:00"
   },
   {
     "benchmark": "ballistics/water-balloon",
@@ -107,7 +113,7 @@
     "harness_name": "Claude Code",
     "harness_version": "2.1.322",
     "harness": "Claude Code 2.1.322",
-    "protocol": "Autonomous Pass@1 (Hardened / Unobstructed Viewport)",
+    "protocol": "Autonomous, first passing attempt (Hardened / Unobstructed Viewport)",
     "status": "COMPLETED",
     "wall_clock_s": 4423.06,
     "agent_turns": 51,
@@ -125,7 +131,9 @@
     "eval_score": 100.0,
     "eval_passed_checks": 18,
     "eval_total_checks": 18,
-    "eval_verdict": "PASS"
+    "eval_verdict": "PASS",
+    "protocol_version": "v1.0",
+    "started_at": "2026-11-11T19:57:53.719810+00:00"
   },
   {
     "benchmark": "ballistics/water-balloon",
@@ -139,7 +147,7 @@
     "harness_name": "Claude Code",
     "harness_version": "2.1.322",
     "harness": "Claude Code 2.1.322",
-    "protocol": "Autonomous Pass@1 (Hardened / Unobstructed Viewport)",
+    "protocol": "Autonomous, first passing attempt (Hardened / Unobstructed Viewport)",
     "status": "COMPLETED",
     "wall_clock_s": 5835.33,
     "agent_turns": 282,
@@ -157,7 +165,9 @@
     "eval_score": 100.0,
     "eval_passed_checks": 18,
     "eval_total_checks": 18,
-    "eval_verdict": "PASS"
+    "eval_verdict": "PASS",
+    "protocol_version": "v1.0",
+    "started_at": "2026-11-11T21:16:25.750240+00:00"
   },
   {
     "benchmark": "ballistics/water-balloon",
@@ -171,7 +181,7 @@
     "harness_name": "Claude Code",
     "harness_version": "2.1.322",
     "harness": "Claude Code 2.1.322",
-    "protocol": "Autonomous Pass@1 (Hardened / Unobstructed Viewport)",
+    "protocol": "Autonomous, first passing attempt (Hardened / Unobstructed Viewport)",
     "status": "COMPLETED",
     "wall_clock_s": 3667.22,
     "agent_turns": 85,
@@ -189,7 +199,9 @@
     "eval_score": 100.0,
     "eval_passed_checks": 18,
     "eval_total_checks": 18,
-    "eval_verdict": "PASS"
+    "eval_verdict": "PASS",
+    "protocol_version": "v1.0",
+    "started_at": "2026-11-13T00:15:17.473299+00:00"
   },
   {
     "benchmark": "ballistics/water-balloon",
@@ -203,7 +215,7 @@
     "harness_name": "Claude Code",
     "harness_version": "2.1.325",
     "harness": "Claude Code 2.1.325",
-    "protocol": "Autonomous Pass@1 (Hardened / Unobstructed Viewport)",
+    "protocol": "Autonomous, first passing attempt (Hardened / Unobstructed Viewport)",
     "status": "COMPLETED",
     "wall_clock_s": 4205.53,
     "agent_turns": 264,
@@ -221,7 +233,9 @@
     "eval_score": 100.0,
     "eval_passed_checks": 18,
     "eval_total_checks": 18,
-    "eval_verdict": "PASS"
+    "eval_verdict": "PASS",
+    "protocol_version": "v1.1",
+    "started_at": "2026-11-17T03:53:00.072736+00:00"
   },
   {
     "benchmark": "ballistics/water-balloon",
@@ -235,7 +249,7 @@
     "harness_name": "Antigravity CLI",
     "harness_version": "1.5.6",
     "harness": "Antigravity CLI 1.5.6",
-    "protocol": "Autonomous Pass@1 (Hardened / Unobstructed Viewport)",
+    "protocol": "Autonomous, first passing attempt (Hardened / Unobstructed Viewport)",
     "status": "COMPLETED",
     "wall_clock_s": 1661.1,
     "agent_turns": 16,
@@ -253,7 +267,9 @@
     "eval_score": 100.0,
     "eval_passed_checks": 18,
     "eval_total_checks": 18,
-    "eval_verdict": "PASS"
+    "eval_verdict": "PASS",
+    "protocol_version": "v1.0",
+    "started_at": "2026-11-11T19:30:45.899169+00:00"
   },
   {
     "benchmark": "ballistics/water-balloon",
@@ -267,7 +283,7 @@
     "harness_name": "Antigravity CLI",
     "harness_version": "1.5.6",
     "harness": "Antigravity CLI 1.5.6",
-    "protocol": "Autonomous Pass@1 (Hardened / Unobstructed Viewport)",
+    "protocol": "Autonomous, first passing attempt (Hardened / Unobstructed Viewport)",
     "status": "COMPLETED",
     "wall_clock_s": 1559.03,
     "agent_turns": 26,
@@ -285,7 +301,9 @@
     "eval_score": 100.0,
     "eval_passed_checks": 18,
     "eval_total_checks": 18,
-    "eval_verdict": "PASS"
+    "eval_verdict": "PASS",
+    "protocol_version": "v1.0",
+    "started_at": "2026-11-11T21:16:23.383189+00:00"
   },
   {
     "benchmark": "ballistics/water-balloon",
@@ -299,7 +317,7 @@
     "harness_name": "Antigravity CLI",
     "harness_version": "1.5.7",
     "harness": "Antigravity CLI 1.5.7",
-    "protocol": "Autonomous Pass@1 (Hardened / Unobstructed Viewport)",
+    "protocol": "Autonomous, first passing attempt (Hardened / Unobstructed Viewport)",
     "status": "COMPLETED",
     "wall_clock_s": 497.32,
     "agent_turns": 29,
@@ -317,7 +335,9 @@
     "eval_score": 100.0,
     "eval_passed_checks": 18,
     "eval_total_checks": 18,
-    "eval_verdict": "PASS"
+    "eval_verdict": "PASS",
+    "protocol_version": "v1.0",
+    "started_at": "2026-11-12T23:48:24.237449+00:00"
   },
   {
     "benchmark": "ballistics/water-balloon",
@@ -331,7 +351,7 @@
     "harness_name": "Qwen Code",
     "harness_version": "1.0.0-preview.1",
     "harness": "Qwen Code 1.0.0-preview.1",
-    "protocol": "Autonomous Pass@1 (Hardened / Unobstructed Viewport)",
+    "protocol": "Autonomous, first passing attempt (Hardened / Unobstructed Viewport)",
     "status": "COMPLETED",
     "wall_clock_s": 2833.94,
     "agent_turns": 94,
@@ -349,7 +369,9 @@
     "eval_score": 100.0,
     "eval_passed_checks": 18,
     "eval_total_checks": 18,
-    "eval_verdict": "PASS"
+    "eval_verdict": "PASS",
+    "protocol_version": "v1.1",
+    "started_at": "2026-11-16T19:40:45.869537+00:00"
   },
   {
     "benchmark": "ballistics/water-balloon",
@@ -363,7 +385,7 @@
     "harness_name": "OpenCode",
     "harness_version": "2.3.0",
     "harness": "OpenCode 2.3.0",
-    "protocol": "Autonomous Pass@1 (Hardened / Unobstructed Viewport)",
+    "protocol": "Autonomous, first passing attempt (Hardened / Unobstructed Viewport)",
     "status": "COMPLETED",
     "wall_clock_s": 1528.31,
     "agent_turns": 21,
@@ -381,7 +403,9 @@
     "eval_score": 100.0,
     "eval_passed_checks": 18,
     "eval_total_checks": 18,
-    "eval_verdict": "PASS"
+    "eval_verdict": "PASS",
+    "protocol_version": "v1.1",
+    "started_at": "2026-11-17T16:27:56.871351+00:00"
   },
   {
     "benchmark": "ballistics/water-balloon",
@@ -395,7 +419,7 @@
     "harness_name": "Kimi Code",
     "harness_version": "2.5.3",
     "harness": "Kimi Code 2.5.3",
-    "protocol": "Autonomous Pass@1 (Hardened / Unobstructed Viewport)",
+    "protocol": "Autonomous, first passing attempt (Hardened / Unobstructed Viewport)",
     "status": "COMPLETED",
     "wall_clock_s": 785.5,
     "agent_turns": 1,
@@ -413,7 +437,9 @@
     "eval_score": 100.0,
     "eval_passed_checks": 18,
     "eval_total_checks": 18,
-    "eval_verdict": "PASS"
+    "eval_verdict": "PASS",
+    "protocol_version": "v1.0",
+    "started_at": "2026-11-11T21:29:32.293179+00:00"
   },
   {
     "benchmark": "ballistics/water-balloon",
@@ -427,7 +453,7 @@
     "harness_name": "OpenCode",
     "harness_version": "2.2.7",
     "harness": "OpenCode 2.2.7",
-    "protocol": "Autonomous Pass@1 (Hardened / Unobstructed Viewport)",
+    "protocol": "Autonomous, first passing attempt (Hardened / Unobstructed Viewport)",
     "status": "COMPLETED",
     "wall_clock_s": 1058.02,
     "agent_turns": 15,
@@ -445,7 +471,9 @@
     "eval_score": 100.0,
     "eval_passed_checks": 18,
     "eval_total_checks": 18,
-    "eval_verdict": "PASS"
+    "eval_verdict": "PASS",
+    "protocol_version": "v1.0",
+    "started_at": "2026-11-11T23:12:28.985324+00:00"
   },
   {
     "benchmark": "ballistics/water-balloon",
@@ -459,7 +487,7 @@
     "harness_name": "OpenCode",
     "harness_version": "2.2.7",
     "harness": "OpenCode 2.2.7",
-    "protocol": "Autonomous Pass@1 (Hardened / Unobstructed Viewport)",
+    "protocol": "Autonomous, first passing attempt (Hardened / Unobstructed Viewport)",
     "status": "COMPLETED",
     "wall_clock_s": 613.16,
     "agent_turns": 7,
@@ -477,7 +505,9 @@
     "eval_score": 100.0,
     "eval_passed_checks": 18,
     "eval_total_checks": 18,
-    "eval_verdict": "PASS"
+    "eval_verdict": "PASS",
+    "protocol_version": "v1.0",
+    "started_at": "2026-11-11T21:04:09.761571+00:00"
   },
   {
     "benchmark": "ballistics/water-balloon",
@@ -491,7 +521,7 @@
     "harness_name": "MiniMax Code",
     "harness_version": "0.7.4",
     "harness": "MiniMax Code 0.7.4",
-    "protocol": "Autonomous Pass@1 (Hardened / Unobstructed Viewport)",
+    "protocol": "Autonomous, first passing attempt (Hardened / Unobstructed Viewport)",
     "status": "COMPLETED",
     "wall_clock_s": 4078.64,
     "agent_turns": 1,
@@ -509,6 +539,8 @@
     "eval_score": 100.0,
     "eval_passed_checks": 18,
     "eval_total_checks": 18,
-    "eval_verdict": "PASS"
+    "eval_verdict": "PASS",
+    "protocol_version": "v1.0",
+    "started_at": "2026-11-13T00:43:27.871203+00:00"
   }
 ]

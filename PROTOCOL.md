@@ -4,9 +4,19 @@ This file records which version of the execution protocol produced each set of r
 
 | Version | Name | Status | Applies to |
 | :--- | :--- | :--- | :--- |
-| **v1.0** | Shared-Host Seatbelt | Retired | [`ballistics/water-balloon`](ballistics/water-balloon/), [`materials/prince-ruperts-drop`](materials/prince-ruperts-drop/) (runs from 2026-11-11 to 2026-11-14) |
-| **v1.1** | Shared-Host Seatbelt, all harnesses enforced | Current | [`vehicle-dynamics/f1-night-duel`](vehicle-dynamics/f1-night-duel/) (introduced in stages during the first round; see below) |
+| **v1.0** | Shared-Host Seatbelt | Retired | [`ballistics/water-balloon`](ballistics/water-balloon/), [`materials/prince-ruperts-drop`](materials/prince-ruperts-drop/): runs started before 2026-11-14 06:31 UTC (12 and 11 published rows) |
+| **v1.1** | Shared-Host Seatbelt, all harnesses enforced | Current | [`vehicle-dynamics/f1-night-duel`](vehicle-dynamics/f1-night-duel/) (introduced in stages during the first round; see below), plus every water-balloon and prince-ruperts-drop run started on or after 2026-11-14 06:31 UTC (4 and 3 rows) |
 | **v2.0** | Isolated, one run per environment | Planned | Future benchmarks |
+
+**Mixed tables.** Water Balloon and Prince Rupert's Drop therefore contain both v1.0 and v1.1 rows. Each row's `protocol_version` is recorded in `telemetry.json` (backfilled 2026-11-17 from `started_at`; the v1.0/v1.1 boundary is the start of the first F1 run). Compare only rows with the same `protocol_version`, and read wall-clock across versions as approximate. The v1.0 rows have not been re-run under v1.1.
+
+**Known confounds inside a benchmark** (not protocol differences, but they limit head-to-head reading):
+
+- *Reasoning effort differs by model.* Gemini 4 Argon/Carbon and ERNIE ran at High; Gemini 4 Hydrogen and Qwen 4 Max (OpenCode) at XHigh; all others at Max. Effort is recorded per row (`reasoning_effort`).
+- *Harness versions differ within a benchmark* for rows produced before the "same version per round" rule: Water Balloon has Claude Code 2.1.322 and 2.1.325, Codex CLI 0.167.1 and 0.169.0, Antigravity CLI 1.5.6 and 1.5.7; Prince Rupert's Drop has Codex CLI 0.167.1 and 0.168.0. Versions are recorded per row (`harness_version`).
+- *Telemetry columns are only comparable within one harness.* Harnesses count turns, uncached input and cache reads differently (e.g. Kimi Code reports 2 turns; MiniMax Code reports none).
+- *The grader checks the page and player, not the scene.* All 18 checks cover structure, countdown, dock, determinism, network and errors; none verifies scene content (for F1: car colours, finish margin, exposure limits, DRS). 100% means "meets the shell contract". Scene quality is judged by review.
+- *One run per model per benchmark.* Run-to-run variance is not measured.
 
 ---
 
@@ -60,7 +70,7 @@ v1.1 was introduced during the first F1 Night Duel round on 2026-11-14. Its chan
 
 **Known exception: Antigravity web search.** Antigravity CLI's `search_web` tool runs on Google's side and could not be disabled by any available setting. Gemini runs therefore have search available. To keep this auditable, each Gemini run's full step-by-step transcript is appended to its `raw_output.json`, and every `search_web` call is counted and noted in the run's commit message.
 
-**Attempts are recorded from v1.1 on.** Every attempt on a benchmark's final prompt is counted, including ones that failed or were discarded because of the setup, and the table below lists how many attempts each published result took. v1.0 did not record failed attempts, so v1.0 results have no attempt count.
+**Attempts are recorded from v1.1 on, with gaps.** The table below has "not recorded" for runs whose attempt count was not written down when they were published; going forward, record the count in each run's commit message and in `metrics.json`. Every attempt on a benchmark's final prompt is counted, including ones that failed or were discarded because of the setup, and the table below lists how many attempts each published result took. v1.0 did not record failed attempts, so v1.0 results have no attempt count.
 
 **F1 Night Duel round, conditions and attempts per published run**
 
@@ -72,8 +82,11 @@ v1.1 was introduced during the first F1 Night Duel round on 2026-11-14. Its chan
 | Kimi Code K3.1 Pro | 15:30 | 2 | Stage B. Clean homes and web tools off for Kimi, DeepSeek and Antigravity. The shared Claude temp area was still reachable. Attempt 1 was cut off when the orchestrating session ended. |
 | Gemini 4 Argon | 16:53 | 1 | Stage B. Transcript appended; `search_web` calls: 0. |
 | Gemini 4 Carbon | 17:18 | 1 | Stage C, full v1.1. `search_web` calls: 0. |
-| Gemini 4 Hydrogen | pending | — | Attempt 1 (16:38, Stage B) failed verification: a page error stopped playback. To be re-run. |
-| MiniMax M3.1 Flash, Claude Fable 5.1 | pending | — | Stage C. |
+| Claude Fable 5.1 | 18:07 | not recorded | Stage C, full v1.1. |
+| Claude Fable 5.2 | 19:09 | not recorded | Stage C. Longest run before the timeout was removed (96 min; never triggered). |
+| Gemini 4 Hydrogen | 21:55 | 2 | Stage C. Attempt 1 (16:38, Stage B) failed verification: a page error stopped playback. Attempt 2 published. |
+| MiniMax M3.1 Flash | 23:42 | not recorded | Stage C. |
+| Claude Haiku 5.5, Claude Opus 5.5, Claude Sonnet 5.5, ERNIE 5.5 Flash Preview, Qwen 4 Max | 01:56, 04:10, 05:34, 08:53, 20:45 | not recorded | Full v1.1. Published after this table was last updated; attempt counts were not written down at the time and cannot be reconstructed from the repository. |
 
 Still shared with v1.0: one machine and one user account. Agents can still list and stop other processes on the machine. That is addressed in v2.0.
 
