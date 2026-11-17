@@ -65,8 +65,8 @@ Each benchmark test directory (e.g. [`ballistics/water-balloon/`](ballistics/wat
 
 | Model | Developer Harness | Verification | Wall-Clock | Deliverable |
 | :--- | :--- | :---: | :---: | :---: |
-| **Claude Sonnet 5.5 (Max)** | Claude Code | **PASS (100%)** | 4205.5s | [`ballistics/water-balloon/claude-sonnet-5.5/`](ballistics/water-balloon/claude-sonnet-5.5/) |
-| **Qwen 4 Max (Max)** | Qwen Code | **PASS (100%)** | 2833.9s | [`ballistics/water-balloon/qwen-4-max/`](ballistics/water-balloon/qwen-4-max/) |
-| **Codex GPT 6.1 Terra (Max)** | Codex CLI | **PASS (100%)** | 858.8s | [`ballistics/water-balloon/codex-gpt-6.1-terra/`](ballistics/water-balloon/codex-gpt-6.1-terra/) |
+| **Kimi Code K3.1 Pro (Max)** | Kimi Code | **PASS (100%)** | 2122.7s | [`materials/prince-ruperts-drop/kimi-k3.1-pro/`](materials/prince-ruperts-drop/kimi-k3.1-pro/) |
+| **Qwen 4 Max (Max)** | Qwen Code | **PASS (100%)** | 996.1s | [`materials/prince-ruperts-drop/qwen-4-max/`](materials/prince-ruperts-drop/qwen-4-max/) |
+| **Gemini 4 Hydrogen (XHigh)** | Antigravity CLI | **PASS (100%)** | 644.4s | [`materials/prince-ruperts-drop/gemini-4-hydrogen/`](materials/prince-ruperts-drop/gemini-4-hydrogen/) |
 
-*Showing the 3 most recent benchmark deliverables. See [`TELEMETRY.md`](ballistics/water-balloon/TELEMETRY.md) for the complete multi-model leaderboard, full token metrics, cache ratios, and runtime verification logs.*
+*Showing the 3 most recent benchmark deliverables. See [`TELEMETRY.md`](materials/prince-ruperts-drop/TELEMETRY.md) for the complete multi-model leaderboard, full token metrics, cache ratios, and runtime verification logs.*
