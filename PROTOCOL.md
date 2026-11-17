@@ -4,8 +4,8 @@ This file records which version of the execution protocol produced each set of r
 
 | Version | Name | Status | Applies to |
 | :--- | :--- | :--- | :--- |
-| **v1.0** | Shared-Host Seatbelt | Retired | [`ballistics/water-balloon`](ballistics/water-balloon/), [`materials/prince-ruperts-drop`](materials/prince-ruperts-drop/): runs started before 2026-11-14 06:31 UTC (12 and 11 published rows) |
-| **v1.1** | Shared-Host Seatbelt, all harnesses enforced | Current | [`vehicle-dynamics/f1-night-duel`](vehicle-dynamics/f1-night-duel/) (introduced in stages during the first round; see below), plus every water-balloon and prince-ruperts-drop run started on or after 2026-11-14 06:31 UTC (5 and 4 rows) |
+| **v1.0** | Shared-Host Seatbelt | Retired | [`ballistics/water-balloon`](ballistics/water-balloon/), [`materials/prince-ruperts-drop`](materials/prince-ruperts-drop/): runs started before 2026-11-14 06:31 UTC (11 and 11 published rows) |
+| **v1.1** | Shared-Host Seatbelt, all harnesses enforced | Current | [`vehicle-dynamics/f1-night-duel`](vehicle-dynamics/f1-night-duel/) (introduced in stages during the first round; see below), plus every water-balloon and prince-ruperts-drop run started on or after 2026-11-14 06:31 UTC (6 and 4 rows) |
 | **v2.0** | Isolated, one run per environment | Planned | Future benchmarks |
 
 **Mixed tables.** Water Balloon and Prince Rupert's Drop therefore contain both v1.0 and v1.1 rows. Each row's `protocol_version` is recorded in `telemetry.json` (backfilled 2026-11-17 from `started_at`; the v1.0/v1.1 boundary is the start of the first F1 run). Compare only rows with the same `protocol_version`, and read wall-clock across versions as approximate. The v1.0 rows have not been re-run under v1.1.
