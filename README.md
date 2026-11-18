@@ -45,6 +45,7 @@ To measure real-world engineering utility without artificial constraints or huma
 | **Ballistics** | **[Water Balloon](ballistics/water-balloon/)** | 3D Ballistics Physics & High-Speed Fluid Dynamics | [`prompt.md`](ballistics/water-balloon/prompt.md) | Active Cohort Testing |
 | **Materials** | **[Prince Rupert's Drop](materials/prince-ruperts-drop/)** | Glass Fracture Mechanics & Supersonic Crack Propagation | [`prompt.md`](materials/prince-ruperts-drop/prompt.md) | Active Cohort Testing |
 | **Vehicle Dynamics** | **[F1 Night Duel](vehicle-dynamics/f1-night-duel/)** | Spline-Track Night Race, F1 Car Detail & Synthesized SFX | [`prompt.md`](vehicle-dynamics/f1-night-duel/prompt.md) | Active Cohort Testing (Protocol v1.1) |
+| **Character Action** | **[Storm Titan](character-action/storm-titan/)** | Code-Driven Boss Skeleton, Verlet Tethers & Ragdoll, In-Canvas HUD, Self-Report | [`prompt.md`](character-action/storm-titan/prompt.md) | Active Cohort Testing (Protocol v1.1) |
 
 ---
 
@@ -66,8 +67,6 @@ Each benchmark test directory (e.g. [`ballistics/water-balloon/`](ballistics/wat
 
 | Model | Developer Harness | Verification | Wall-Clock | Deliverable |
 | :--- | :--- | :---: | :---: | :---: |
-| **Codex GPT 6 Astra (Max)** | Codex CLI | **PASS (100%)** | 1617.0s | [`materials/prince-ruperts-drop/codex-gpt-6-astra/`](materials/prince-ruperts-drop/codex-gpt-6-astra/) |
-| **Codex GPT 6.2 Astra (Max)** | Codex CLI | **PASS (100%)** | 2054.5s | [`materials/prince-ruperts-drop/codex-gpt-6.2-astra/`](materials/prince-ruperts-drop/codex-gpt-6.2-astra/) |
-| **Codex GPT 6.1 Sol (Max)** | Codex CLI | **PASS (100%)** | 909.1s | [`materials/prince-ruperts-drop/codex-gpt-6.1-sol/`](materials/prince-ruperts-drop/codex-gpt-6.1-sol/) |
+| **Codex GPT 6.2 Sol (Max)** | Codex CLI | **PASS (100%)** | 2570.8s | [`character-action/storm-titan/codex-gpt-6.2-sol/`](character-action/storm-titan/codex-gpt-6.2-sol/) |
 
-*Showing the 3 most recent benchmark deliverables. See [`TELEMETRY.md`](materials/prince-ruperts-drop/TELEMETRY.md) for the complete multi-model leaderboard, full token metrics, cache ratios, and runtime verification logs.*
+*Showing the 3 most recent benchmark deliverables. See [`TELEMETRY.md`](character-action/storm-titan/TELEMETRY.md) for the complete multi-model leaderboard, full token metrics, cache ratios, and runtime verification logs.*
