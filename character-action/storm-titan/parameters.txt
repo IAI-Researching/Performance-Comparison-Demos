@@ -14,7 +14,29 @@ isolation setup; see PROTOCOL.md. Harness versions below are the versions record
 
 ## Harness Execution Commands (Invoked Inside `sandbox-exec -f baseline/sandbox.sb`)
 
-### Track 1: Codex CLI (Codex CLI 0.170.0 — First-Party Native)
+### Track 1: Claude Code (Claude Code 2.1.325 — First-Party Native)
+Environment:
+CLAUDE_CONFIG_DIR=~/.pcd-harness/claude (benchmark-only; everything except the login wiped before each run)
+
+Command:
+claude -p \
+  --model <model_id> \
+  --effort max \
+  --dangerously-skip-permissions \
+  --no-session-persistence \
+  --strict-mcp-config \
+  --setting-sources '' \
+  --disallowedTools WebSearch,WebFetch \
+  --output-format stream-json \
+  --verbose \
+  "<PROMPT>"
+
+Models:
+- claude-opus-5-5 (Claude Opus 5.5, Max; protocol v1.1)
+
+---
+
+### Track 2: Codex CLI (Codex CLI 0.170.0 — First-Party Native)
 Environment:
 CODEX_HOME=<fresh run-local home: auth.json only>
 
