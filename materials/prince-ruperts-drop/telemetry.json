@@ -13,6 +13,8 @@
     "harness": "Codex CLI 0.169.0",
     "protocol": "Autonomous, first passing attempt (Hardened / Unobstructed Viewport)",
     "protocol_version": "v1.1",
+    "attempts": 1,
+    "attempt_notes": "commit 0f6bda5; re-run on Codex CLI 0.169.0",
     "status": "COMPLETED",
     "wall_clock_s": 1616.96,
     "agent_turns": 48,
@@ -23,6 +25,7 @@
     "thinking_tokens": 29958,
     "output_tokens": 57403,
     "total_tokens": 6213098,
+    "started_at": "2026-11-18T11:29:24.292340+00:00",
     "completed_at": "2026-11-18T11:56:21.258151+00:00",
     "file_bytes": 42761,
     "lines_of_code": 977,
@@ -30,8 +33,7 @@
     "eval_score": 100.0,
     "eval_passed_checks": 18,
     "eval_total_checks": 18,
-    "eval_verdict": "PASS",
-    "started_at": "2026-11-18T11:29:24.292340+00:00"
+    "eval_verdict": "PASS"
   },
   {
     "benchmark": "materials/prince-ruperts-drop",
@@ -47,6 +49,8 @@
     "harness": "Codex CLI 0.169.0",
     "protocol": "Autonomous, first passing attempt (Hardened / Unobstructed Viewport)",
     "protocol_version": "v1.1",
+    "attempts": 1,
+    "attempt_notes": "commit 4ccb290; re-run on Codex CLI 0.169.0",
     "status": "COMPLETED",
     "wall_clock_s": 909.13,
     "agent_turns": 28,
@@ -57,6 +61,7 @@
     "thinking_tokens": 17824,
     "output_tokens": 39823,
     "total_tokens": 2152890,
+    "started_at": "2026-11-17T23:14:55.676807+00:00",
     "completed_at": "2026-11-17T23:30:04.812292+00:00",
     "file_bytes": 42169,
     "lines_of_code": 847,
@@ -64,8 +69,7 @@
     "eval_score": 100.0,
     "eval_passed_checks": 18,
     "eval_total_checks": 18,
-    "eval_verdict": "PASS",
-    "started_at": "2026-11-17T23:14:55.676807+00:00"
+    "eval_verdict": "PASS"
   },
   {
     "benchmark": "materials/prince-ruperts-drop",
@@ -81,6 +85,8 @@
     "harness": "Codex CLI 0.169.0",
     "protocol": "Autonomous, first passing attempt (Hardened / Unobstructed Viewport)",
     "protocol_version": "v1.1",
+    "attempts": 1,
+    "attempt_notes": "commit 68f1c92",
     "status": "COMPLETED",
     "wall_clock_s": 2054.52,
     "agent_turns": 51,
@@ -91,6 +97,7 @@
     "thinking_tokens": 35000,
     "output_tokens": 68632,
     "total_tokens": 7874922,
+    "started_at": "2026-11-18T05:04:37.590386+00:00",
     "completed_at": "2026-11-18T05:38:52.122235+00:00",
     "file_bytes": 58174,
     "lines_of_code": 1371,
@@ -98,8 +105,7 @@
     "eval_score": 100.0,
     "eval_passed_checks": 18,
     "eval_total_checks": 18,
-    "eval_verdict": "PASS",
-    "started_at": "2026-11-18T05:04:37.590386+00:00"
+    "eval_verdict": "PASS"
   },
   {
     "benchmark": "materials/prince-ruperts-drop",
@@ -115,6 +121,8 @@
     "harness": "Codex CLI 0.169.0",
     "protocol": "Autonomous, first passing attempt (Hardened / Unobstructed Viewport)",
     "protocol_version": "v1.1",
+    "attempts": 1,
+    "attempt_notes": "commit 274e99b",
     "status": "COMPLETED",
     "wall_clock_s": 1428.03,
     "agent_turns": 57,
@@ -125,6 +133,7 @@
     "thinking_tokens": 27653,
     "output_tokens": 60144,
     "total_tokens": 8036205,
+    "started_at": "2026-11-17T22:23:07.588707+00:00",
     "completed_at": "2026-11-17T22:46:55.633332+00:00",
     "file_bytes": 55520,
     "lines_of_code": 1370,
@@ -132,8 +141,7 @@
     "eval_score": 100.0,
     "eval_passed_checks": 18,
     "eval_total_checks": 18,
-    "eval_verdict": "PASS",
-    "started_at": "2026-11-17T22:23:07.588707+00:00"
+    "eval_verdict": "PASS"
   },
   {
     "benchmark": "materials/prince-ruperts-drop",
@@ -149,6 +157,8 @@
     "harness": "Codex CLI 0.168.0",
     "protocol": "Autonomous, first passing attempt (Hardened / Unobstructed Viewport)",
     "protocol_version": "v1.0",
+    "attempts": null,
+    "attempt_notes": "protocol v1.0 did not record attempts",
     "status": "COMPLETED",
     "wall_clock_s": 1332.93,
     "agent_turns": 68,
@@ -159,6 +169,7 @@
     "thinking_tokens": 23253,
     "output_tokens": 66234,
     "total_tokens": 11901708,
+    "started_at": "2026-11-13T19:03:02.601787+00:00",
     "completed_at": "2026-11-13T19:25:15.540430+00:00",
     "file_bytes": 35965,
     "lines_of_code": 918,
@@ -166,8 +177,7 @@
     "eval_score": 100.0,
     "eval_passed_checks": 18,
     "eval_total_checks": 18,
-    "eval_verdict": "PASS",
-    "started_at": "2026-11-13T19:03:02.601787+00:00"
+    "eval_verdict": "PASS"
   },
   {
     "benchmark": "materials/prince-ruperts-drop",
@@ -183,6 +193,8 @@
     "harness": "Claude Code 2.1.322",
     "protocol": "Autonomous, first passing attempt (Hardened / Unobstructed Viewport)",
     "protocol_version": "v1.0",
+    "attempts": null,
+    "attempt_notes": "protocol v1.0 did not record attempts",
     "status": "COMPLETED",
     "wall_clock_s": 4621.85,
     "agent_turns": 134,
@@ -193,6 +205,7 @@
     "thinking_tokens": 235618,
     "output_tokens": 311156,
     "total_tokens": 32157745,
+    "started_at": "2026-11-13T15:06:55.647396+00:00",
     "completed_at": "2026-11-13T16:23:57.505535+00:00",
     "file_bytes": 59459,
     "lines_of_code": 1409,
@@ -200,8 +213,7 @@
     "eval_score": 100.0,
     "eval_passed_checks": 18,
     "eval_total_checks": 18,
-    "eval_verdict": "PASS",
-    "started_at": "2026-11-13T15:06:55.647396+00:00"
+    "eval_verdict": "PASS"
   },
   {
     "benchmark": "materials/prince-ruperts-drop",
@@ -217,6 +229,8 @@
     "harness": "Claude Code 2.1.322",
     "protocol": "Autonomous, first passing attempt (Hardened / Unobstructed Viewport)",
     "protocol_version": "v1.0",
+    "attempts": null,
+    "attempt_notes": "protocol v1.0 did not record attempts",
     "status": "COMPLETED",
     "wall_clock_s": 5467.28,
     "agent_turns": 166,
@@ -227,6 +241,7 @@
     "thinking_tokens": 295012,
     "output_tokens": 461119,
     "total_tokens": 44111227,
+    "started_at": "2026-11-13T05:13:17.979374+00:00",
     "completed_at": "2026-11-13T06:44:25.283789+00:00",
     "file_bytes": 88714,
     "lines_of_code": 2052,
@@ -234,8 +249,7 @@
     "eval_score": 100.0,
     "eval_passed_checks": 18,
     "eval_total_checks": 18,
-    "eval_verdict": "PASS",
-    "started_at": "2026-11-13T05:13:17.979374+00:00"
+    "eval_verdict": "PASS"
   },
   {
     "benchmark": "materials/prince-ruperts-drop",
@@ -251,6 +265,8 @@
     "harness": "Claude Code 2.1.322",
     "protocol": "Autonomous, first passing attempt (Hardened / Unobstructed Viewport)",
     "protocol_version": "v1.0",
+    "attempts": null,
+    "attempt_notes": "protocol v1.0 did not record attempts",
     "status": "COMPLETED",
     "wall_clock_s": 2981.05,
     "agent_turns": 92,
@@ -261,6 +277,7 @@
     "thinking_tokens": 207139,
     "output_tokens": 296913,
     "total_tokens": 20350516,
+    "started_at": "2026-11-13T14:14:51.913270+00:00",
     "completed_at": "2026-11-13T15:04:32.971993+00:00",
     "file_bytes": 81607,
     "lines_of_code": 1983,
@@ -268,8 +285,7 @@
     "eval_score": 100.0,
     "eval_passed_checks": 18,
     "eval_total_checks": 18,
-    "eval_verdict": "PASS",
-    "started_at": "2026-11-13T14:14:51.913270+00:00"
+    "eval_verdict": "PASS"
   },
   {
     "benchmark": "materials/prince-ruperts-drop",
@@ -285,6 +301,8 @@
     "harness": "Claude Code 2.1.322",
     "protocol": "Autonomous, first passing attempt (Hardened / Unobstructed Viewport)",
     "protocol_version": "v1.0",
+    "attempts": null,
+    "attempt_notes": "protocol v1.0 did not record attempts",
     "status": "COMPLETED",
     "wall_clock_s": 5065.94,
     "agent_turns": 233,
@@ -295,6 +313,7 @@
     "thinking_tokens": 302857,
     "output_tokens": 426529,
     "total_tokens": 47345051,
+    "started_at": "2026-11-13T16:52:38.546389+00:00",
     "completed_at": "2026-11-13T18:17:04.511204+00:00",
     "file_bytes": 73155,
     "lines_of_code": 1726,
@@ -302,8 +321,7 @@
     "eval_score": 100.0,
     "eval_passed_checks": 18,
     "eval_total_checks": 18,
-    "eval_verdict": "PASS",
-    "started_at": "2026-11-13T16:52:38.546389+00:00"
+    "eval_verdict": "PASS"
   },
   {
     "benchmark": "materials/prince-ruperts-drop",
@@ -319,6 +337,8 @@
     "harness": "Claude Code 2.1.322",
     "protocol": "Autonomous, first passing attempt (Hardened / Unobstructed Viewport)",
     "protocol_version": "v1.0",
+    "attempts": null,
+    "attempt_notes": "protocol v1.0 did not record attempts",
     "status": "COMPLETED",
     "wall_clock_s": 1942.21,
     "agent_turns": 99,
@@ -329,6 +349,7 @@
     "thinking_tokens": 276287,
     "output_tokens": 340656,
     "total_tokens": 33848903,
+    "started_at": "2026-11-13T17:58:18.230790+00:00",
     "completed_at": "2026-11-13T18:30:40.451107+00:00",
     "file_bytes": 44138,
     "lines_of_code": 1117,
@@ -336,8 +357,7 @@
     "eval_score": 100.0,
     "eval_passed_checks": 18,
     "eval_total_checks": 18,
-    "eval_verdict": "PASS",
-    "started_at": "2026-11-13T17:58:18.230790+00:00"
+    "eval_verdict": "PASS"
   },
   {
     "benchmark": "materials/prince-ruperts-drop",
@@ -353,6 +373,8 @@
     "harness": "Antigravity CLI 1.5.8",
     "protocol": "Autonomous, first passing attempt (Hardened / Unobstructed Viewport)",
     "protocol_version": "v1.0",
+    "attempts": null,
+    "attempt_notes": "protocol v1.0 did not record attempts",
     "status": "COMPLETED",
     "wall_clock_s": 997.92,
     "agent_turns": 17,
@@ -363,6 +385,7 @@
     "thinking_tokens": 19564,
     "output_tokens": 95263,
     "total_tokens": 1551776,
+    "started_at": "2026-11-14T04:56:13.092449+00:00",
     "completed_at": "2026-11-14T05:12:51.021588+00:00",
     "file_bytes": 85195,
     "lines_of_code": 2318,
@@ -370,8 +393,7 @@
     "eval_score": 100.0,
     "eval_passed_checks": 18,
     "eval_total_checks": 18,
-    "eval_verdict": "PASS",
-    "started_at": "2026-11-14T04:56:13.092449+00:00"
+    "eval_verdict": "PASS"
   },
   {
     "benchmark": "materials/prince-ruperts-drop",
@@ -387,6 +409,8 @@
     "harness": "Antigravity CLI 1.5.8",
     "protocol": "Autonomous, first passing attempt (Hardened / Unobstructed Viewport)",
     "protocol_version": "v1.0",
+    "attempts": null,
+    "attempt_notes": "protocol v1.0 did not record attempts",
     "status": "COMPLETED",
     "wall_clock_s": 1999.53,
     "agent_turns": 45,
@@ -397,6 +421,7 @@
     "thinking_tokens": 58294,
     "output_tokens": 136271,
     "total_tokens": 5979570,
+    "started_at": "2026-11-14T05:13:01.169407+00:00",
     "completed_at": "2026-11-14T05:46:20.714807+00:00",
     "file_bytes": 103857,
     "lines_of_code": 2690,
@@ -404,8 +429,7 @@
     "eval_score": 100.0,
     "eval_passed_checks": 18,
     "eval_total_checks": 18,
-    "eval_verdict": "PASS",
-    "started_at": "2026-11-14T05:13:01.169407+00:00"
+    "eval_verdict": "PASS"
   },
   {
     "benchmark": "materials/prince-ruperts-drop",
@@ -421,6 +445,8 @@
     "harness": "Antigravity CLI 1.5.8",
     "protocol": "Autonomous, first passing attempt (Hardened / Unobstructed Viewport)",
     "protocol_version": "v1.0",
+    "attempts": null,
+    "attempt_notes": "protocol v1.0 did not record attempts",
     "status": "COMPLETED",
     "wall_clock_s": 644.38,
     "agent_turns": 37,
@@ -431,6 +457,7 @@
     "thinking_tokens": 56600,
     "output_tokens": 116786,
     "total_tokens": 4365908,
+    "started_at": "2026-11-14T05:46:32.165582+00:00",
     "completed_at": "2026-11-14T05:57:16.553732+00:00",
     "file_bytes": 79685,
     "lines_of_code": 2186,
@@ -438,8 +465,7 @@
     "eval_score": 100.0,
     "eval_passed_checks": 18,
     "eval_total_checks": 18,
-    "eval_verdict": "PASS",
-    "started_at": "2026-11-14T05:46:32.165582+00:00"
+    "eval_verdict": "PASS"
   },
   {
     "benchmark": "materials/prince-ruperts-drop",
@@ -455,6 +481,8 @@
     "harness": "Qwen Code 1.0.0-preview.1",
     "protocol": "Autonomous, first passing attempt (Hardened / Unobstructed Viewport)",
     "protocol_version": "v1.1",
+    "attempts": 1,
+    "attempt_notes": "commit 318f16c ('first attempt')",
     "status": "COMPLETED",
     "wall_clock_s": 996.13,
     "agent_turns": 22,
@@ -465,6 +493,7 @@
     "thinking_tokens": 0,
     "output_tokens": 38138,
     "total_tokens": 1721993,
+    "started_at": "2026-11-16T20:28:47.950315+00:00",
     "completed_at": "2026-11-16T20:45:24.086154+00:00",
     "file_bytes": 39054,
     "lines_of_code": 1118,
@@ -472,8 +501,7 @@
     "eval_score": 100.0,
     "eval_passed_checks": 18,
     "eval_total_checks": 18,
-    "eval_verdict": "PASS",
-    "started_at": "2026-11-16T20:28:47.950315+00:00"
+    "eval_verdict": "PASS"
   },
   {
     "benchmark": "materials/prince-ruperts-drop",
@@ -489,6 +517,8 @@
     "harness": "OpenCode 2.3.0",
     "protocol": "Autonomous, first passing attempt (Hardened / Unobstructed Viewport)",
     "protocol_version": "v1.1",
+    "attempts": null,
+    "attempt_notes": "not recorded when published",
     "status": "COMPLETED",
     "wall_clock_s": 1593.91,
     "agent_turns": 29,
@@ -499,6 +529,7 @@
     "thinking_tokens": 65481,
     "output_tokens": 26167,
     "total_tokens": 2422812,
+    "started_at": "2026-11-17T16:53:56.216122+00:00",
     "completed_at": "2026-11-17T17:20:30.130546+00:00",
     "file_bytes": 47190,
     "lines_of_code": 1334,
@@ -506,8 +537,7 @@
     "eval_score": 100.0,
     "eval_passed_checks": 18,
     "eval_total_checks": 18,
-    "eval_verdict": "PASS",
-    "started_at": "2026-11-17T16:53:56.216122+00:00"
+    "eval_verdict": "PASS"
   },
   {
     "benchmark": "materials/prince-ruperts-drop",
@@ -523,6 +553,8 @@
     "harness": "Kimi Code 2.6.0",
     "protocol": "Autonomous, first passing attempt (Hardened / Unobstructed Viewport)",
     "protocol_version": "v1.1",
+    "attempts": null,
+    "attempt_notes": "not recorded when published",
     "status": "COMPLETED",
     "wall_clock_s": 2122.74,
     "agent_turns": 2,
@@ -533,6 +565,7 @@
     "thinking_tokens": 0,
     "output_tokens": 57273,
     "total_tokens": 2099595,
+    "started_at": "2026-11-17T15:25:21.645732+00:00",
     "completed_at": "2026-11-17T16:00:44.389425+00:00",
     "file_bytes": 48737,
     "lines_of_code": 1325,
@@ -540,7 +573,6 @@
     "eval_score": 100.0,
     "eval_passed_checks": 18,
     "eval_total_checks": 18,
-    "eval_verdict": "PASS",
-    "started_at": "2026-11-17T15:25:21.645732+00:00"
+    "eval_verdict": "PASS"
   }
 ]

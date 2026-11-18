@@ -2,6 +2,11 @@
   "benchmark": "vehicle-dynamics/f1-night-duel",
   "model_key": "claude-opus-5.5",
   "display_name": "Claude Opus 5.5 (Max)",
+  "protocol_version": "v1.1",
+  "attempt": {
+    "number": 1,
+    "notes": "commit 21b4db1"
+  },
   "requested_config": {
     "harness": "claude",
     "harness_name": "Claude Code",

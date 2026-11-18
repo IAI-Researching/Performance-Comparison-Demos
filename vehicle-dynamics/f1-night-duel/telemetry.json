@@ -13,6 +13,8 @@
     "harness": "Codex CLI 0.169.0",
     "protocol": "Autonomous, first passing attempt (Hardened / Unobstructed Viewport)",
     "protocol_version": "v1.1",
+    "attempts": 1,
+    "attempt_notes": "PROTOCOL.md table",
     "status": "COMPLETED",
     "wall_clock_s": 1700.94,
     "agent_turns": 57,
@@ -23,6 +25,7 @@
     "thinking_tokens": 21746,
     "output_tokens": 58096,
     "total_tokens": 7205066,
+    "started_at": "2026-11-14T14:32:40.050390+00:00",
     "completed_at": "2026-11-14T15:01:01.000061+00:00",
     "file_bytes": 67948,
     "lines_of_code": 982,
@@ -30,8 +33,7 @@
     "eval_score": 100.0,
     "eval_passed_checks": 18,
     "eval_total_checks": 18,
-    "eval_verdict": "PASS",
-    "started_at": "2026-11-14T14:32:40.050390+00:00"
+    "eval_verdict": "PASS"
   },
   {
     "benchmark": "vehicle-dynamics/f1-night-duel",
@@ -47,6 +49,8 @@
     "harness": "Codex CLI 0.169.0",
     "protocol": "Autonomous, first passing attempt (Hardened / Unobstructed Viewport)",
     "protocol_version": "v1.1",
+    "attempts": 1,
+    "attempt_notes": "PROTOCOL.md table",
     "status": "COMPLETED",
     "wall_clock_s": 2515.57,
     "agent_turns": 55,
@@ -57,6 +61,7 @@
     "thinking_tokens": 41303,
     "output_tokens": 90983,
     "total_tokens": 8924004,
+    "started_at": "2026-11-14T13:50:33.410344+00:00",
     "completed_at": "2026-11-14T14:32:28.992586+00:00",
     "file_bytes": 67200,
     "lines_of_code": 993,
@@ -64,8 +69,7 @@
     "eval_score": 100.0,
     "eval_passed_checks": 18,
     "eval_total_checks": 18,
-    "eval_verdict": "PASS",
-    "started_at": "2026-11-14T13:50:33.410344+00:00"
+    "eval_verdict": "PASS"
   },
   {
     "benchmark": "vehicle-dynamics/f1-night-duel",
@@ -81,6 +85,8 @@
     "harness": "Codex CLI 0.169.0",
     "protocol": "Autonomous, first passing attempt (Hardened / Unobstructed Viewport)",
     "protocol_version": "v1.1",
+    "attempts": 1,
+    "attempt_notes": "commit 9768c76",
     "status": "COMPLETED",
     "wall_clock_s": 3192.52,
     "agent_turns": 88,
@@ -91,6 +97,7 @@
     "thinking_tokens": 35275,
     "output_tokens": 97408,
     "total_tokens": 14157783,
+    "started_at": "2026-11-18T05:39:15.745272+00:00",
     "completed_at": "2026-11-18T06:32:28.287080+00:00",
     "file_bytes": 112214,
     "lines_of_code": 2009,
@@ -98,8 +105,7 @@
     "eval_score": 100.0,
     "eval_passed_checks": 18,
     "eval_total_checks": 18,
-    "eval_verdict": "PASS",
-    "started_at": "2026-11-18T05:39:15.745272+00:00"
+    "eval_verdict": "PASS"
   },
   {
     "benchmark": "vehicle-dynamics/f1-night-duel",
@@ -115,6 +121,8 @@
     "harness": "Codex CLI 0.169.0",
     "protocol": "Autonomous, first passing attempt (Hardened / Unobstructed Viewport)",
     "protocol_version": "v1.1",
+    "attempts": 1,
+    "attempt_notes": "commit 105c0ff",
     "status": "COMPLETED",
     "wall_clock_s": 2128.0,
     "agent_turns": 65,
@@ -125,6 +133,7 @@
     "thinking_tokens": 38206,
     "output_tokens": 93466,
     "total_tokens": 10107805,
+    "started_at": "2026-11-17T23:30:27.480224+00:00",
     "completed_at": "2026-11-18T00:05:55.492064+00:00",
     "file_bytes": 109578,
     "lines_of_code": 2469,
@@ -132,8 +141,7 @@
     "eval_score": 100.0,
     "eval_passed_checks": 18,
     "eval_total_checks": 18,
-    "eval_verdict": "PASS",
-    "started_at": "2026-11-17T23:30:27.480224+00:00"
+    "eval_verdict": "PASS"
   },
   {
     "benchmark": "vehicle-dynamics/f1-night-duel",
@@ -149,6 +157,8 @@
     "harness": "Codex CLI 0.169.0",
     "protocol": "Autonomous, first passing attempt (Hardened / Unobstructed Viewport)",
     "protocol_version": "v1.1",
+    "attempts": 1,
+    "attempt_notes": "PROTOCOL.md table",
     "status": "COMPLETED",
     "wall_clock_s": 1578.27,
     "agent_turns": 63,
@@ -159,6 +169,7 @@
     "thinking_tokens": 37348,
     "output_tokens": 77000,
     "total_tokens": 11887311,
+    "started_at": "2026-11-14T06:31:13.648988+00:00",
     "completed_at": "2026-11-14T06:57:31.930493+00:00",
     "file_bytes": 57478,
     "lines_of_code": 824,
@@ -166,8 +177,7 @@
     "eval_score": 100.0,
     "eval_passed_checks": 18,
     "eval_total_checks": 18,
-    "eval_verdict": "PASS",
-    "started_at": "2026-11-14T06:31:13.648988+00:00"
+    "eval_verdict": "PASS"
   },
   {
     "benchmark": "vehicle-dynamics/f1-night-duel",
@@ -183,6 +193,8 @@
     "harness": "Claude Code 2.1.325",
     "protocol": "Autonomous, first passing attempt (Hardened / Unobstructed Viewport)",
     "protocol_version": "v1.1",
+    "attempts": null,
+    "attempt_notes": "not recorded when published",
     "status": "COMPLETED",
     "wall_clock_s": 3718.19,
     "agent_turns": 65,
@@ -193,6 +205,7 @@
     "thinking_tokens": 163289,
     "output_tokens": 263518,
     "total_tokens": 7522372,
+    "started_at": "2026-11-14T18:07:05.207096+00:00",
     "completed_at": "2026-11-14T19:09:03.420556+00:00",
     "file_bytes": 114109,
     "lines_of_code": 2050,
@@ -200,8 +213,7 @@
     "eval_score": 100.0,
     "eval_passed_checks": 18,
     "eval_total_checks": 18,
-    "eval_verdict": "PASS",
-    "started_at": "2026-11-14T18:07:05.207096+00:00"
+    "eval_verdict": "PASS"
   },
   {
     "benchmark": "vehicle-dynamics/f1-night-duel",
@@ -217,6 +229,8 @@
     "harness": "Claude Code 2.1.325",
     "protocol": "Autonomous, first passing attempt (Hardened / Unobstructed Viewport)",
     "protocol_version": "v1.1",
+    "attempts": 1,
+    "attempt_notes": "commit 07e52a9",
     "status": "COMPLETED",
     "wall_clock_s": 5767.16,
     "agent_turns": 173,
@@ -227,6 +241,7 @@
     "thinking_tokens": 365577,
     "output_tokens": 506672,
     "total_tokens": 38257696,
+    "started_at": "2026-11-14T19:09:19.800687+00:00",
     "completed_at": "2026-11-14T20:45:26.987847+00:00",
     "file_bytes": 137419,
     "lines_of_code": 2109,
@@ -234,8 +249,7 @@
     "eval_score": 100.0,
     "eval_passed_checks": 18,
     "eval_total_checks": 18,
-    "eval_verdict": "PASS",
-    "started_at": "2026-11-14T19:09:19.800687+00:00"
+    "eval_verdict": "PASS"
   },
   {
     "benchmark": "vehicle-dynamics/f1-night-duel",
@@ -251,6 +265,8 @@
     "harness": "Claude Code 2.1.325",
     "protocol": "Autonomous, first passing attempt (Hardened / Unobstructed Viewport)",
     "protocol_version": "v1.1",
+    "attempts": 1,
+    "attempt_notes": "commit 21b4db1",
     "status": "COMPLETED",
     "wall_clock_s": 5030.58,
     "agent_turns": 211,
@@ -261,6 +277,7 @@
     "thinking_tokens": 303112,
     "output_tokens": 458151,
     "total_tokens": 80139611,
+    "started_at": "2026-11-15T04:10:07.359832+00:00",
     "completed_at": "2026-11-15T05:33:57.966443+00:00",
     "file_bytes": 148125,
     "lines_of_code": 2664,
@@ -268,8 +285,7 @@
     "eval_score": 100.0,
     "eval_passed_checks": 18,
     "eval_total_checks": 18,
-    "eval_verdict": "PASS",
-    "started_at": "2026-11-15T04:10:07.359832+00:00"
+    "eval_verdict": "PASS"
   },
   {
     "benchmark": "vehicle-dynamics/f1-night-duel",
@@ -285,6 +301,8 @@
     "harness": "Claude Code 2.1.325",
     "protocol": "Autonomous, first passing attempt (Hardened / Unobstructed Viewport)",
     "protocol_version": "v1.1",
+    "attempts": 1,
+    "attempt_notes": "commit f78d274",
     "status": "COMPLETED",
     "wall_clock_s": 4637.88,
     "agent_turns": 252,
@@ -295,6 +313,7 @@
     "thinking_tokens": 342241,
     "output_tokens": 539874,
     "total_tokens": 57638871,
+    "started_at": "2026-11-15T05:34:14.994926+00:00",
     "completed_at": "2026-11-15T06:51:32.902355+00:00",
     "file_bytes": 161444,
     "lines_of_code": 2826,
@@ -302,8 +321,7 @@
     "eval_score": 100.0,
     "eval_passed_checks": 18,
     "eval_total_checks": 18,
-    "eval_verdict": "PASS",
-    "started_at": "2026-11-15T05:34:14.994926+00:00"
+    "eval_verdict": "PASS"
   },
   {
     "benchmark": "vehicle-dynamics/f1-night-duel",
@@ -319,6 +337,8 @@
     "harness": "Claude Code 2.1.325",
     "protocol": "Autonomous, first passing attempt (Hardened / Unobstructed Viewport)",
     "protocol_version": "v1.1",
+    "attempts": 1,
+    "attempt_notes": "commit 37bed8c",
     "status": "COMPLETED",
     "wall_clock_s": 2286.68,
     "agent_turns": 74,
@@ -329,6 +349,7 @@
     "thinking_tokens": 404089,
     "output_tokens": 478995,
     "total_tokens": 16382222,
+    "started_at": "2026-11-15T01:56:24.517786+00:00",
     "completed_at": "2026-11-15T02:34:31.207571+00:00",
     "file_bytes": 78656,
     "lines_of_code": 1813,
@@ -336,8 +357,7 @@
     "eval_score": 100.0,
     "eval_passed_checks": 18,
     "eval_total_checks": 18,
-    "eval_verdict": "PASS",
-    "started_at": "2026-11-15T01:56:24.517786+00:00"
+    "eval_verdict": "PASS"
   },
   {
     "benchmark": "vehicle-dynamics/f1-night-duel",
@@ -353,6 +373,8 @@
     "harness": "DeepSeek CLI 0.2.2-rc.3",
     "protocol": "Autonomous, first passing attempt (Hardened / Unobstructed Viewport)",
     "protocol_version": "v1.1",
+    "attempts": 2,
+    "attempt_notes": "PROTOCOL.md table; attempt 1 discarded: orchestrator ran DeepSeek without the sandbox",
     "status": "COMPLETED",
     "wall_clock_s": 3055.67,
     "agent_turns": 252,
@@ -363,6 +385,7 @@
     "thinking_tokens": 0,
     "output_tokens": 308909,
     "total_tokens": 67763261,
+    "started_at": "2026-11-14T12:52:06.422730+00:00",
     "completed_at": "2026-11-14T13:43:02.106581+00:00",
     "file_bytes": 116586,
     "lines_of_code": 3017,
@@ -370,8 +393,7 @@
     "eval_score": 100.0,
     "eval_passed_checks": 18,
     "eval_total_checks": 18,
-    "eval_verdict": "PASS",
-    "started_at": "2026-11-14T12:52:06.422730+00:00"
+    "eval_verdict": "PASS"
   },
   {
     "benchmark": "vehicle-dynamics/f1-night-duel",
@@ -387,6 +409,8 @@
     "harness": "Antigravity CLI 1.5.9",
     "protocol": "Autonomous, first passing attempt (Hardened / Unobstructed Viewport)",
     "protocol_version": "v1.1",
+    "attempts": 1,
+    "attempt_notes": "PROTOCOL.md table",
     "status": "COMPLETED",
     "wall_clock_s": 1483.39,
     "agent_turns": 42,
@@ -397,6 +421,7 @@
     "thinking_tokens": 29379,
     "output_tokens": 107814,
     "total_tokens": 4778002,
+    "started_at": "2026-11-14T16:53:55.794669+00:00",
     "completed_at": "2026-11-14T17:18:39.195556+00:00",
     "file_bytes": 125910,
     "lines_of_code": 3318,
@@ -404,8 +429,7 @@
     "eval_score": 100.0,
     "eval_passed_checks": 18,
     "eval_total_checks": 18,
-    "eval_verdict": "PASS",
-    "started_at": "2026-11-14T16:53:55.794669+00:00"
+    "eval_verdict": "PASS"
   },
   {
     "benchmark": "vehicle-dynamics/f1-night-duel",
@@ -421,6 +445,8 @@
     "harness": "Antigravity CLI 1.5.9",
     "protocol": "Autonomous, first passing attempt (Hardened / Unobstructed Viewport)",
     "protocol_version": "v1.1",
+    "attempts": 1,
+    "attempt_notes": "PROTOCOL.md table",
     "status": "COMPLETED",
     "wall_clock_s": 2252.62,
     "agent_turns": 45,
@@ -431,6 +457,7 @@
     "thinking_tokens": 47524,
     "output_tokens": 142638,
     "total_tokens": 6052574,
+    "started_at": "2026-11-14T17:18:53.315695+00:00",
     "completed_at": "2026-11-14T17:56:25.953864+00:00",
     "file_bytes": 171836,
     "lines_of_code": 4490,
@@ -438,8 +465,7 @@
     "eval_score": 100.0,
     "eval_passed_checks": 18,
     "eval_total_checks": 18,
-    "eval_verdict": "PASS",
-    "started_at": "2026-11-14T17:18:53.315695+00:00"
+    "eval_verdict": "PASS"
   },
   {
     "benchmark": "vehicle-dynamics/f1-night-duel",
@@ -455,6 +481,8 @@
     "harness": "Antigravity CLI 1.5.9",
     "protocol": "Autonomous, first passing attempt (Hardened / Unobstructed Viewport)",
     "protocol_version": "v1.1",
+    "attempts": 2,
+    "attempt_notes": "PROTOCOL.md table; attempt 1 failed verification (page error stopped playback)",
     "status": "COMPLETED",
     "wall_clock_s": 1284.72,
     "agent_turns": 86,
@@ -465,6 +493,7 @@
     "thinking_tokens": 72568,
     "output_tokens": 273284,
     "total_tokens": 8460795,
+    "started_at": "2026-11-14T21:55:19.483122+00:00",
     "completed_at": "2026-11-14T22:16:44.204368+00:00",
     "file_bytes": 130385,
     "lines_of_code": 3662,
@@ -472,8 +501,7 @@
     "eval_score": 100.0,
     "eval_passed_checks": 18,
     "eval_total_checks": 18,
-    "eval_verdict": "PASS",
-    "started_at": "2026-11-14T21:55:19.483122+00:00"
+    "eval_verdict": "PASS"
   },
   {
     "benchmark": "vehicle-dynamics/f1-night-duel",
@@ -489,6 +517,8 @@
     "harness": "Qwen Code 1.0.0-preview.1",
     "protocol": "Autonomous, first passing attempt (Hardened / Unobstructed Viewport)",
     "protocol_version": "v1.1",
+    "attempts": 1,
+    "attempt_notes": "commit 036373f ('first attempt')",
     "status": "COMPLETED",
     "wall_clock_s": 2702.74,
     "agent_turns": 53,
@@ -499,6 +529,7 @@
     "thinking_tokens": 0,
     "output_tokens": 106246,
     "total_tokens": 7722774,
+    "started_at": "2026-11-16T20:45:47.428769+00:00",
     "completed_at": "2026-11-16T21:30:50.187390+00:00",
     "file_bytes": 84516,
     "lines_of_code": 2108,
@@ -506,8 +537,7 @@
     "eval_score": 100.0,
     "eval_passed_checks": 18,
     "eval_total_checks": 18,
-    "eval_verdict": "PASS",
-    "started_at": "2026-11-16T20:45:47.428769+00:00"
+    "eval_verdict": "PASS"
   },
   {
     "benchmark": "vehicle-dynamics/f1-night-duel",
@@ -523,6 +553,8 @@
     "harness": "Kimi Code 2.6.0",
     "protocol": "Autonomous, first passing attempt (Hardened / Unobstructed Viewport)",
     "protocol_version": "v1.1",
+    "attempts": 2,
+    "attempt_notes": "PROTOCOL.md table; attempt 1 cut off when the orchestrating session ended",
     "status": "COMPLETED",
     "wall_clock_s": 3999.35,
     "agent_turns": 2,
@@ -533,6 +565,7 @@
     "thinking_tokens": 0,
     "output_tokens": 105792,
     "total_tokens": 10181027,
+    "started_at": "2026-11-14T15:30:55.997466+00:00",
     "completed_at": "2026-11-14T16:37:35.382347+00:00",
     "file_bytes": 86347,
     "lines_of_code": 2087,
@@ -540,8 +573,7 @@
     "eval_score": 100.0,
     "eval_passed_checks": 18,
     "eval_total_checks": 18,
-    "eval_verdict": "PASS",
-    "started_at": "2026-11-14T15:30:55.997466+00:00"
+    "eval_verdict": "PASS"
   },
   {
     "benchmark": "vehicle-dynamics/f1-night-duel",
@@ -557,6 +589,8 @@
     "harness": "MiniMax Code 0.7.7",
     "protocol": "Autonomous, first passing attempt (Hardened / Unobstructed Viewport)",
     "protocol_version": "v1.1",
+    "attempts": 3,
+    "attempt_notes": "commit 084ce69; earlier attempts not published",
     "status": "COMPLETED",
     "wall_clock_s": 4047.71,
     "agent_turns": null,
@@ -567,6 +601,7 @@
     "thinking_tokens": 0,
     "output_tokens": 334059,
     "total_tokens": 45091365,
+    "started_at": "2026-11-14T23:42:16.530956+00:00",
     "completed_at": "2026-11-15T00:49:44.258392+00:00",
     "file_bytes": 109931,
     "lines_of_code": 2701,
@@ -574,8 +609,7 @@
     "eval_score": 100.0,
     "eval_passed_checks": 18,
     "eval_total_checks": 18,
-    "eval_verdict": "PASS",
-    "started_at": "2026-11-14T23:42:16.530956+00:00"
+    "eval_verdict": "PASS"
   },
   {
     "benchmark": "vehicle-dynamics/f1-night-duel",
@@ -591,6 +625,8 @@
     "harness": "OpenCode 2.3.0",
     "protocol": "Autonomous, first passing attempt (Hardened / Unobstructed Viewport)",
     "protocol_version": "v1.1",
+    "attempts": 1,
+    "attempt_notes": "commit 620ea48",
     "status": "COMPLETED",
     "wall_clock_s": 1100.69,
     "agent_turns": 57,
@@ -601,6 +637,7 @@
     "thinking_tokens": 187399,
     "output_tokens": 35987,
     "total_tokens": 11184680,
+    "started_at": "2026-11-15T08:53:46.089561+00:00",
     "completed_at": "2026-11-15T09:12:06.789865+00:00",
     "file_bytes": 81783,
     "lines_of_code": 2616,
@@ -608,7 +645,6 @@
     "eval_score": 100.0,
     "eval_passed_checks": 18,
     "eval_total_checks": 18,
-    "eval_verdict": "PASS",
-    "started_at": "2026-11-15T08:53:46.089561+00:00"
+    "eval_verdict": "PASS"
   }
 ]

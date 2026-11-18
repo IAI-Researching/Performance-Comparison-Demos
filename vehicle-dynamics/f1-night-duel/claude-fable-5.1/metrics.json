@@ -2,6 +2,11 @@
   "benchmark": "vehicle-dynamics/f1-night-duel",
   "model_key": "claude-fable-5.1",
   "display_name": "Claude Fable 5.1 (Max)",
+  "protocol_version": "v1.1",
+  "attempt": {
+    "number": null,
+    "notes": "not recorded when published"
+  },
   "requested_config": {
     "harness": "claude",
     "harness_name": "Claude Code",

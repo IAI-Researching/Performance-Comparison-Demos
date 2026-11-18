@@ -2,6 +2,11 @@
   "benchmark": "ballistics/water-balloon",
   "model_key": "claude-opus-5.5",
   "display_name": "Claude Opus 5.5 (Max)",
+  "protocol_version": "v1.0",
+  "attempt": {
+    "number": null,
+    "notes": "protocol v1.0 did not record attempts"
+  },
   "requested_config": {
     "harness": "claude",
     "harness_name": "Claude Code",

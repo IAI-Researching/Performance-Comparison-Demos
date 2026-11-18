@@ -2,6 +2,11 @@
   "benchmark": "ballistics/water-balloon",
   "model_key": "glm-5.3",
   "display_name": "GLM 5.3 (Max)",
+  "protocol_version": "v1.0",
+  "attempt": {
+    "number": null,
+    "notes": "protocol v1.0 did not record attempts"
+  },
   "requested_config": {
     "harness": "opencode",
     "harness_name": "OpenCode",

@@ -33,7 +33,8 @@ To measure real-world engineering utility without artificial constraints or huma
    - Once an agent declares completion, the deliverable is audited via an automated 18-point CDP runtime verification suite checking for WebGL rendering, draw calls, countdown sequence, dock geometry, canvas freeze, determinism across scrubbing, and clean workdir.
 
 5. **Universal Telemetry**:
-   - Every run logs exact wall-clock duration, Time to First Token (TTFT), thinking/reasoning tokens, total output tokens, tool call counts, prompt cache hit ratios, and cryptographic SHA-256 integrity hashes.
+   - Every run logs exact wall-clock duration, agent turns, tool call counts, input / cached-read / cache-creation / thinking / output tokens, deliverable size and lines of code, the 18-check verification result, attempt count, and a SHA-256 integrity hash. Time to first token is not recorded.
+   - Harnesses count turns, cached input and thinking tokens differently, so token and turn columns are comparable only within one harness (see [`PROTOCOL.md`](PROTOCOL.md)).
 
 ---
 

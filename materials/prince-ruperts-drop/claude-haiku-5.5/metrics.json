@@ -2,6 +2,11 @@
   "benchmark": "materials/prince-ruperts-drop",
   "model_key": "claude-haiku-5.5",
   "display_name": "Claude Haiku 5.5 (Max)",
+  "protocol_version": "v1.0",
+  "attempt": {
+    "number": null,
+    "notes": "protocol v1.0 did not record attempts"
+  },
   "requested_config": {
     "harness": "claude",
     "harness_name": "Claude Code",

@@ -2,6 +2,11 @@
   "benchmark": "materials/prince-ruperts-drop",
   "model_key": "codex-gpt-6.2-astra",
   "display_name": "Codex GPT 6.2 Astra (Max)",
+  "protocol_version": "v1.1",
+  "attempt": {
+    "number": 1,
+    "notes": "commit 68f1c92"
+  },
   "requested_config": {
     "harness": "codex",
     "harness_name": "Codex CLI",

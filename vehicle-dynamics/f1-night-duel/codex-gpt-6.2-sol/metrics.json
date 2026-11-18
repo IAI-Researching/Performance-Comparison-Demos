@@ -2,6 +2,11 @@
   "benchmark": "vehicle-dynamics/f1-night-duel",
   "model_key": "codex-gpt-6.2-sol",
   "display_name": "Codex GPT 6.2 Sol (Max)",
+  "protocol_version": "v1.1",
+  "attempt": {
+    "number": 1,
+    "notes": "commit 105c0ff"
+  },
   "requested_config": {
     "harness": "codex",
     "harness_name": "Codex CLI",

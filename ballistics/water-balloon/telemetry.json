@@ -13,6 +13,8 @@
     "harness": "Codex CLI 0.169.0",
     "protocol": "Autonomous, first passing attempt (Hardened / Unobstructed Viewport)",
     "protocol_version": "v1.1",
+    "attempts": 1,
+    "attempt_notes": "commit 788a9e5; re-run on Codex CLI 0.169.0",
     "status": "COMPLETED",
     "wall_clock_s": 1111.85,
     "agent_turns": 26,
@@ -23,6 +25,7 @@
     "thinking_tokens": 17883,
     "output_tokens": 45051,
     "total_tokens": 3325027,
+    "started_at": "2026-11-18T11:10:24.633220+00:00",
     "completed_at": "2026-11-18T11:28:56.493773+00:00",
     "file_bytes": 46398,
     "lines_of_code": 1196,
@@ -30,8 +33,7 @@
     "eval_score": 100.0,
     "eval_passed_checks": 18,
     "eval_total_checks": 18,
-    "eval_verdict": "PASS",
-    "started_at": "2026-11-18T11:10:24.633220+00:00"
+    "eval_verdict": "PASS"
   },
   {
     "benchmark": "ballistics/water-balloon",
@@ -47,6 +49,8 @@
     "harness": "Codex CLI 0.169.0",
     "protocol": "Autonomous, first passing attempt (Hardened / Unobstructed Viewport)",
     "protocol_version": "v1.1",
+    "attempts": 1,
+    "attempt_notes": "commit 317982c; re-run on Codex CLI 0.169.0",
     "status": "COMPLETED",
     "wall_clock_s": 1203.89,
     "agent_turns": 36,
@@ -57,6 +61,7 @@
     "thinking_tokens": 20799,
     "output_tokens": 46759,
     "total_tokens": 2685794,
+    "started_at": "2026-11-17T22:54:17.866004+00:00",
     "completed_at": "2026-11-17T23:14:21.768610+00:00",
     "file_bytes": 42890,
     "lines_of_code": 1082,
@@ -64,8 +69,7 @@
     "eval_score": 100.0,
     "eval_passed_checks": 18,
     "eval_total_checks": 18,
-    "eval_verdict": "PASS",
-    "started_at": "2026-11-17T22:54:17.866004+00:00"
+    "eval_verdict": "PASS"
   },
   {
     "benchmark": "ballistics/water-balloon",
@@ -81,6 +85,8 @@
     "harness": "Codex CLI 0.169.0",
     "protocol": "Autonomous, first passing attempt (Hardened / Unobstructed Viewport)",
     "protocol_version": "v1.1",
+    "attempts": 3,
+    "attempt_notes": "commit d6dc94f; attempts 1-2 failed the countdown check (unclamped lead-in timer)",
     "status": "COMPLETED",
     "wall_clock_s": 2318.84,
     "agent_turns": 63,
@@ -91,6 +97,7 @@
     "thinking_tokens": 37197,
     "output_tokens": 75595,
     "total_tokens": 8452806,
+    "started_at": "2026-11-18T04:25:23.663090+00:00",
     "completed_at": "2026-11-18T05:04:02.516310+00:00",
     "file_bytes": 55957,
     "lines_of_code": 1340,
@@ -98,8 +105,7 @@
     "eval_score": 100.0,
     "eval_passed_checks": 18,
     "eval_total_checks": 18,
-    "eval_verdict": "PASS",
-    "started_at": "2026-11-18T04:25:23.663090+00:00"
+    "eval_verdict": "PASS"
   },
   {
     "benchmark": "ballistics/water-balloon",
@@ -115,6 +121,8 @@
     "harness": "Codex CLI 0.169.0",
     "protocol": "Autonomous, first passing attempt (Hardened / Unobstructed Viewport)",
     "protocol_version": "v1.1",
+    "attempts": 1,
+    "attempt_notes": "commit fb71c4d",
     "status": "COMPLETED",
     "wall_clock_s": 1535.75,
     "agent_turns": 79,
@@ -125,6 +133,7 @@
     "thinking_tokens": 29022,
     "output_tokens": 65175,
     "total_tokens": 7942148,
+    "started_at": "2026-11-17T21:56:59.112247+00:00",
     "completed_at": "2026-11-17T22:22:34.876035+00:00",
     "file_bytes": 59350,
     "lines_of_code": 1520,
@@ -132,8 +141,7 @@
     "eval_score": 100.0,
     "eval_passed_checks": 18,
     "eval_total_checks": 18,
-    "eval_verdict": "PASS",
-    "started_at": "2026-11-17T21:56:59.112247+00:00"
+    "eval_verdict": "PASS"
   },
   {
     "benchmark": "ballistics/water-balloon",
@@ -149,6 +157,8 @@
     "harness": "Codex CLI 0.169.0",
     "protocol": "Autonomous, first passing attempt (Hardened / Unobstructed Viewport)",
     "protocol_version": "v1.1",
+    "attempts": 1,
+    "attempt_notes": "commit 66c32bf ('first attempt')",
     "status": "COMPLETED",
     "wall_clock_s": 858.81,
     "agent_turns": 36,
@@ -159,6 +169,7 @@
     "thinking_tokens": 19777,
     "output_tokens": 41342,
     "total_tokens": 5922273,
+    "started_at": "2026-11-16T17:27:34.919955+00:00",
     "completed_at": "2026-11-16T17:41:53.737298+00:00",
     "file_bytes": 33417,
     "lines_of_code": 904,
@@ -166,8 +177,7 @@
     "eval_score": 100.0,
     "eval_passed_checks": 18,
     "eval_total_checks": 18,
-    "eval_verdict": "PASS",
-    "started_at": "2026-11-16T17:27:34.919955+00:00"
+    "eval_verdict": "PASS"
   },
   {
     "benchmark": "ballistics/water-balloon",
@@ -183,6 +193,8 @@
     "harness": "Claude Code 2.1.322",
     "protocol": "Autonomous, first passing attempt (Hardened / Unobstructed Viewport)",
     "protocol_version": "v1.0",
+    "attempts": null,
+    "attempt_notes": "protocol v1.0 did not record attempts",
     "status": "COMPLETED",
     "wall_clock_s": 4423.06,
     "agent_turns": 51,
@@ -193,6 +205,7 @@
     "thinking_tokens": 213245,
     "output_tokens": 255903,
     "total_tokens": 3952882,
+    "started_at": "2026-11-11T19:57:53.719810+00:00",
     "completed_at": "2026-11-11T21:11:36.810346+00:00",
     "file_bytes": 45889,
     "lines_of_code": 1066,
@@ -200,8 +213,7 @@
     "eval_score": 100.0,
     "eval_passed_checks": 18,
     "eval_total_checks": 18,
-    "eval_verdict": "PASS",
-    "started_at": "2026-11-11T19:57:53.719810+00:00"
+    "eval_verdict": "PASS"
   },
   {
     "benchmark": "ballistics/water-balloon",
@@ -217,6 +229,8 @@
     "harness": "Claude Code 2.1.322",
     "protocol": "Autonomous, first passing attempt (Hardened / Unobstructed Viewport)",
     "protocol_version": "v1.0",
+    "attempts": null,
+    "attempt_notes": "protocol v1.0 did not record attempts",
     "status": "COMPLETED",
     "wall_clock_s": 5835.33,
     "agent_turns": 282,
@@ -227,6 +241,7 @@
     "thinking_tokens": 323212,
     "output_tokens": 491384,
     "total_tokens": 61109999,
+    "started_at": "2026-11-11T21:16:25.750240+00:00",
     "completed_at": "2026-11-11T22:53:41.112402+00:00",
     "file_bytes": 100339,
     "lines_of_code": 2178,
@@ -234,8 +249,7 @@
     "eval_score": 100.0,
     "eval_passed_checks": 18,
     "eval_total_checks": 18,
-    "eval_verdict": "PASS",
-    "started_at": "2026-11-11T21:16:25.750240+00:00"
+    "eval_verdict": "PASS"
   },
   {
     "benchmark": "ballistics/water-balloon",
@@ -251,6 +265,8 @@
     "harness": "Claude Code 2.1.322",
     "protocol": "Autonomous, first passing attempt (Hardened / Unobstructed Viewport)",
     "protocol_version": "v1.0",
+    "attempts": null,
+    "attempt_notes": "protocol v1.0 did not record attempts",
     "status": "COMPLETED",
     "wall_clock_s": 3667.22,
     "agent_turns": 85,
@@ -261,6 +277,7 @@
     "thinking_tokens": 307141,
     "output_tokens": 374424,
     "total_tokens": 17374282,
+    "started_at": "2026-11-13T00:15:17.473299+00:00",
     "completed_at": "2026-11-13T01:16:24.703705+00:00",
     "file_bytes": 63304,
     "lines_of_code": 1564,
@@ -268,8 +285,7 @@
     "eval_score": 100.0,
     "eval_passed_checks": 18,
     "eval_total_checks": 18,
-    "eval_verdict": "PASS",
-    "started_at": "2026-11-13T00:15:17.473299+00:00"
+    "eval_verdict": "PASS"
   },
   {
     "benchmark": "ballistics/water-balloon",
@@ -285,6 +301,8 @@
     "harness": "Claude Code 2.1.325",
     "protocol": "Autonomous, first passing attempt (Hardened / Unobstructed Viewport)",
     "protocol_version": "v1.1",
+    "attempts": null,
+    "attempt_notes": "not recorded when published",
     "status": "COMPLETED",
     "wall_clock_s": 4205.53,
     "agent_turns": 264,
@@ -295,6 +313,7 @@
     "thinking_tokens": 319122,
     "output_tokens": 459573,
     "total_tokens": 56986303,
+    "started_at": "2026-11-17T03:53:00.072736+00:00",
     "completed_at": "2026-11-17T05:03:05.625759+00:00",
     "file_bytes": 70372,
     "lines_of_code": 1759,
@@ -302,8 +321,7 @@
     "eval_score": 100.0,
     "eval_passed_checks": 18,
     "eval_total_checks": 18,
-    "eval_verdict": "PASS",
-    "started_at": "2026-11-17T03:53:00.072736+00:00"
+    "eval_verdict": "PASS"
   },
   {
     "benchmark": "ballistics/water-balloon",
@@ -319,6 +337,8 @@
     "harness": "Antigravity CLI 1.5.6",
     "protocol": "Autonomous, first passing attempt (Hardened / Unobstructed Viewport)",
     "protocol_version": "v1.0",
+    "attempts": null,
+    "attempt_notes": "protocol v1.0 did not record attempts",
     "status": "COMPLETED",
     "wall_clock_s": 1661.1,
     "agent_turns": 16,
@@ -329,6 +349,7 @@
     "thinking_tokens": 35359,
     "output_tokens": 88002,
     "total_tokens": 986644,
+    "started_at": "2026-11-11T19:30:45.899169+00:00",
     "completed_at": "2026-11-11T19:58:27.012845+00:00",
     "file_bytes": 85916,
     "lines_of_code": 2249,
@@ -336,8 +357,7 @@
     "eval_score": 100.0,
     "eval_passed_checks": 18,
     "eval_total_checks": 18,
-    "eval_verdict": "PASS",
-    "started_at": "2026-11-11T19:30:45.899169+00:00"
+    "eval_verdict": "PASS"
   },
   {
     "benchmark": "ballistics/water-balloon",
@@ -353,6 +373,8 @@
     "harness": "Antigravity CLI 1.5.6",
     "protocol": "Autonomous, first passing attempt (Hardened / Unobstructed Viewport)",
     "protocol_version": "v1.0",
+    "attempts": null,
+    "attempt_notes": "protocol v1.0 did not record attempts",
     "status": "COMPLETED",
     "wall_clock_s": 1559.03,
     "agent_turns": 26,
@@ -363,6 +385,7 @@
     "thinking_tokens": 52814,
     "output_tokens": 107376,
     "total_tokens": 3113522,
+    "started_at": "2026-11-11T21:16:23.383189+00:00",
     "completed_at": "2026-11-11T21:42:22.416028+00:00",
     "file_bytes": 99631,
     "lines_of_code": 2557,
@@ -370,8 +393,7 @@
     "eval_score": 100.0,
     "eval_passed_checks": 18,
     "eval_total_checks": 18,
-    "eval_verdict": "PASS",
-    "started_at": "2026-11-11T21:16:23.383189+00:00"
+    "eval_verdict": "PASS"
   },
   {
     "benchmark": "ballistics/water-balloon",
@@ -387,6 +409,8 @@
     "harness": "Antigravity CLI 1.5.7",
     "protocol": "Autonomous, first passing attempt (Hardened / Unobstructed Viewport)",
     "protocol_version": "v1.0",
+    "attempts": null,
+    "attempt_notes": "protocol v1.0 did not record attempts",
     "status": "COMPLETED",
     "wall_clock_s": 497.32,
     "agent_turns": 29,
@@ -397,6 +421,7 @@
     "thinking_tokens": 52137,
     "output_tokens": 132647,
     "total_tokens": 3644256,
+    "started_at": "2026-11-12T23:48:24.237449+00:00",
     "completed_at": "2026-11-12T23:56:41.557343+00:00",
     "file_bytes": 67716,
     "lines_of_code": 1913,
@@ -404,8 +429,7 @@
     "eval_score": 100.0,
     "eval_passed_checks": 18,
     "eval_total_checks": 18,
-    "eval_verdict": "PASS",
-    "started_at": "2026-11-12T23:48:24.237449+00:00"
+    "eval_verdict": "PASS"
   },
   {
     "benchmark": "ballistics/water-balloon",
@@ -421,6 +445,8 @@
     "harness": "Qwen Code 1.0.0-preview.1",
     "protocol": "Autonomous, first passing attempt (Hardened / Unobstructed Viewport)",
     "protocol_version": "v1.1",
+    "attempts": 1,
+    "attempt_notes": "commit 6f562ed ('first attempt')",
     "status": "COMPLETED",
     "wall_clock_s": 2833.94,
     "agent_turns": 94,
@@ -431,6 +457,7 @@
     "thinking_tokens": 0,
     "output_tokens": 112709,
     "total_tokens": 13580047,
+    "started_at": "2026-11-16T19:40:45.869537+00:00",
     "completed_at": "2026-11-16T20:27:59.827937+00:00",
     "file_bytes": 35565,
     "lines_of_code": 1050,
@@ -438,8 +465,7 @@
     "eval_score": 100.0,
     "eval_passed_checks": 18,
     "eval_total_checks": 18,
-    "eval_verdict": "PASS",
-    "started_at": "2026-11-16T19:40:45.869537+00:00"
+    "eval_verdict": "PASS"
   },
   {
     "benchmark": "ballistics/water-balloon",
@@ -455,6 +481,8 @@
     "harness": "OpenCode 2.3.0",
     "protocol": "Autonomous, first passing attempt (Hardened / Unobstructed Viewport)",
     "protocol_version": "v1.1",
+    "attempts": null,
+    "attempt_notes": "not recorded when published",
     "status": "COMPLETED",
     "wall_clock_s": 1528.31,
     "agent_turns": 21,
@@ -465,6 +493,7 @@
     "thinking_tokens": 53790,
     "output_tokens": 34979,
     "total_tokens": 1768678,
+    "started_at": "2026-11-17T16:27:56.871351+00:00",
     "completed_at": "2026-11-17T16:53:25.190491+00:00",
     "file_bytes": 51640,
     "lines_of_code": 1388,
@@ -472,8 +501,7 @@
     "eval_score": 100.0,
     "eval_passed_checks": 18,
     "eval_total_checks": 18,
-    "eval_verdict": "PASS",
-    "started_at": "2026-11-17T16:27:56.871351+00:00"
+    "eval_verdict": "PASS"
   },
   {
     "benchmark": "ballistics/water-balloon",
@@ -489,6 +517,8 @@
     "harness": "Kimi Code 2.5.3",
     "protocol": "Autonomous, first passing attempt (Hardened / Unobstructed Viewport)",
     "protocol_version": "v1.0",
+    "attempts": null,
+    "attempt_notes": "protocol v1.0 did not record attempts",
     "status": "COMPLETED",
     "wall_clock_s": 785.5,
     "agent_turns": 1,
@@ -499,6 +529,7 @@
     "thinking_tokens": 0,
     "output_tokens": 61117,
     "total_tokens": 2355503,
+    "started_at": "2026-11-11T21:29:32.293179+00:00",
     "completed_at": "2026-11-11T21:42:37.797618+00:00",
     "file_bytes": 39695,
     "lines_of_code": 1161,
@@ -506,8 +537,7 @@
     "eval_score": 100.0,
     "eval_passed_checks": 18,
     "eval_total_checks": 18,
-    "eval_verdict": "PASS",
-    "started_at": "2026-11-11T21:29:32.293179+00:00"
+    "eval_verdict": "PASS"
   },
   {
     "benchmark": "ballistics/water-balloon",
@@ -523,6 +553,8 @@
     "harness": "OpenCode 2.2.7",
     "protocol": "Autonomous, first passing attempt (Hardened / Unobstructed Viewport)",
     "protocol_version": "v1.0",
+    "attempts": null,
+    "attempt_notes": "protocol v1.0 did not record attempts",
     "status": "COMPLETED",
     "wall_clock_s": 1058.02,
     "agent_turns": 15,
@@ -533,6 +565,7 @@
     "thinking_tokens": 87427,
     "output_tokens": 22220,
     "total_tokens": 1743162,
+    "started_at": "2026-11-11T23:12:28.985324+00:00",
     "completed_at": "2026-11-11T23:30:07.015337+00:00",
     "file_bytes": 49724,
     "lines_of_code": 1306,
@@ -540,8 +573,7 @@
     "eval_score": 100.0,
     "eval_passed_checks": 18,
     "eval_total_checks": 18,
-    "eval_verdict": "PASS",
-    "started_at": "2026-11-11T23:12:28.985324+00:00"
+    "eval_verdict": "PASS"
   },
   {
     "benchmark": "ballistics/water-balloon",
@@ -557,6 +589,8 @@
     "harness": "OpenCode 2.2.7",
     "protocol": "Autonomous, first passing attempt (Hardened / Unobstructed Viewport)",
     "protocol_version": "v1.0",
+    "attempts": null,
+    "attempt_notes": "protocol v1.0 did not record attempts",
     "status": "COMPLETED",
     "wall_clock_s": 613.16,
     "agent_turns": 7,
@@ -567,6 +601,7 @@
     "thinking_tokens": 65654,
     "output_tokens": 18456,
     "total_tokens": 605479,
+    "started_at": "2026-11-11T21:04:09.761571+00:00",
     "completed_at": "2026-11-11T21:14:22.927241+00:00",
     "file_bytes": 46714,
     "lines_of_code": 1309,
@@ -574,8 +609,7 @@
     "eval_score": 100.0,
     "eval_passed_checks": 18,
     "eval_total_checks": 18,
-    "eval_verdict": "PASS",
-    "started_at": "2026-11-11T21:04:09.761571+00:00"
+    "eval_verdict": "PASS"
   },
   {
     "benchmark": "ballistics/water-balloon",
@@ -591,6 +625,8 @@
     "harness": "MiniMax Code 0.7.4",
     "protocol": "Autonomous, first passing attempt (Hardened / Unobstructed Viewport)",
     "protocol_version": "v1.0",
+    "attempts": null,
+    "attempt_notes": "protocol v1.0 did not record attempts",
     "status": "COMPLETED",
     "wall_clock_s": 4078.64,
     "agent_turns": 1,
@@ -601,6 +637,7 @@
     "thinking_tokens": 0,
     "output_tokens": 230859,
     "total_tokens": 52073535,
+    "started_at": "2026-11-13T00:43:27.871203+00:00",
     "completed_at": "2026-11-13T01:51:26.523932+00:00",
     "file_bytes": 52182,
     "lines_of_code": 1427,
@@ -608,7 +645,6 @@
     "eval_score": 100.0,
     "eval_passed_checks": 18,
     "eval_total_checks": 18,
-    "eval_verdict": "PASS",
-    "started_at": "2026-11-13T00:43:27.871203+00:00"
+    "eval_verdict": "PASS"
   }
 ]

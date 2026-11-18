@@ -2,6 +2,11 @@
   "benchmark": "ballistics/water-balloon",
   "model_key": "qwen-4-max-opencode",
   "display_name": "Qwen 4 Max (XHigh) via OpenCode",
+  "protocol_version": "v1.1",
+  "attempt": {
+    "number": null,
+    "notes": "not recorded when published"
+  },
   "requested_config": {
     "harness": "opencode",
     "harness_name": "OpenCode",

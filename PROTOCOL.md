@@ -70,7 +70,7 @@ v1.1 was introduced during the first F1 Night Duel round on 2026-11-14. Its chan
 
 **Known exception: Antigravity web search.** Antigravity CLI's `search_web` tool runs on Google's side and could not be disabled by any available setting. Gemini runs therefore have search available. To keep this auditable, each Gemini run's full step-by-step transcript is appended to its `raw_output.json`, and every `search_web` call is counted and noted in the run's commit message.
 
-**Attempts are recorded from v1.1 on, with gaps.** The table below has "not recorded" for runs whose attempt count was not written down when they were published; going forward, record the count in each run's commit message and in `metrics.json`. Every attempt on a benchmark's final prompt is counted, including ones that failed or were discarded because of the setup, and the table below lists how many attempts each published result took. v1.0 did not record failed attempts, so v1.0 results have no attempt count.
+**Attempts are recorded from v1.1 on, with gaps.** The table below has "not recorded" for runs whose attempt count was not written down when they were published; since 2026-11-18 the orchestrator numbers every launch in a local attempt ledger and writes the count to each run's `metrics.json` (`attempt.number`), `telemetry.json` (`attempts`) and `TELEMETRY.md`. Counts for runs published earlier were backfilled on 2026-11-18 from this file and from the runs' commit messages; the source is stored in `attempt_notes`. Every attempt on a benchmark's final prompt is counted, including ones that failed or were discarded because of the setup, and the table below lists how many attempts each published result took. v1.0 did not record failed attempts, so v1.0 results have no attempt count.
 
 **F1 Night Duel round, conditions and attempts per published run**
 
@@ -83,18 +83,21 @@ v1.1 was introduced during the first F1 Night Duel round on 2026-11-14. Its chan
 | Gemini 4 Argon | 16:53 | 1 | Stage B. Transcript appended; `search_web` calls: 0. |
 | Gemini 4 Carbon | 17:18 | 1 | Stage C, full v1.1. `search_web` calls: 0. |
 | Claude Fable 5.1 | 18:07 | not recorded | Stage C, full v1.1. |
-| Claude Fable 5.2 | 19:09 | not recorded | Stage C. Longest run before the timeout was removed (96 min; never triggered). |
+| Claude Fable 5.2 | 19:09 | 1 | Stage C. Longest run before the timeout was removed (96 min; never triggered). |
 | Gemini 4 Hydrogen | 21:55 | 2 | Stage C. Attempt 1 (16:38, Stage B) failed verification: a page error stopped playback. Attempt 2 published. |
-| MiniMax M3.1 Flash | 23:42 | not recorded | Stage C. |
+| MiniMax M3.1 Flash | 23:42 | 3 | Stage C. Attempts 1 and 2 not published (from the run's commit message). |
 | Codex GPT 6.2 Sol | 23:30 | 1 | Full v1.1. Codex CLI 0.169.0. |
 | Codex GPT 6.2 Astra | 05:39 | 1 | Full v1.1. Codex CLI 0.169.0. |
-| Claude Haiku 5.5, Claude Opus 5.5, Claude Sonnet 5.5, ERNIE 5.5 Flash Preview, Qwen 4 Max | 01:56, 04:10, 05:34, 08:53, 20:45 | not recorded | Full v1.1. Published after this table was last updated; attempt counts were not written down at the time and cannot be reconstructed from the repository. |
+| Claude Haiku 5.5, Claude Opus 5.5, Claude Sonnet 5.5, ERNIE 5.5 Flash Preview, Qwen 4 Max | 01:56, 04:10, 05:34, 08:53, 20:45 | 1, 1, 1, 1, 1 | Full v1.1. Counts recovered on 2026-11-18 from each run's commit message. |
 
-**Attempts for v1.1 rows of Water Balloon and Prince Rupert's Drop added 2026-11-17** (earlier v1.1 rows in these two benchmarks have no recorded count):
+**Attempts for v1.1 rows of Water Balloon and Prince Rupert's Drop added 2026-11-17** (Water Balloon Claude Sonnet 5.5, both Qwen 4 Max via OpenCode rows and Prince Rupert's Drop Kimi K3.1 Pro have no recorded count; with F1 Claude Fable 5.1, these are the only v1.1 rows without one):
 
 | Run | Attempts | Notes |
 | :--- | :---: | :--- |
 | Water Balloon, Codex GPT 6.2 Sol | 1 | |
+| Water Balloon, Codex GPT 6.1 Terra | 1 | From the run's commit message ("first attempt"). |
+| Water Balloon, Qwen 4 Max (Qwen Code) | 1 | From the run's commit message ("first attempt"). |
+| Prince Rupert's Drop, Qwen 4 Max (Qwen Code) | 1 | From the run's commit message ("first attempt"). |
 | Water Balloon, Codex GPT 6.1 Sol (re-run on Codex CLI 0.169.0) | 1 | Replaces the Codex CLI 0.167.1 run, archived in `_archive/`. |
 | Water Balloon, Codex GPT 6 Astra (re-run on Codex CLI 0.169.0) | 1 | Replaces the Codex CLI 0.167.1 run, archived in `_archive/`. |
 | Water Balloon, Codex GPT 6.2 Astra | 3 | Attempts 1 and 2 failed the countdown check (17/18: the "3" was never shown). Cause is in the deliverable: its lead-in timer uses an unclamped wall clock, which the prompt forbids, so a slow cold start skips "3". Failed attempts are not published. |
@@ -117,4 +120,4 @@ Goal: every run is physically or virtually separated, so no run can observe or a
 - Agents **cannot list, signal or stop processes** outside their own run.
 - Published raw logs are checked for **host-specific details**, such as installed apps and user paths, before release.
 - **Attempt policy: single attempt.** Each model gets exactly one attempt per round, and that attempt is published whether it passes or fails.
-- Each `metrics.json` records the **protocol version** it was produced under.
+- Each `metrics.json` records the **protocol version** it was produced under (done from 2026-11-18; earlier runs backfilled).

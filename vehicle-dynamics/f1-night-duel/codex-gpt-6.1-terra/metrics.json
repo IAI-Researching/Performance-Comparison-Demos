@@ -2,6 +2,11 @@
   "benchmark": "vehicle-dynamics/f1-night-duel",
   "model_key": "codex-gpt-6.1-terra",
   "display_name": "Codex GPT 6.1 Terra (Max)",
+  "protocol_version": "v1.1",
+  "attempt": {
+    "number": 1,
+    "notes": "PROTOCOL.md table"
+  },
   "requested_config": {
     "harness": "codex",
     "harness_name": "Codex CLI",

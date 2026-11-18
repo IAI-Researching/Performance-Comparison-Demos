@@ -2,6 +2,11 @@
   "benchmark": "materials/prince-ruperts-drop",
   "model_key": "qwen-4-max",
   "display_name": "Qwen 4 Max (Max)",
+  "protocol_version": "v1.1",
+  "attempt": {
+    "number": 1,
+    "notes": "commit 318f16c ('first attempt')"
+  },
   "requested_config": {
     "harness": "qwen",
     "harness_name": "Qwen Code",

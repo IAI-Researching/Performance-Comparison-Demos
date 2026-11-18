@@ -2,6 +2,11 @@
   "benchmark": "ballistics/water-balloon",
   "model_key": "codex-gpt-6.1-sol",
   "display_name": "Codex GPT 6.1 Sol (Max)",
+  "protocol_version": "v1.1",
+  "attempt": {
+    "number": 1,
+    "notes": "commit 317982c; re-run on Codex CLI 0.169.0"
+  },
   "requested_config": {
     "harness": "codex",
     "harness_name": "Codex CLI",

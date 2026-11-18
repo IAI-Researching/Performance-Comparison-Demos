@@ -2,6 +2,11 @@
   "benchmark": "ballistics/water-balloon",
   "model_key": "gemini-4-argon",
   "display_name": "Gemini 4 Argon (High)",
+  "protocol_version": "v1.0",
+  "attempt": {
+    "number": null,
+    "notes": "protocol v1.0 did not record attempts"
+  },
   "requested_config": {
     "harness": "agy",
     "harness_name": "Antigravity CLI",

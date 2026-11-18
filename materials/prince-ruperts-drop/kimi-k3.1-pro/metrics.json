@@ -2,6 +2,11 @@
   "benchmark": "materials/prince-ruperts-drop",
   "model_key": "kimi-k3.1-pro",
   "display_name": "Kimi Code K3.1 Pro (Max)",
+  "protocol_version": "v1.1",
+  "attempt": {
+    "number": null,
+    "notes": "not recorded when published"
+  },
   "requested_config": {
     "harness": "kimi",
     "harness_name": "Kimi Code",

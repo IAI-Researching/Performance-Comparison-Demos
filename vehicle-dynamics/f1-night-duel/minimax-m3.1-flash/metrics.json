@@ -2,6 +2,11 @@
   "benchmark": "vehicle-dynamics/f1-night-duel",
   "model_key": "minimax-m3.1-flash",
   "display_name": "MiniMax M3.1 Flash (Max)",
+  "protocol_version": "v1.1",
+  "attempt": {
+    "number": 3,
+    "notes": "commit 084ce69; earlier attempts not published"
+  },
   "requested_config": {
     "harness": "mcode",
     "harness_name": "MiniMax Code",
