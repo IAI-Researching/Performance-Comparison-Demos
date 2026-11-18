@@ -87,6 +87,7 @@ v1.1 was introduced during the first F1 Night Duel round on 2026-11-14. Its chan
 | Gemini 4 Hydrogen | 21:55 | 2 | Stage C. Attempt 1 (16:38, Stage B) failed verification: a page error stopped playback. Attempt 2 published. |
 | MiniMax M3.1 Flash | 23:42 | not recorded | Stage C. |
 | Codex GPT 6.2 Sol | 23:30 | 1 | Full v1.1. Codex CLI 0.169.0. |
+| Codex GPT 6.2 Astra | 05:39 | 1 | Full v1.1. Codex CLI 0.169.0. |
 | Claude Haiku 5.5, Claude Opus 5.5, Claude Sonnet 5.5, ERNIE 5.5 Flash Preview, Qwen 4 Max | 01:56, 04:10, 05:34, 08:53, 20:45 | not recorded | Full v1.1. Published after this table was last updated; attempt counts were not written down at the time and cannot be reconstructed from the repository. |
 
 **Attempts for v1.1 rows of Water Balloon and Prince Rupert's Drop added 2026-11-17** (earlier v1.1 rows in these two benchmarks have no recorded count):

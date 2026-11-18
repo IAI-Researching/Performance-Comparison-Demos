@@ -65,8 +65,8 @@ Each benchmark test directory (e.g. [`ballistics/water-balloon/`](ballistics/wat
 
 | Model | Developer Harness | Verification | Wall-Clock | Deliverable |
 | :--- | :--- | :---: | :---: | :---: |
-| **Codex GPT 6.2 Astra (Max)** | Codex CLI | **PASS (100%)** | 2054.5s | [`materials/prince-ruperts-drop/codex-gpt-6.2-astra/`](materials/prince-ruperts-drop/codex-gpt-6.2-astra/) |
-| **Codex GPT 6.1 Sol (Max)** | Codex CLI | **PASS (100%)** | 909.1s | [`materials/prince-ruperts-drop/codex-gpt-6.1-sol/`](materials/prince-ruperts-drop/codex-gpt-6.1-sol/) |
-| **Codex GPT 6.2 Sol (Max)** | Codex CLI | **PASS (100%)** | 1428.0s | [`materials/prince-ruperts-drop/codex-gpt-6.2-sol/`](materials/prince-ruperts-drop/codex-gpt-6.2-sol/) |
+| **Codex GPT 6.2 Astra (Max)** | Codex CLI | **PASS (100%)** | 3192.5s | [`vehicle-dynamics/f1-night-duel/codex-gpt-6.2-astra/`](vehicle-dynamics/f1-night-duel/codex-gpt-6.2-astra/) |
+| **Codex GPT 6.2 Sol (Max)** | Codex CLI | **PASS (100%)** | 2128.0s | [`vehicle-dynamics/f1-night-duel/codex-gpt-6.2-sol/`](vehicle-dynamics/f1-night-duel/codex-gpt-6.2-sol/) |
+| **Qwen 4 Max (Max)** | Qwen Code | **PASS (100%)** | 2702.7s | [`vehicle-dynamics/f1-night-duel/qwen-4-max/`](vehicle-dynamics/f1-night-duel/qwen-4-max/) |
 
-*Showing the 3 most recent benchmark deliverables. See [`TELEMETRY.md`](materials/prince-ruperts-drop/TELEMETRY.md) for the complete multi-model leaderboard, full token metrics, cache ratios, and runtime verification logs.*
+*Showing the 3 most recent benchmark deliverables. See [`TELEMETRY.md`](vehicle-dynamics/f1-night-duel/TELEMETRY.md) for the complete multi-model leaderboard, full token metrics, cache ratios, and runtime verification logs.*
