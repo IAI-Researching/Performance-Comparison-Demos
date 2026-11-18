@@ -5,44 +5,44 @@
   "requested_config": {
     "harness": "codex",
     "harness_name": "Codex CLI",
-    "harness_version": "0.167.1",
-    "harness_label": "Codex CLI 0.167.1",
+    "harness_version": "0.169.0",
+    "harness_label": "Codex CLI 0.169.0",
     "model_id": "gpt-6-astra",
     "effort": "max"
   },
   "provenance": {
     "prompt_sha256": "6f66c2262cdd63e7e4a962fa94c8d0b989ada574ac1b6d498a5a3858d4091302",
     "evaluator_sha256": "8548ec2a423793ff8c3df9ad9e8911ed262f753b375e376ca617209697619174",
-    "runtime_verifier_sha256": "de447e7fd310cb34a077023e427b6280399ccb9a785a4130f1ff87b2f02ff725",
-    "sandbox_profile_sha256": "bc16c89f45a5218a83dda0c9ac9547f268112be9fa0b17a22bd873a021ad31f1",
-    "raw_output_sha256": "7587239140f5be58935cbae4ac471d3acebf17a97b3e048adf80227c3d2386ac",
+    "runtime_verifier_sha256": "86c1e7ee0f776ec36e0b435021de164e3c12b35216d452607b417411835df9c7",
+    "sandbox_profile_sha256": "1ee72f1f6ddac91cc042bdde6a60c7c314e74ba81601c8bc80f211aa3ff79d67",
+    "raw_output_sha256": "b6d13df3165bb1e919cf28cb3f39411d4f50495352d725258436ec4ef6f51dd5",
     "raw_output_redacted": false,
     "extra_workdir_files": []
   },
   "execution": {
-    "started_at": "2026-11-11T22:49:03.670330+00:00",
-    "completed_at": "2026-11-11T23:03:25.283575+00:00",
-    "wall_clock_seconds": 861.61,
+    "started_at": "2026-11-18T11:10:24.633220+00:00",
+    "completed_at": "2026-11-18T11:28:56.493773+00:00",
+    "wall_clock_seconds": 1111.85,
     "exit_code": 0,
     "timed_out": false,
     "outcome": "PASS"
   },
   "deliverable": {
     "file": "index.html",
-    "bytes": 40291,
-    "lines_of_code": 1068,
-    "sha256": "d72c7f93f657359fbcf67e9227a69f62075bbdc84e16a00df472ec887225dca0"
+    "bytes": 46398,
+    "lines_of_code": 1196,
+    "sha256": "aa4368f83241f92aec36ad0ec33a8f34aa37568804936f30d309beadea1466e0"
   },
   "usage": {
     "available": true,
-    "agent_turns": 38,
-    "tool_calls": 32,
-    "input_tokens": 1483498,
-    "cached_read_tokens": 1444352,
+    "agent_turns": 26,
+    "tool_calls": 19,
+    "input_tokens": 1663208,
+    "cached_read_tokens": 1616768,
     "cache_creation_tokens": 0,
-    "thinking_tokens": 11157,
-    "output_tokens": 35564,
-    "total_tokens": 2963414
+    "thinking_tokens": 17883,
+    "output_tokens": 45051,
+    "total_tokens": 3325027
   },
   "evaluation": {
     "file": "/Volumes/Projects_mUSB/IAI_Researching/Performance-Comparison-Demos/ballistics/water-balloon/codex-gpt-6-astra/index.html",
@@ -50,7 +50,7 @@
       {
         "name": "Valid UTF-8 Non-Empty Deliverable",
         "passed": true,
-        "detail": "Size: 40,291 bytes, 1068 LOC"
+        "detail": "Size: 46,398 bytes, 1196 LOC"
       },
       {
         "name": "Parsed Single-File HTML Structure",
@@ -85,7 +85,7 @@
       {
         "name": "[Runtime] WebGL Stage, Draw Calls & Three.js r128 Verified",
         "passed": true,
-        "detail": "THREE r128, glStats={'contextsCreated': 1, 'drawCalls': 564, 'clears': 47}, canvases=1, rect={'x': 0, 'y': 0, 'w': 1920, 'h': 1080}"
+        "detail": "THREE r128, glStats={'contextsCreated': 1, 'drawCalls': 341, 'clears': 44}, canvases=1, rect={'x': 0, 'y': 0, 'w': 1920, 'h': 1080}"
       },
       {
         "name": "[Runtime] 3.0s Countdown Sequence (3->2->1->Hidden) Verified",
@@ -105,22 +105,22 @@
       {
         "name": "[Runtime] WebGL Canvas-Only 3D Frame Progression & Scrubber Advance",
         "passed": true,
-        "detail": "canvasHashes=(c5c493b96a31 -> a4eab6327cb2), drawCalls=(564 -> 1058), scrubber=(0.833 -> 1.466)"
+        "detail": "canvasHashes=(35f36057fbee -> 2ede00908e61), drawCalls=(350 -> 813), scrubber=(0.717 -> 1.333)"
       },
       {
         "name": "[Runtime] Pause/Resume Canvas Freeze & 2.0x Playback Rate Verified",
         "passed": true,
-        "detail": "pausedScrub=(1.483 -> 1.483), pausedCanvasFrozen=True, observedRate2x=1.97x"
+        "detail": "pausedScrub=(1.349 -> 1.349), pausedCanvasFrozen=True, observedRate2x=1.89x"
       },
       {
         "name": "[Runtime] Cross-Reload Seed-42 Determinism, Backward Seek & Endpoint Hold",
         "passed": true,
-        "detail": "h(tA)=39ce49d04ca7bd45, backward=39ce49d04ca7bd45, freshReload=39ce49d04ca7bd45, endClamp=8/8, endedCanvasFrozen=True"
+        "detail": "h(tA)=58af17f9974f0ad1, backward=58af17f9974f0ad1, freshReload=58af17f9974f0ad1, endClamp=8/8, endedCanvasFrozen=True"
       },
       {
         "name": "[Runtime] Silent 1.0s Re-Fire Hold & Auto-Restart Verified",
         "passed": true,
-        "detail": "reset=0, at0.82s=0, at1.27s=0.258, silent=True"
+        "detail": "reset=0, at0.82s=0, at1.27s=0.262, silent=True"
       },
       {
         "name": "[Runtime] Pre-Dispatch Network Enforcement (Single Pinned Three.js r128 Only)",
