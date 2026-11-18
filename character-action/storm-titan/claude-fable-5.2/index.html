@@ -1,0 +1,2552 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Storm Titan: Tethered Hunter vs. Lightning-Bound Boulder Golem</title>
+<style>
+*, *::before, *::after {
+  box-sizing: border-box;
+}
+html, body {
+  margin: 0;
+  padding: 0;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  background: radial-gradient(circle at center, #161922 0%, #090a0f 100%);
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -webkit-user-select: none;
+  user-select: none;
+}
+#stage {
+  display: block;
+  width: 100vw;
+  height: 100vh;
+}
+
+#countdown {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 50;
+  pointer-events: none;
+  font-size: 96px;
+  font-weight: 700;
+  line-height: 1;
+  color: rgba(255, 255, 255, 0.35);
+  font-variant-numeric: tabular-nums;
+}
+
+#dock {
+  position: fixed;
+  bottom: 24px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 100;
+  width: 536px;
+  height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 0 14px;
+  background: rgba(15, 17, 23, 0.78);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 9999px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.35);
+}
+
+#dock button {
+  font-family: inherit;
+  line-height: 1;
+  margin: 0;
+  flex-shrink: 0;
+  white-space: nowrap;
+  appearance: none;
+  -webkit-appearance: none;
+}
+
+.dock-sep {
+  width: 1px;
+  height: 18px;
+  flex-shrink: 0;
+  background: rgba(255, 255, 255, 0.12);
+}
+
+#btn-refire {
+  width: 78px;
+  height: 28px;
+  padding: 0 10px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 9999px;
+  color: #ffffff;
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+}
+#btn-refire:hover {
+  background: rgba(255, 255, 255, 0.16);
+}
+
+#btn-toggle {
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 9999px;
+  color: #ffffff;
+  cursor: pointer;
+}
+#btn-toggle:hover {
+  background: rgba(255, 255, 255, 0.16);
+}
+
+#speed-group {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  flex-shrink: 0;
+}
+.speed-pill {
+  width: 42px;
+  height: 24px;
+  padding: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 9999px;
+  color: rgba(255, 255, 255, 0.6);
+  font-size: 11px;
+  font-weight: 500;
+  font-variant-numeric: tabular-nums;
+  cursor: pointer;
+}
+.speed-pill:hover {
+  color: #ffffff;
+  background: rgba(255, 255, 255, 0.06);
+}
+.speed-pill.is-active {
+  color: #ffffff;
+  background: rgba(255, 255, 255, 0.18);
+  border-color: rgba(255, 255, 255, 0.2);
+}
+
+#scrubber {
+  width: 157px;
+  height: 4px;
+  margin: 0;
+  padding: 0;
+  flex-shrink: 0;
+  appearance: none;
+  -webkit-appearance: none;
+  background: rgba(255, 255, 255, 0.22);
+  border-radius: 9999px;
+  outline: none;
+  cursor: pointer;
+}
+#scrubber::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: #ffffff;
+  border: none;
+  cursor: pointer;
+}
+#scrubber::-moz-range-thumb {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: #ffffff;
+  border: none;
+  cursor: pointer;
+}
+</style>
+</head>
+<body>
+<canvas id="stage"></canvas>
+<div id="countdown" aria-hidden="true">3</div>
+
+<div id="dock" role="toolbar" aria-label="Simulation Controls">
+  <button id="btn-refire" type="button" aria-label="Re-fire" title="Re-fire">
+    <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+      <path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.19"/>
+    </svg>
+    <span>Re-fire</span>
+  </button>
+  <span class="dock-sep" aria-hidden="true"></span>
+  <button id="btn-toggle" type="button" aria-label="Pause" title="Play / Pause">
+    <svg id="icon-pause" viewBox="0 0 24 24" width="14" height="14" fill="currentColor" aria-hidden="true">
+      <rect x="6" y="4" width="4" height="16" rx="1"/>
+      <rect x="14" y="4" width="4" height="16" rx="1"/>
+    </svg>
+    <svg id="icon-play" viewBox="0 0 24 24" width="14" height="14" fill="currentColor" aria-hidden="true" style="display:none;">
+      <path d="M8 5v14l11-7z"/>
+    </svg>
+  </button>
+  <span class="dock-sep" aria-hidden="true"></span>
+  <div id="speed-group" role="radiogroup" aria-label="Playback Speed">
+    <button class="speed-pill" type="button" role="radio" aria-checked="false" data-speed="0.25">0.25×</button>
+    <button class="speed-pill" type="button" role="radio" aria-checked="false" data-speed="0.5">0.5×</button>
+    <button class="speed-pill is-active" type="button" role="radio" aria-checked="true" data-speed="1.0">1.0×</button>
+    <button class="speed-pill" type="button" role="radio" aria-checked="false" data-speed="2.0">2.0×</button>
+  </div>
+  <span class="dock-sep" aria-hidden="true"></span>
+  <input id="scrubber" type="range" min="0" max="40" step="0.001" value="0" aria-label="Timeline Scrubber">
+</div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+'use strict';
+/* =====================================================================
+   STORM TITAN — Tethered Hunter vs. Lightning-Bound Boulder Golem
+   Everything is a deterministic function of simTime (seed 42).
+   Only the three tethers and the ragdoll are stepped (fixed 1/240 s from
+   their own start times) and cached step-by-step.
+   ===================================================================== */
+const DURATION = 40;
+const SEED = 42;
+const SUB = 1 / 240;
+const GRAV = 9.81;
+
+/* ---------- seeded randomness only (Mulberry32, seed 42) ---------- */
+function mulberry32(a) {
+  return function () {
+    a |= 0; a = (a + 0x6D2B79F5) | 0;
+    let t = Math.imul(a ^ (a >>> 15), 1 | a);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+let rng = mulberry32(SEED);
+function rr(a, b) { return a + (b - a) * rng(); }
+function hashU(n) {
+  n |= 0;
+  n = Math.imul(n ^ (n >>> 16), 0x7feb352d);
+  n = Math.imul(n ^ (n >>> 15), 0x846ca68b);
+  return (n ^ (n >>> 16)) >>> 0;
+}
+function hash01(a, b, c) {
+  return hashU(hashU((a | 0) + 0x9E3779B9) ^ Math.imul((b | 0) + 0x85EBCA6B, 0x27D4EB2F) ^ Math.imul((c | 0) + 0x165667B1, 0x9E3779B1)) / 4294967296;
+}
+/* smooth seeded value noise of one variable, range [-1,1] */
+function vnoise(x, seed) {
+  const i = Math.floor(x), f = x - i, u = f * f * (3 - 2 * f);
+  const a = hash01(i, seed, 7) * 2 - 1, b = hash01(i + 1, seed, 7) * 2 - 1;
+  return a + (b - a) * u;
+}
+
+/* ---------- scalar helpers ---------- */
+const PI = Math.PI, TAU = Math.PI * 2, DEG = Math.PI / 180;
+function clamp(x, a, b) { return x < a ? a : (x > b ? b : x); }
+function lerp(a, b, t) { return a + (b - a) * t; }
+function sstep(a, b, x) { const t = clamp((x - a) / (b - a), 0, 1); return t * t * (3 - 2 * t); }
+function smooth01(t) { t = clamp(t, 0, 1); return t * t * (3 - 2 * t); }
+function pulse(a, b, c, d, x) { return sstep(a, b, x) * (1 - sstep(c, d, x)); }
+function smax(a, b, k) { const h = clamp(0.5 + 0.5 * (a - b) / k, 0, 1); return lerp(b, a, h) + k * h * (1 - h); }
+/* keyed track: flat list [t, v, mode, t, v, mode ...]; mode of a key = easing of the segment ENDING there
+   0 smoothstep, 1 ease-in (accelerating), 2 ease-out, 3 linear */
+function track(k) {
+  const n = k.length / 3;
+  return function (t) {
+    if (t <= k[0]) return k[1];
+    if (t >= k[(n - 1) * 3]) return k[(n - 1) * 3 + 1];
+    let i = 0; while (t > k[(i + 1) * 3]) i++;
+    const t0 = k[i * 3], t1 = k[(i + 1) * 3], m = k[(i + 1) * 3 + 2];
+    let u = (t - t0) / (t1 - t0);
+    if (m === 0) u = u * u * (3 - 2 * u); else if (m === 1) u = u * u; else if (m === 2) u = 1 - (1 - u) * (1 - u);
+    return k[i * 3 + 1] + (k[(i + 1) * 3 + 1] - k[i * 3 + 1]) * u;
+  };
+}
+
+/* ---------- tiny vector / quaternion library on plain arrays ---------- */
+function v3(x, y, z) { return [x, y, z]; }
+function vadd(a, b) { return [a[0] + b[0], a[1] + b[1], a[2] + b[2]]; }
+function vsub(a, b) { return [a[0] - b[0], a[1] - b[1], a[2] - b[2]]; }
+function vscale(a, s) { return [a[0] * s, a[1] * s, a[2] * s]; }
+function vmad(a, b, s) { return [a[0] + b[0] * s, a[1] + b[1] * s, a[2] + b[2] * s]; }
+function vdot(a, b) { return a[0] * b[0] + a[1] * b[1] + a[2] * b[2]; }
+function vcross(a, b) { return [a[1] * b[2] - a[2] * b[1], a[2] * b[0] - a[0] * b[2], a[0] * b[1] - a[1] * b[0]]; }
+function vlen(a) { return Math.sqrt(a[0] * a[0] + a[1] * a[1] + a[2] * a[2]); }
+function vdist(a, b) { const x = a[0] - b[0], y = a[1] - b[1], z = a[2] - b[2]; return Math.sqrt(x * x + y * y + z * z); }
+function vnorm(a) { const l = vlen(a); return l > 1e-9 ? [a[0] / l, a[1] / l, a[2] / l] : [0, 1, 0]; }
+function vlerp(a, b, t) { return [a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t, a[2] + (b[2] - a[2]) * t]; }
+function qmul(a, b) {
+  return [a[3] * b[0] + a[0] * b[3] + a[1] * b[2] - a[2] * b[1],
+          a[3] * b[1] - a[0] * b[2] + a[1] * b[3] + a[2] * b[0],
+          a[3] * b[2] + a[0] * b[1] - a[1] * b[0] + a[2] * b[3],
+          a[3] * b[3] - a[0] * b[0] - a[1] * b[1] - a[2] * b[2]];
+}
+function qaxis(ax, ang) { const s = Math.sin(ang * 0.5); return [ax[0] * s, ax[1] * s, ax[2] * s, Math.cos(ang * 0.5)]; }
+function qrot(q, v) {
+  const x = v[0], y = v[1], z = v[2], qx = q[0], qy = q[1], qz = q[2], qw = q[3];
+  const ix = qw * x + qy * z - qz * y, iy = qw * y + qz * x - qx * z, iz = qw * z + qx * y - qy * x, iw = -qx * x - qy * y - qz * z;
+  return [ix * qw + iw * -qx + iy * -qz - iz * -qy, iy * qw + iw * -qy + iz * -qx - ix * -qz, iz * qw + iw * -qz + ix * -qy - iy * -qx];
+}
+function qconj(q) { return [-q[0], -q[1], -q[2], q[3]]; }
+function qnorm(q) { const l = Math.sqrt(q[0] * q[0] + q[1] * q[1] + q[2] * q[2] + q[3] * q[3]) || 1; return [q[0] / l, q[1] / l, q[2] / l, q[3] / l]; }
+/* quaternion from an orthonormal basis given as columns X, Y, Z */
+function qbasis(X, Y, Z) {
+  const m00 = X[0], m10 = X[1], m20 = X[2], m01 = Y[0], m11 = Y[1], m21 = Y[2], m02 = Z[0], m12 = Z[1], m22 = Z[2];
+  const tr = m00 + m11 + m22; let x, y, z, w, s;
+  if (tr > 0) { s = 0.5 / Math.sqrt(tr + 1); w = 0.25 / s; x = (m21 - m12) * s; y = (m02 - m20) * s; z = (m10 - m01) * s; }
+  else if (m00 > m11 && m00 > m22) { s = 2 * Math.sqrt(1 + m00 - m11 - m22); w = (m21 - m12) / s; x = 0.25 * s; y = (m01 + m10) / s; z = (m02 + m20) / s; }
+  else if (m11 > m22) { s = 2 * Math.sqrt(1 + m11 - m00 - m22); w = (m02 - m20) / s; x = (m01 + m10) / s; y = 0.25 * s; z = (m12 + m21) / s; }
+  else { s = 2 * Math.sqrt(1 + m22 - m00 - m11); w = (m10 - m01) / s; x = (m02 + m20) / s; y = (m12 + m21) / s; z = 0.25 * s; }
+  return qnorm([x, y, z, w]);
+}
+/* frame whose local +Y points along `up`, with local +X as close as possible to `fwd` */
+function qframe(fwd, up) {
+  const Y = vnorm(up); let X = vsub(fwd, vscale(Y, vdot(fwd, Y)));
+  if (vlen(X) < 1e-5) { X = Math.abs(Y[1]) < 0.9 ? vcross(Y, [0, 1, 0]) : [1, 0, 0]; X = vsub(X, vscale(Y, vdot(X, Y))); }
+  X = vnorm(X); const Z = vcross(X, Y);
+  return qbasis(X, Y, Z);
+}
+/* two-bone IK: returns the middle joint. a,b = bone lengths, pole = preferred bend direction */
+function ik2(root, target, a, b, pole) {
+  let d = vsub(target, root); let L = vlen(d);
+  const maxL = (a + b) * 0.999, minL = Math.abs(a - b) + 0.02;
+  const dir = L > 1e-6 ? vscale(d, 1 / L) : [0, -1, 0];
+  const Lc = clamp(L, minL, maxL);
+  const ca = clamp((a * a + Lc * Lc - b * b) / (2 * a * Lc), -1, 1), sa = Math.sqrt(1 - ca * ca);
+  let p = vsub(pole, vscale(dir, vdot(pole, dir)));
+  if (vlen(p) < 1e-5) p = vcross(dir, [0.31, 0.2, 0.93]);
+  p = vnorm(p);
+  const mid = vadd(root, vadd(vscale(dir, a * ca), vscale(p, a * sa)));
+  const end = vadd(root, vscale(dir, Lc));            /* reachable end (== target when in range) */
+  return { mid: mid, end: end, bend: p };
+}
+
+/* ---------- terrain (same formula is mirrored in GLSL) ---------- */
+const PLATEAU_R = 90;
+function terrainH(x, z) {
+  return 0.28 * Math.sin(0.045 * x + 1.3) * Math.cos(0.038 * z - 0.7)
+       + 0.20 * Math.sin(0.09 * x - 0.05 * z + 2.1)
+       + 0.10 * Math.sin(0.17 * z + 0.11 * x);
+}
+
+/* ---------- the standardized fight: event table ---------- */
+const STRIKES = [
+  { t: 5.0,  wp: 0, dmg: 400, stop: 0.100, trauma: 0.45 },
+  { t: 12.0, wp: 1, dmg: 600, stop: 0.100, trauma: 0.55 },
+  { t: 27.0, wp: 2, dmg: 500, stop: 0.100, trauma: 0.60 },
+  { t: 29.5, wp: 2, dmg: 500, stop: 0.200, trauma: 1.00 }
+];
+const FOOTFALLS = [ { t: 1.0, side: 0 }, { t: 2.5, side: 1 }, { t: 4.0, side: 0 }, { t: 5.5, side: 1 } ];  /* 0 = left, 1 = right */
+const T_SLAM = 7.5, T_KNEE = 13.0, T_SWEEP_HIT = 19.0, T_RAG_END = 21.5, T_RAG_BLEND_END = 22.5, T_KILL = 29.5, T_HUNTER_LAND = 31.5;
+const SKY_BOLTS = [8.2, 25.0, 33.0];
+const TETHER = [
+  { fire: 3.0,  attach: 3.3,  release: 5.6 },
+  { fire: 9.0,  attach: 9.3,  release: 12.4 },
+  { fire: 23.5, attach: 23.8, release: 31.45 }
+];
+/* bone release order of the collapse (bone group -> time) */
+const T_REL = { head: 29.7, arms: 30.2, chest: 30.8, spine: 31.4, pelvis: 32.0, legs: 32.6 };
+const TRAUMA_EVENTS = [
+  [1.0, 0.25], [2.5, 0.25], [4.0, 0.25], [5.0, 0.45], [5.5, 0.25], [7.5, 0.9], [8.2, 0.3], [12.0, 0.55], [13.0, 0.7],
+  [19.0, 0.8], [25.0, 0.5], [27.0, 0.6], [29.5, 1.0], [31.5, 0.2], [33.0, 0.3]
+];
+const BOSS_HP = 2000;
+
+/* hit-stop: motion holds at the strike time, then catches up linearly over 0.3 s */
+const CATCHUP = 0.300;
+function motionTime(t) {
+  for (let i = 0; i < STRIKES.length; i++) {
+    const s = STRIKES[i];
+    if (t < s.t) break;
+    if (t < s.t + s.stop) return s.t;
+    if (t < s.t + s.stop + CATCHUP) return s.t + (t - s.t - s.stop) * (s.stop + CATCHUP) / CATCHUP;
+  }
+  return t;
+}
+/* camera trauma: events add, linear decay 0.8/s, clamp [0,1] */
+function traumaAt(t) {
+  let tr = 0, last = 0;
+  for (let i = 0; i < TRAUMA_EVENTS.length; i++) {
+    const e = TRAUMA_EVENTS[i];
+    if (e[0] > t) break;
+    tr = clamp(Math.max(0, tr - 0.8 * (e[0] - last)) + e[1], 0, 1); last = e[0];
+  }
+  return Math.max(0, tr - 0.8 * (t - last));
+}
+function wetnessAt(t) { return clamp(t / 30, 0, 1); }
+function flashAt(t) {           /* full-scene lightning flash, decays over 0.4 s */
+  let f = 0;
+  for (let i = 0; i < SKY_BOLTS.length; i++) { const d = t - SKY_BOLTS[i]; if (d >= 0 && d < 0.4) { const u = 1 - d / 0.4; f = Math.max(f, u * u * (0.75 + 0.25 * Math.cos(d * 70))); } }
+  return f;
+}
+/* =====================================================================
+   TITAN — hierarchical skeleton posed entirely in code from motion time.
+   The spec names pelvis, spine, chest, head + (upper arm, forearm, fist,
+   thigh, shin, foot) per side. That list is 16 named bones (the text says
+   14, which is the count without the two feet); every named bone exists.
+   Titan-local axes: +x forward, +y up, +z right. It starts facing world -X.
+   ===================================================================== */
+const B = { PELVIS: 0, SPINE: 1, CHEST: 2, HEAD: 3, LUA: 4, LFA: 5, LFI: 6, RUA: 7, RFA: 8, RFI: 9, LTH: 10, LSH: 11, LFT: 12, RTH: 13, RSH: 14, RFT: 15 };
+const NB = 16;
+const BONE_NAMES = ['pelvis', 'spine', 'chest', 'head', 'upperArmL', 'forearmL', 'fistL', 'upperArmR', 'forearmR', 'fistR', 'thighL', 'shinL', 'footL', 'thighR', 'shinR', 'footR'];
+const BONE_PARENT = [-1, 0, 1, 2, 2, 4, 5, 2, 7, 8, 0, 10, 11, 0, 13, 14];
+const BONE_LEN = [2.0, 6.0, 7.0, 5.5, 7.5, 7.0, 2.5, 7.5, 7.0, 2.5, 8.3, 7.7, 3.5, 8.3, 7.7, 3.5];
+const BONE_DIR = [[0, 1, 0], [0, 1, 0], [0, 1, 0], [0, 1, 0], [0, -1, 0], [0, -1, 0], [0, -1, 0], [0, -1, 0], [0, -1, 0], [0, -1, 0], [0, -1, 0], [0, -1, 0], [1, 0, 0], [0, -1, 0], [0, -1, 0], [1, 0, 0]];
+const BONE_RAD = [3.3, 3.0, 4.4, 2.9, 2.3, 2.1, 2.3, 2.3, 2.1, 2.3, 2.7, 2.2, 1.8, 2.7, 2.2, 1.8];   /* collision capsule radii */
+const BONE_REL = [T_REL.pelvis, T_REL.spine, T_REL.chest, T_REL.head, T_REL.arms, T_REL.arms, T_REL.arms, T_REL.arms, T_REL.arms, T_REL.arms,
+                  T_REL.legs, T_REL.legs, T_REL.legs, T_REL.legs, T_REL.legs, T_REL.legs];
+const UPPER_ARM = 7.5, FOREARM = 7.0, FIST = 2.5, THIGH = 8.3, SHIN = 7.7, ANKLE_H = 1.5;
+const HIP_Z = 4.5, SHOULDER_Z = 8.0, SHOULDER_Y = 5.5, STANCE_Z = 4.8;
+const WALK_SPEED = 4, LEAD = 6, SWING_T = 1.3;
+const SLAM_POS = [3, 0, 1.5];                 /* = hunter's ground position at t = 6.5 (the path passes exactly here) */
+
+/* weak points / tether pins in bone-local coordinates */
+const WP_BONE = [B.LSH, B.CHEST, B.CHEST];
+const WP_LOCAL = [[0.25, 0.25, -2.05], [1.5, SHOULDER_Y + 2.0, SHOULDER_Z + 0.2], [1.9, 3.4, 0]];
+const PIN_BONE = [B.LSH, B.RFA, B.CHEST];
+const PIN_LOCAL = [[0.9, -5.4, -1.95], [0, -3.4, 0], [4.3, 6.1, 0]];   /* pin 2 is re-seated on the surface facing the hunter at init */
+
+const L_PLANTS = [[-2, 48 - LEAD], [1, 36 - LEAD], [4, 24 - LEAD]];
+const R_PLANTS = [[-0.5, 42 - LEAD], [2.5, 30 - LEAD], [5.5, 18 - LEAD]];
+const WALK_FALLS = [-2, -0.5, 1, 2.5, 4, 5.5];
+
+function walkBump(tau) { return sstep(-0.3, 0.1, tau) * (1 - sstep(0.1, 0.95, tau)); }
+function footWalk(plants, t) {                    /* -> [x, lift, swing phase] */
+  let k = 0; while (k < plants.length - 1 && t >= plants[k + 1][0]) k++;
+  if (k >= plants.length - 1) return [plants[plants.length - 1][1], 0, 0];
+  const tp = plants[k + 1][0], tl = tp - SWING_T;
+  if (t <= tl) return [plants[k][1], 0, 0];
+  const s = (t - tl) / SWING_T, e = smooth01(Math.pow(s, 0.6));
+  return [lerp(plants[k][1], plants[k + 1][1], e), 3.4 * Math.sin(PI * Math.pow(s, 1.6)), s];
+}
+
+/* ---- keyed tracks (all in code; times are motion time) ---- */
+const TR = {
+  gx: track([6.0, 16, 0, 6.95, 16.0, 0, 7.5, 14, 1, 10.5, 14, 0, 12.0, 16, 0, 12.9, 19.5, 2, 15.0, 19.5, 0, 16.0, 18.2, 0, 17.0, 18.2, 0, 18.5, 18.7, 0,
+              18.9, 17.0, 1, 19.3, 16.8, 2, 21.5, 17.5, 0, 25.0, 17.5, 0, 25.4, 17.9, 2, 27.0, 17.5, 0, 27.5, 18.2, 2, 29.5, 17.5, 0]),
+  py: track([6.0, 17.0, 0, 6.75, 17.4, 0, 6.95, 17.4, 0, 7.5, 11.0, 1, 7.9, 10.6, 2, 10.5, 11.0, 0, 12.0, 16.2, 0, 12.35, 16.8, 0, 13.0, 10.05, 1, 13.4, 9.85, 2, 15.0, 10.0, 0,
+              16.0, 16.5, 0, 17.0, 16.5, 0, 18.5, 13.5, 0, 18.85, 10.3, 1, 19.3, 10.3, 0, 21.5, 12.0, 0, 23.8, 14.5, 0, 25.0, 15.8, 0, 25.3, 16.6, 2,
+              26.2, 15.8, 0, 27.0, 15.5, 0, 27.5, 14.4, 2, 29.5, 14.0, 0, 32.6, 12.6, 0]),
+  pz: track([12.0, 0, 0, 13.0, 1.0, 0, 15.0, 1.0, 0, 16.0, 0, 0]),
+  pitch: track([6.0, 6, 0, 6.75, -14, 0, 6.95, -14, 0, 7.5, 72, 1, 7.9, 75, 2, 10.5, 70, 0, 12.0, 22, 0, 12.45, -16, 2, 13.0, 34, 1, 13.5, 40, 2, 15.0, 36, 0, 16.0, 8, 0,
+                 17.0, 10, 0, 18.5, 44, 0, 18.85, 76, 1, 19.3, 76, 0, 21.5, 56, 0, 23.8, 38, 0, 24.95, 30, 0, 25.4, -10, 2, 26.3, 20, 0, 27.0, 22, 0, 27.35, 8, 2,
+                 28.3, 24, 0, 29.5, 28, 0, 29.8, 12, 2, 32.6, 40, 0]),
+  yaw: track([6.0, 0, 0, 6.75, -10, 0, 6.95, -10, 0, 7.5, 20, 1, 10.5, 18, 0, 12.0, -8, 0, 12.5, 10, 0, 13.0, -6, 0, 16.0, 0, 0, 17.0, 0, 0, 18.5, 46, 0,
+               19.3, -22, 0, 19.8, -30, 2, 21.5, -12, 0, 23.5, -14, 0, 27.0, -4, 0, 29.5, 0, 0]),
+  headPitch: track([24.95, 0, 0, 25.2, -28, 2, 26.0, 0, 0, 29.5, 0, 0, 29.9, -30, 2]),
+  /* left foot after the walk: stumble back at the stagger, step forward when rising */
+  lfx: track([12.2, 24 - LEAD, 0, 12.8, 25.7, 2, 15.15, 25.7, 0, 15.9, 21.0, 0]),
+  lfPitch: track([12.3, 0, 0, 12.9, 70, 0, 15.2, 70, 0, 15.9, 0, 0]),
+  /* left arm sweep, polar about the pelvis ground point: angle from forward toward the Titan's left (deg), radius, height */
+  swA: track([17.0, 55, 0, 18.5, 80, 0, 19.3, -25, 0, 19.9, -42, 2]),
+  swR: track([17.0, 12, 0, 18.5, 15.5, 0, 18.8, 20.0, 0, 19.3, 19.5, 0, 19.9, 14, 0]),
+  swY: track([17.0, 8, 0, 18.5, 9.5, 0, 18.8, 2.9, 0, 19.25, 2.9, 0, 19.85, 9, 0])
+};
+function track3(k) {                              /* keys: [t, [f,u,r], mode] */
+  const a = [], b = [], c = [];
+  for (let i = 0; i < k.length; i += 3) { a.push(k[i], k[i + 1][0], k[i + 2]); b.push(k[i], k[i + 1][1], k[i + 2]); c.push(k[i], k[i + 1][2], k[i + 2]); }
+  const fa = track(a), fb = track(b), fc = track(c);
+  return function (t) { return [fa(t), fb(t), fc(t)]; };
+}
+/* free arm targets relative to the shoulder: [forward, up, right] in the chest-heading frame */
+const ARM_R = track3([6.0, [1.2, -14.0, 1.2], 0, 6.25, [4, -6, 7], 0, 6.5, [-1, 8, 6], 0, 6.75, [0.5, 13.6, 2.0], 0, 6.92, [0.5, 13.6, 2.0], 0, 7.2, [11.5, 5.5, 1.0], 1, 10.5, [7, -9, -3], 0, 11.3, [9.5, -5, -2], 0, 12.0, [9.5, 0.5, -3], 0,
+  12.45, [6, -9, 0.5], 0, 13.1, [2.5, -13.4, 2.8], 0, 14.0, [-1.5, -13.8, 2.0], 0, 15.0, [1.5, -13.9, 1.5], 0, 16.0, [1.2, -14, 1.2], 0, 17.0, [1.2, -14, 1.2], 0,
+  18.5, [-4, -8, 8.5], 0, 19.3, [-5, -10, 7], 0, 21.0, [1.2, -14, 1.4], 0, 23.5, [5, -10, 1.5], 0, 24.95, [5.5, -9, 1.5], 0, 25.4, [-2, 3, 11], 0,
+  26.3, [3, -10.5, 4.5], 0, 27.0, [3, -10.5, 4.5], 0, 27.4, [1, -8, 8], 2, 29.5, [2, -12.5, 4], 0, 29.95, [0, -6, 9], 0]);
+const ARM_L = track3([6.0, [1.2, -14.0, -1.2], 0, 6.95, [-4.5, -11, -5.5], 0, 7.5, [4.5, -11.5, -4.5], 1, 10.5, [3, -13, -3], 0, 12.0, [1.5, -13.8, -1.5], 0,
+  12.45, [-3, -2, -11], 0, 13.1, [2.5, -13.4, -2.8], 0, 14.0, [-1.5, -13.8, -2.0], 0, 15.0, [1.5, -13.9, -1.5], 0, 17.0, [1.2, -14, -1.2], 0,
+  21.0, [1.2, -14, -1.4], 0, 23.5, [4, -11, -1.5], 0, 24.95, [4.5, -10, -1.5], 0, 25.4, [-2, 3, -11], 0, 26.3, [3, -10.5, -4.5], 0, 27.0, [3, -10.5, -4.5], 0,
+  27.4, [1, -8, -8], 2, 29.5, [2, -12.5, -4], 0, 29.95, [0, -6, -9], 0]);
+
+function chargeBase(t) {
+  let c = 1;
+  c += 0.6 * pulse(5.9, 6.1, 7.6, 7.9, t);        /* slam wind-up + slam */
+  c += 0.6 * pulse(16.9, 17.1, 19.3, 19.6, t);    /* sweep wind-up + sweep */
+  c -= 0.6 * pulse(12.0, 12.2, 15.6, 16.0, t);    /* stagger */
+  return c;
+}
+function boneCharge(i, t) { return chargeBase(t) * (1 - sstep(BONE_REL[i] - 0.35, BONE_REL[i], t)); }
+
+/* limb bone orientation: local -Y along `d`, local +X toward `x` (made perpendicular) */
+function limbQuat(d, x) {
+  const Y = vscale(d, -1); let X = vsub(x, vscale(d, vdot(x, d)));
+  if (vlen(X) < 1e-5) X = vcross(d, [0.3, 0.2, 0.93]);
+  X = vnorm(X); return qbasis(X, Y, vcross(X, Y));
+}
+
+function titanCompute(t) {
+  const P = { t: t, bp: new Array(NB), bq: new Array(NB), tip: new Array(NB), charge: new Array(NB) };
+  const walkW = 1 - sstep(5.5, 6.0, t);                 /* the walk has fully settled when the Titan stops at 6.000 over (16, 0, 0) */
+  const ph = TAU * (t - 1) / 3;
+  /* --- pelvis --- */
+  let bump = 0; for (let i = 0; i < WALK_FALLS.length; i++) bump += walkBump(t - WALK_FALLS[i]);
+  const gx = t < 6 ? 40 - WALK_SPEED * t : TR.gx(t);
+  const gz = 1.3 * Math.sin(ph) * walkW + TR.pz(t);
+  const py = lerp(TR.py(t), 17.1 - 1.3 * bump, walkW);
+  const pitch = lerp(TR.pitch(t), 6 + 3.5 * bump, walkW) * DEG;
+  const yawT = TR.yaw(t) * (1 - walkW) * DEG;
+  const yawWalk = -7 * DEG * Math.cos(ph) * walkW;
+  const rollWalk = 3 * DEG * Math.sin(ph) * walkW;
+  const breathe = 0.12 * Math.sin(t * 1.3) * (1 - walkW);
+  const yawP = yawWalk + 0.25 * yawT;
+  const Yax = [0, 1, 0], Zax = [0, 0, 1], Xax = [1, 0, 0];
+  const qRoot = qaxis(Yax, PI + yawP);
+  const qPel = qmul(qmul(qRoot, qaxis(Zax, -0.30 * pitch)), qaxis(Xax, rollWalk));
+  const pel = [gx, py + breathe, gz];
+  P.G = [gx, 0, gz]; P.pel = pel;
+  P.bq[B.PELVIS] = qPel; P.bp[B.PELVIS] = vadd(pel, qrot(qPel, [0, -1, 0]));
+  /* --- spine / chest / head --- */
+  const counter = 11 * DEG * Math.cos(TAU * (t - 1 - 0.15) / 3) * walkW;
+  const qSp = qmul(qmul(qPel, qaxis(Yax, 0.35 * yawT + counter * 0.4)), qaxis(Zax, -0.35 * pitch));
+  const spB = vadd(pel, qrot(qPel, [0, 1, 0]));
+  P.bq[B.SPINE] = qSp; P.bp[B.SPINE] = spB;
+  const qCh = qmul(qmul(qSp, qaxis(Yax, 0.40 * yawT + counter * 0.6)), qaxis(Zax, -0.35 * pitch));
+  const chB = vadd(spB, qrot(qSp, [0, BONE_LEN[B.SPINE], 0]));
+  P.bq[B.CHEST] = qCh; P.bp[B.CHEST] = chB;
+  const hdPitch = (-0.45 * pitch) + TR.headPitch(t) * DEG + 4 * DEG * Math.sin(t * 0.9);
+  const qHd = qmul(qmul(qCh, qaxis(Yax, 0.25 * yawT - counter * 0.5)), qaxis(Zax, -hdPitch));
+  P.bq[B.HEAD] = qHd; P.bp[B.HEAD] = vadd(chB, qrot(qCh, [0, BONE_LEN[B.CHEST] + 0.8, 0]));
+  /* --- arms (IK toward free / world-anchored targets) --- */
+  const yawC = yawP + 0.75 * yawT + counter;
+  const Fh = [-Math.cos(yawC), 0, Math.sin(yawC)], Rh = [-Math.sin(yawC), 0, -Math.cos(yawC)];
+  for (let side = 0; side < 2; side++) {          /* 0 = left, 1 = right */
+    const sg = side ? 1 : -1;
+    const sh = vadd(chB, qrot(qCh, [0, SHOULDER_Y, sg * SHOULDER_Z]));
+    /* free target */
+    const swing = 17 * DEG * Math.cos(TAU * (t - 1 - 0.35) / 3) * (side ? 1 : -1);
+    const fw = [14.2 * Math.sin(swing) + 0.8, -14.2 * Math.cos(swing), sg * 1.2];
+    const fk = side ? ARM_R(t) : ARM_L(t);
+    const f = [lerp(fk[0], fw[0], walkW), lerp(fk[1], fw[1], walkW), lerp(fk[2], fw[2], walkW)];
+    let tgt = vadd(sh, vadd(vscale(Fh, f[0]), vadd([0, f[1], 0], vscale(Rh, f[2]))));
+    let pole = vadd(vadd(vscale(Fh, -0.55), vscale(Rh, sg * 0.55)), [0, -0.6, 0]);
+    let fistTip = null, wWorld = 0;
+    if (side === 1) {                              /* right fist slam, planted until 10.5 */
+      wWorld = t < 7.5 ? Math.pow(clamp((t - 7.1) / 0.4, 0, 1), 1.5) : 1 - sstep(10.5, 11.1, t);
+      if (wWorld > 0) fistTip = [SLAM_POS[0], terrainH(SLAM_POS[0], SLAM_POS[2]) + 1.25, SLAM_POS[2]];
+    } else {                                       /* left arm sweep */
+      wWorld = pulse(17.0, 18.2, 19.6, 20.9, t);
+      if (wWorld > 0) { const a = TR.swA(t) * DEG, r = TR.swR(t); fistTip = [gx - r * Math.cos(a), TR.swY(t) - 1.2, gz + r * Math.sin(a)]; }
+    }
+    if (fistTip) {
+      let wt = vadd(fistTip, [0, 2.0, 0]);
+      for (let it = 0; it < 2; it++) {             /* seat the fist tip, not the wrist, on the target */
+        const r0 = ik2(sh, wt, UPPER_ARM, FOREARM, pole);
+        wt = vsub(fistTip, vscale(vnorm(vsub(r0.end, r0.mid)), FIST));
+      }
+      tgt = vlerp(tgt, wt, wWorld);
+    }
+    const r = ik2(sh, tgt, UPPER_ARM, FOREARM, pole);
+    const d1 = vnorm(vsub(r.mid, sh)), d2 = vnorm(vsub(r.end, r.mid)), back = vscale(r.bend, -1);
+    const ua = side ? B.RUA : B.LUA;
+    P.bp[ua] = sh; P.bq[ua] = limbQuat(d1, back);
+    P.bp[ua + 1] = r.mid; P.bq[ua + 1] = limbQuat(d2, back);
+    P.bp[ua + 2] = r.end; P.bq[ua + 2] = P.bq[ua + 1];
+  }
+  /* --- legs (IK to planted / stepping ankles) --- */
+  const FhP = [-Math.cos(yawP), 0, Math.sin(yawP)], RhP = [-Math.sin(yawP), 0, -Math.cos(yawP)];
+  for (let side = 0; side < 2; side++) {
+    const sg = side ? 1 : -1;
+    const hip = vadd(pel, qrot(qPel, [0, -0.5, sg * HIP_Z]));
+    let ax, lift = 0, toeDown = 0;
+    if (side === 0) {
+      if (t < 4) { const w = footWalk(L_PLANTS, t); ax = w[0]; lift = w[1]; toeDown = -16 * DEG * Math.sin(PI * w[2]); }
+      else {
+        ax = TR.lfx(t);
+        lift = 1.7 * Math.sin(PI * clamp((t - 12.2) / 0.6, 0, 1)) + 1.4 * Math.sin(PI * clamp((t - 15.15) / 0.75, 0, 1)) + 0.25 * pulse(12.8, 13.0, 15.1, 15.3, t);
+        toeDown = TR.lfPitch(t) * DEG;
+      }
+    } else {
+      const w = footWalk(R_PLANTS, t); ax = w[0]; lift = w[1]; toeDown = -16 * DEG * Math.sin(PI * w[2]);
+    }
+    const az = -sg * STANCE_Z;                     /* world z: left = +, right = - */
+    const ank = [ax, terrainH(ax, az) + ANKLE_H + lift, az];
+    const pole = vadd(FhP, vscale(RhP, sg * 0.12));
+    const r = ik2(hip, ank, THIGH, SHIN, pole);
+    const d1 = vnorm(vsub(r.mid, hip)), d2 = vnorm(vsub(r.end, r.mid));
+    const th = side ? B.RTH : B.LTH;
+    P.bp[th] = hip; P.bq[th] = limbQuat(d1, r.bend);
+    P.bp[th + 1] = r.mid; P.bq[th + 1] = limbQuat(d2, r.bend);
+    const qFoot = qmul(qaxis(Yax, PI + yawP * 0.5), qaxis(Zax, -toeDown));
+    P.bq[th + 2] = qFoot; P.bp[th + 2] = vadd(r.end, qrot(qFoot, [-1.2, -0.6, 0]));
+    if (side === 0) { P.ankL = r.end; P.kneeL = r.mid; } else { P.ankR = r.end; P.kneeR = r.mid; }
+  }
+  for (let i = 0; i < NB; i++) {
+    P.tip[i] = vadd(P.bp[i], qrot(P.bq[i], vscale(BONE_DIR[i], BONE_LEN[i])));
+    P.charge[i] = boneCharge(i, t);
+  }
+  return P;
+}
+/* memoized pose lookup */
+const _tpCache = new Map();
+function titanPose(t) {
+  let p = _tpCache.get(t);
+  if (!p) { if (_tpCache.size > 600) _tpCache.clear(); p = titanCompute(t); _tpCache.set(t, p); }
+  return p;
+}
+function boneLocal(P, bone, loc) { return vadd(P.bp[bone], qrot(P.bq[bone], loc)); }
+function wpPos(P, i) { return boneLocal(P, WP_BONE[i], WP_LOCAL[i]); }
+function pinPos(P, i) { return boneLocal(P, PIN_BONE[i], PIN_LOCAL[i]); }
+function chestCenter(P) { return boneLocal(P, B.CHEST, [0, 3.5, 0]); }
+function fistCenter(P, side) { const b = side ? B.RFI : B.LFI; return boneLocal(P, b, [0, -1.25, 0]); }
+function avgCharge(t) { let s = 0; for (let i = 0; i < NB; i++) s += boneCharge(i, t); return s / NB; }
+/* =====================================================================
+   HUNTER — chest path. Closed-form pieces (splines through time-stamped
+   waypoints, constant-length swing arcs around the tether pins, ballistic
+   drops) that reach every event of the table on time. Motion time only.
+   ===================================================================== */
+const HUNTER_START = [-40, 0, 10];
+const RUN_H = 1.3;                                 /* chest height above the ground while running */
+function G3(x, z, h) { return [x, terrainH(x, z) + (h === undefined ? RUN_H : h), z]; }
+
+/* C1 spline through time-stamped waypoints {t, p, g, m}:
+   p = point or function(t)->point (so a waypoint can ride on a Titan bone), g = 1 when on the ground,
+   m = optional explicit velocity (e.g. [0,0,0] for a stop) */
+function makeSpline(pts) {
+  const n = pts.length;
+  function P(i, t) { const p = pts[i].p; return typeof p === 'function' ? p(t) : p; }
+  function f(t) {
+    if (t <= pts[0].t) return P(0, t).slice();
+    if (t >= pts[n - 1].t) return P(n - 1, t).slice();
+    let i = 0; while (t > pts[i + 1].t) i++;
+    const t0 = pts[i].t, t1 = pts[i + 1].t, h = t1 - t0, u = (t - t0) / h;
+    const p0 = P(i, t), p1 = P(i + 1, t);
+    let m0, m1;
+    if (pts[i].m) m0 = pts[i].m; else if (i > 0) m0 = vscale(vsub(p1, P(i - 1, t)), 1 / (t1 - pts[i - 1].t)); else m0 = vscale(vsub(p1, p0), 1 / h);
+    if (pts[i + 1].m) m1 = pts[i + 1].m; else if (i < n - 2) m1 = vscale(vsub(P(i + 2, t), p0), 1 / (pts[i + 2].t - t0)); else m1 = vscale(vsub(p1, p0), 1 / h);
+    const u2 = u * u, u3 = u2 * u, h00 = 2 * u3 - 3 * u2 + 1, h10 = (u3 - 2 * u2 + u) * h, h01 = -2 * u3 + 3 * u2, h11 = (u3 - u2) * h;
+    const r = [h00 * p0[0] + h10 * m0[0] + h01 * p1[0] + h11 * m1[0], h00 * p0[1] + h10 * m0[1] + h01 * p1[1] + h11 * m1[1], h00 * p0[2] + h10 * m0[2] + h01 * p1[2] + h11 * m1[2]];
+    const g0 = pts[i].g || 0, g1 = pts[i + 1].g || 0;
+    if (g0 > 0 || g1 > 0) {
+      const g = g0 + (g1 - g0) * (u * u * (3 - 2 * u));
+      const hh = (pts[i].h === undefined ? RUN_H : pts[i].h) + ((pts[i + 1].h === undefined ? RUN_H : pts[i + 1].h) - (pts[i].h === undefined ? RUN_H : pts[i].h)) * u;
+      r[1] = lerp(r[1], terrainH(r[0], r[2]) + hh, g);
+    }
+    return r;
+  }
+  f.t0 = pts[0].t; f.t1 = pts[n - 1].t;
+  return f;
+}
+/* scalar C1 spline through keys [[t, v], ...] */
+function hermite1(k) {
+  const n = k.length;
+  return function (t) {
+    if (t <= k[0][0]) return k[0][1];
+    if (t >= k[n - 1][0]) return k[n - 1][1];
+    let i = 0; while (t > k[i + 1][0]) i++;
+    const h = k[i + 1][0] - k[i][0], u = (t - k[i][0]) / h, p0 = k[i][1], p1 = k[i + 1][1];
+    const m0 = i > 0 ? (p1 - k[i - 1][1]) / (k[i + 1][0] - k[i - 1][0]) : (p1 - p0) / h;
+    const m1 = i < n - 2 ? (k[i + 2][1] - p0) / (k[i + 2][0] - k[i][0]) : (p1 - p0) / h;
+    const u2 = u * u, u3 = u2 * u;
+    return (2 * u3 - 3 * u2 + 1) * p0 + (u3 - 2 * u2 + u) * h * m0 + (-2 * u3 + 3 * u2) * p1 + (u3 - u2) * h * m1;
+  };
+}
+function ballistic(p0, t0, p1, t1) {                /* projectile from p0@t0 that lands on p1@t1 */
+  const T = t1 - t0;
+  const v0 = [(p1[0] - p0[0]) / T, (p1[1] - p0[1] + 0.5 * GRAV * T * T) / T, (p1[2] - p0[2]) / T];
+  const f = function (t) { const a = t - t0; return [p0[0] + v0[0] * a, p0[1] + v0[1] * a - 0.5 * GRAV * a * a, p0[2] + v0[2] * a]; };
+  f.v0 = v0; return f;
+}
+function groundClamp(p, minH) { const g = terrainH(p[0], p[2]) + minH; if (p[1] < g + 0.6) p[1] = smax(p[1], g, 0.5); return p; }
+
+const HP = { swingL: [0, 0, 0] };                    /* constant rope lengths of the swing arcs + shared path data */
+let hunterPathFn = null;
+
+function buildHunterPathA() {
+  /* ---------- swing 1: a rising spiral on the sphere |H - pin1| = L1 around the left shin ---------- */
+  const P5 = titanPose(5.0);
+  const pin5 = pinPos(P5, 0), w1 = wpPos(P5, 0);
+  const strike1 = vadd(w1, [0.3, 0.4, 1.6]);
+  const rel = vsub(strike1, pin5), L1 = vlen(rel);
+  HP.swingL[0] = L1;
+  const thS = Math.atan2(rel[2], rel[0]), dTh = TAU + 30 * DEG, th0 = thS + 30 * DEG;      /* 390 deg around the pin by the strike */
+  const phS = Math.asin(rel[1] / L1);
+  const pin33 = pinPos(titanPose(3.3), 0);
+  const ph0 = Math.asin(clamp((4.2 - pin33[1]) / L1, -1, 1));
+  const phi = hermite1([[3.3, ph0], [3.9, -6 * DEG], [4.35, 42 * DEG], [4.7, 52 * DEG], [5.0, phS]]);
+  function F(s) { return s <= 0 ? 1.2 * s : 1.2 * s - 0.75 * s * s + 0.55 * s * s * s; }       /* normalized swept angle */
+  function swing1(t) {
+    const tt = Math.min(t, 5.0), pin = pinPos(titanPose(tt), 0);
+    const th = th0 - dTh * F((tt - 3.3) / 1.7), ph = phi(tt), c = Math.cos(ph);
+    return [pin[0] + L1 * c * Math.cos(th), pin[1] + L1 * Math.sin(ph), pin[2] + L1 * c * Math.sin(th)];
+  }
+  HP.swing1 = swing1; HP.strikePos = [swing1(5.0)];
+  /* ---------- approach sprint ---------- */
+  const e33 = swing1(3.3), runEnd = [e33[0], 0, e33[2]];
+  HP.runSpeed = Math.hypot(runEnd[0] - HUNTER_START[0], runEnd[2] - HUNTER_START[2]) / 3.3;
+  function run0(t) { const u = t / 3.3; return G3(lerp(HUNTER_START[0], runEnd[0], u), lerp(HUNTER_START[2], runEnd[2], u)); }
+  /* ---------- kick off the knee, drop, sprint clear of the slam, turn, tether 2 ---------- */
+  const pin2a = pinPos(titanPose(10.5), 1);
+  /* swing 2 geometry (needs the strike standoff at W2) */
+  const P12 = titanPose(12.0), pin2s = pinPos(P12, 1), w2 = wpPos(P12, 1);
+  const strike2 = vadd(w2, vadd(qrot(P12.bq[B.CHEST], [1.5, 0.9, 0.2]), [0, 0.3, 0]));
+  const L2 = 5.6;                                    /* rope length when the forearm starts to lift */
+  const gy = terrainH(pin2a[0] - 4, pin2a[2] - 1) + RUN_H + 0.1, dy = gy - pin2a[1];
+  const hr = Math.sqrt(Math.max(1, L2 * L2 - dy * dy));
+  const toH = vnorm([-5.2 - pin2a[0], 0, 2.4 - pin2a[2]]);
+  const ps2 = [pin2a[0] + toH[0] * hr, gy, pin2a[2] + toH[2] * hr];
+  const splB = makeSpline([
+    { t: 5.0, p: HP.strikePos[0] }, { t: 5.3, p: [14.6, 8.4, 9.9] }, { t: 5.6, p: [11.3, 5.0, 8.4] },
+    { t: 6.05, p: G3(8.5, 6.0), g: 1, h: 1.0 }, { t: 6.5, p: G3(SLAM_POS[0], SLAM_POS[2]), g: 1 }, { t: 7.0, p: G3(-3.5, -3), g: 1 },
+    { t: 7.5, p: G3(-9.5, -7.5), g: 1 }, { t: 8.2, p: G3(-13.5, -4.5), g: 1 }, { t: 9.0, p: G3(-9.5, 3.2), g: 1, m: [1.5, 0, 0.8] },
+    { t: 9.3, p: G3(-8.8, 3.5), g: 1 }, { t: 10.0, p: G3(-5.2, 2.4), g: 1 }, { t: 10.5, p: ps2, g: 1, h: RUN_H + 0.1 }
+  ]);
+  /* ---------- tether 2: hoisted by the rising forearm (waypoints ride on the forearm pin), up to the shoulder ---------- */
+  function pinOff(off) { return function (t) { return vadd(pinPos(titanPose(t), 1), off); }; }
+  const land2 = G3(4, -6, 1.0), rel2 = [11.6, 25.5, -11.8];
+  const bal2 = ballistic(rel2, 12.4, land2, 13.5);
+  const splS = makeSpline([
+    { t: 10.5, p: ps2 }, { t: 10.9, p: pinOff([-1.6, -5.0, -1.2]) }, { t: 11.2, p: pinOff([-2.6, -4.2, -1.2]) }, { t: 11.5, p: pinOff([-3.6, 0.6, -1.6]) }, { t: 11.75, p: pinOff([-0.5, 4.6, -0.8]) },
+    { t: 12.0, p: strike2 }, { t: 12.2, p: [10.8, 28.9, -10.5] }, { t: 12.4, p: rel2, m: bal2.v0 }
+  ]);
+  HP.strikePos[1] = strike2;
+  const P19 = titanPose(T_SWEEP_HIT), fc = fistCenter(P19, 0), fv = vnorm(vsub(fistCenter(titanPose(19.02), 0), fistCenter(titanPose(18.98), 0)));
+  const hit = [fc[0] + fv[0] * 2.7, 0, fc[2] + fv[2] * 2.7]; hit[1] = terrainH(hit[0], hit[2]) + 1.9;
+  HP.hitPos = hit; HP.fistDir = fv;
+  const splC = makeSpline([
+    { t: 13.5, p: land2, g: 1, h: 1.0 }, { t: 14.3, p: G3(-1.5, -3.5), g: 1 }, { t: 15.2, p: G3(-6.5, 0.5), g: 1 }, { t: 16.0, p: G3(-9.5, 3.0), g: 1 },
+    { t: 17.0, p: G3(-9.0, 2.2), g: 1 }, { t: 18.0, p: G3(hit[0] - 3.4, hit[2] - 0.8), g: 1 }, { t: 18.6, p: G3(hit[0] - 1.2, hit[2] - 0.2), g: 1 }, { t: 19.0, p: hit }
+  ]);
+  HP.pathA = function (t) {
+    if (t < 3.05) return run0(t);
+    if (t < 3.3) return vlerp(run0(t), swing1(t), sstep(3.05, 3.3, t));
+    if (t < 5.0) return groundClamp(swing1(t), 1.15);
+    if (t < 10.5) return splB(t);
+    if (t < 12.4) return groundClamp(splS(t), 1.15);
+    if (t < 13.5) return bal2(t);
+    return splC(Math.min(t, T_SWEEP_HIT));
+  };
+}
+
+/* second half: needs the ragdoll's resting place (upXZ) */
+function buildHunterPathB(upXZ, lieDir) {
+  HP.up = upXZ; HP.lieDir = lieDir;
+  const Q = [-2, 0, -13], d = vnorm([Q[0] - upXZ[0], 0, Q[2] - upXZ[2]]), dist = Math.hypot(Q[0] - upXZ[0], Q[2] - upXZ[2]);
+  function along(s) { const k = Math.min(s, dist * 0.92); return G3(upXZ[0] + d[0] * k, upXZ[2] + d[2] * k); }
+  function w3off(off) { return function (t) { return vadd(wpPos(titanPose(t), 2), off); }; }
+  function w3loc(loc) { return function (t) { const P = titanPose(t); return vadd(wpPos(P, 2), qrot(P.bq[B.CHEST], loc)); }; }
+  const upG = function (t) { return [upXZ[0], terrainH(upXZ[0], upXZ[2]) + lerp(0.36, RUN_H, smooth01((t - T_RAG_END) / 1.0)), upXZ[2]]; };
+  const strikeA = w3loc([1.75, 0.15, 0.25]), strikeB = w3loc([1.7, 0.2, 0.2]);
+  const w3ref = wpPos(titanPose(26.6), 2);
+  HP.strikePos[2] = strikeA(27.0); HP.strikePos[3] = strikeB(T_KILL);
+  const splD = makeSpline([
+    { t: 22.5, p: G3(upXZ[0], upXZ[2]), g: 1, m: [0, 0, 0] }, { t: 23.5, p: along(9.5), g: 1 }, { t: 23.8, p: along(13.6), g: 1 }, { t: 24.5, p: along(23.5), g: 1 },
+    { t: 25.2, p: vadd(w3ref, [-14.5, -17, -9.5]) }, { t: 25.85, p: vadd(w3ref, [-9, -9.5, -6.5]) }, { t: 26.45, p: w3off([-5.8, -4.6, -4.2]) }, { t: 27.0, p: strikeA },
+    { t: 27.5, p: w3loc([2.6, -0.3, -1.6]) }, { t: 28.1, p: w3loc([3.1, 0.5, -2.6]), m: [0, 0, 0] }, { t: 28.8, p: w3loc([2.9, -0.2, -1.0]) }, { t: T_KILL, p: strikeB }
+  ]);
+  const land3 = G3(-8, 7, 0.95);
+  const bal3 = ballistic(HP.strikePos[3], T_KILL, land3, T_HUNTER_LAND);
+  const splE = makeSpline([
+    { t: 31.5, p: land3, g: 1, h: 0.95 }, { t: 31.9, p: G3(-9.9, 8.1, 0.75), g: 1, h: 0.75 }, { t: 32.3, p: G3(-11.3, 9.0, 1.0), g: 1, h: 1.0 },
+    { t: 33.0, p: G3(-11.9, 9.5), g: 1, m: [0, 0, 0] }, { t: 33.7, p: G3(-11.9, 9.5), g: 1, m: [0, 0, 0] },
+    { t: 36.0, p: G3(-2.5, 13), g: 1, m: [0, 0, 0] }, { t: 40.5, p: G3(-2.5, 13), g: 1, m: [0, 0, 0] }
+  ]);
+  HP.pathB = function (t) {
+    if (t < T_RAG_BLEND_END) return upG(t);
+    if (t < T_KILL) return splD(t);
+    if (t < T_HUNTER_LAND) return bal3(t);
+    return splE(t);
+  };
+  hunterPathFn = function (t) { return t <= T_SWEEP_HIT ? HP.pathA(t) : (t < T_RAG_END ? HP.pathA(T_SWEEP_HIT) : HP.pathB(t)); };
+}
+/* grounded weight of the animated hunter (1 on the grass, 0 in the air) */
+const GROUND_SPANS = [[-1, 3.07], [6.03, 10.52], [13.48, 18.88], [21.4, 24.6], [31.48, 99]];
+function groundedAt(t) { let g = 0; for (let i = 0; i < GROUND_SPANS.length; i++) g = Math.max(g, pulse(GROUND_SPANS[i][0] - 0.04, GROUND_SPANS[i][0] + 0.08, GROUND_SPANS[i][1] - 0.06, GROUND_SPANS[i][1] + 0.06, t)); return g; }
+function tetherAt(t) { for (let i = 0; i < 3; i++) if (t >= TETHER[i].attach && t < TETHER[i].release) return i; return -1; }
+/* =====================================================================
+   HUNTER — body. 15 joints; every body part is drawn between joints, so
+   the animated pose, the Verlet ragdoll and the blend share one format.
+   ===================================================================== */
+const NJ = 15;
+const J = { HEAD: 0, CHEST: 1, PELVIS: 2, SHL: 3, SHR: 4, ELL: 5, ELR: 6, HAL: 7, HAR: 8, HIPL: 9, HIPR: 10, KNL: 11, KNR: 12, FTL: 13, FTR: 14 };
+const UARM = 0.30, LARM = 0.29, ULEG = 0.46, LLEG = 0.45, TORSO = 0.44, NECK = 0.27, SH_W = 0.2, HIP_W = 0.1, BLADE_LEN = 1.15;
+const UPV = [0, 1, 0];
+const PH_DT = 1 / 120;
+const runPhaseTab = new Float32Array(Math.round(41 / PH_DT) + 2);
+let runPhaseN = 0, runPhaseAcc = 0;
+function hunterVel(t) { const a = hunterPathFn(t), b = hunterPathFn(t - 0.03); return [(a[0] - b[0]) / 0.03, (a[1] - b[1]) / 0.03, (a[2] - b[2]) / 0.03]; }
+function buildRunPhase(tEnd) {                     /* stride phase = integral of a speed-dependent cadence (precomputed table) */
+  const n = Math.min(runPhaseTab.length - 1, Math.round(tEnd / PH_DT));
+  for (; runPhaseN <= n; runPhaseN++) {
+    const t = runPhaseN * PH_DT; runPhaseTab[runPhaseN] = runPhaseAcc;
+    const v = hunterVel(t), sp = Math.hypot(v[0], v[2]);
+    runPhaseAcc += TAU * (0.9 + 0.105 * Math.min(sp, 18)) * PH_DT * groundedAt(t) * sstep(0.3, 1.5, sp);
+  }
+}
+function runPhase(t) { const x = clamp(t / PH_DT, 0, runPhaseTab.length - 2), i = Math.floor(x); return lerp(runPhaseTab[i], runPhaseTab[i + 1], x - i); }
+function tetherHangW(t) { let w = 0; for (let i = 0; i < 3; i++) w = Math.max(w, pulse(TETHER[i].attach - 0.02, TETHER[i].attach + 0.15, TETHER[i].release - 0.04, TETHER[i].release + 0.15, t)); return w; }
+function tetherAimW(t) { let w = 0; for (let i = 0; i < 3; i++) w = Math.max(w, pulse(TETHER[i].fire - 0.18, TETHER[i].fire - 0.02, TETHER[i].release - 0.04, TETHER[i].release + 0.25, t)); return w; }
+function tetherIndexNear(t) { let b = 0; for (let i = 0; i < 3; i++) if (t >= TETHER[i].fire - 0.3) b = i; return b; }
+function frameFromJoints(j) {
+  const u = vnorm(vsub(j[J.CHEST], j[J.PELVIS])); let r = vsub(j[J.SHR], j[J.SHL]); r = vnorm(vsub(r, vscale(u, vdot(r, u))));
+  return { u: u, r: r, X: vcross(u, r) };
+}
+
+function hunterPoseKin(t) {
+  const c = hunterPathFn(t), v = hunterVel(t), sp = vlen(v);
+  const P = titanPose(t), tc = chestCenter(P);
+  const gW = groundedAt(t), twS = tetherHangW(t), aimW = tetherAimW(t);
+  const ti = tetherIndexNear(t), pin = pinPos(P, ti);
+  const face = vnorm([tc[0] - c[0], 0, tc[2] - c[2]]);
+  const vh = [v[0], 0, v[2]], vdir = sp > 0.5 ? vscale(v, 1 / sp) : face;
+  let f = vnorm(vadd(vh, vscale(face, 2.5)));
+  const toPin = vnorm(vsub(pin, c));
+  const getup = (t >= T_RAG_END - 0.01 && t < T_RAG_BLEND_END) ? clamp(t - T_RAG_END, 0, 1) : -1;
+  /* body up axis */
+  const lean = clamp(sp * 2.0, 0, 34) * DEG;
+  const uG = vadd(vscale(f, Math.sin(lean)), [0, Math.cos(lean), 0]);
+  const uT = vnorm(vadd(vadd(vscale(toPin, 0.75), [0, 0.55, 0]), vscale(vdir, -0.2)));
+  const uA = vnorm(vadd(UPV, vscale(vh, 0.012)));
+  const wT = (1 - gW) * twS, wA = (1 - gW) * (1 - twS);
+  let u = vnorm(vadd(vadd(vscale(uG, gW), vscale(uT, wT)), vscale(uA, wA)));
+  if (getup >= 0) u = vnorm(vlerp(vadd(HP.lieDir, [0, 0.35, 0]), UPV, smooth01(getup * 1.15)));
+  let X = vsub(f, vscale(u, vdot(f, u))); if (vlen(X) < 1e-4) X = vsub(face, vscale(u, vdot(face, u))); X = vnorm(X);
+  if (t >= T_HUNTER_LAND && t < T_HUNTER_LAND + 0.8) {         /* landing roll: one forward revolution */
+    const a = TAU * smooth01((t - T_HUNTER_LAND) / 0.8), ca = Math.cos(a), sa = Math.sin(a);
+    const u2 = vadd(vscale(u, ca), vscale(X, sa)), X2 = vsub(vscale(X, ca), vscale(u, sa)); u = u2; X = X2;
+  }
+  const r = vcross(X, u);
+  const fh = vnorm([f[0], 0, f[2]]);
+  const j = new Array(NJ);
+  const pel = vmad(c, u, -TORSO);
+  j[J.CHEST] = c; j[J.PELVIS] = pel; j[J.HEAD] = vadd(vmad(c, u, NECK), vscale(X, 0.03));
+  const shL = vadd(vmad(c, r, -SH_W), vscale(u, 0.03)), shR = vadd(vmad(c, r, SH_W), vscale(u, 0.03));
+  const hipL = vmad(pel, r, -HIP_W), hipR = vmad(pel, r, HIP_W);
+  j[J.SHL] = shL; j[J.SHR] = shR; j[J.HIPL] = hipL; j[J.HIPR] = hipR;
+  /* ---- limb targets per mode ---- */
+  const ph = runPhase(t), idle = 1 - sstep(0.4, 2.0, sp), k = clamp(sp / 9, 0.25, 1.15), mv = 1 - idle;
+  function footG(hip, phi, side) {
+    const sw = Math.sin(phi), lf = Math.max(0, Math.cos(phi)), st = 0.55 * k * mv * sw - 0.04;
+    const x = hip[0] + fh[0] * st + r[0] * side * 0.03, z = hip[2] + fh[2] * st + r[2] * side * 0.03;
+    return [x, terrainH(x, z) + 0.09 + 0.3 * k * lf * mv, z];
+  }
+  function handG(sh, phi, side) {
+    const sa = Math.sin(phi);
+    return vadd(sh, vadd(vadd(vscale(fh, 0.3 * k * sa * mv + 0.04 * idle), [0, -0.36 + 0.1 * Math.abs(sa) * mv * k - 0.14 * idle, 0]), vscale(r, side * (0.09 - 0.03 * idle))));
+  }
+  const tG = [footG(hipL, ph, -1), footG(hipR, ph + PI, 1), handG(shL, ph + PI, -1), handG(shR, ph, 1)];
+  const tA = [vadd(vadd(vmad(hipL, u, -0.62), vscale(X, -0.22)), vscale(r, -0.05)), vadd(vadd(vmad(hipR, u, -0.5), vscale(X, 0.2)), vscale(r, 0.05)),
+              vadd(vadd(vmad(shL, r, -0.3), vscale(u, -0.15)), vscale(X, 0.1)), vadd(vadd(vmad(shR, r, 0.3), vscale(u, -0.2)), vscale(X, -0.1))];
+  const tT = [vadd(vadd(vmad(hipL, u, -0.78), vscale(vdir, -0.28)), vscale(r, -0.04)), vadd(vadd(vadd(vmad(hipR, u, -0.6), vscale(vdir, -0.1)), vscale(X, 0.2)), vscale(r, 0.04)),
+              vmad(shL, toPin, 0.56), vadd(vadd(vmad(shR, u, -0.3), vscale(X, -0.2)), vscale(r, 0.22))];
+  const tg = new Array(4);
+  for (let i = 0; i < 4; i++) tg[i] = [tG[i][0] * gW + tA[i][0] * wA + tT[i][0] * wT, tG[i][1] * gW + tA[i][1] * wA + tT[i][1] * wT, tG[i][2] * gW + tA[i][2] * wA + tT[i][2] * wT];
+  if (t >= T_HUNTER_LAND && t < T_HUNTER_LAND + 0.8) {         /* tuck while rolling */
+    const w = pulse(T_HUNTER_LAND, T_HUNTER_LAND + 0.12, T_HUNTER_LAND + 0.62, T_HUNTER_LAND + 0.8, t);
+    tg[0] = vlerp(tg[0], vadd(vmad(hipL, u, -0.4), vscale(X, 0.25)), w); tg[1] = vlerp(tg[1], vadd(vmad(hipR, u, -0.4), vscale(X, 0.25)), w);
+    tg[2] = vlerp(tg[2], vadd(vmad(shL, X, 0.3), vscale(u, -0.15)), w); tg[3] = vlerp(tg[3], vadd(vmad(shR, X, 0.3), vscale(u, -0.15)), w);
+  }
+  if (getup >= 0) {                                 /* push up off the grass, gather the feet, stand */
+    const e = smooth01(getup), hw = 1 - sstep(0.45, 0.85, getup);
+    const gp = function (p) { return [p[0], terrainH(p[0], p[2]) + 0.07, p[2]]; };
+    tg[2] = vlerp(tg[2], gp(vadd(vmad(shL, r, -0.12), vscale(fh, 0.18))), hw); tg[3] = vlerp(tg[3], gp(vadd(vmad(shR, r, 0.12), vscale(fh, 0.18))), hw);
+    const back = vscale(HP.lieDir, -lerp(0.75, 0.0, e));
+    tg[0] = gp(vadd(vadd(pel, back), vscale(r, -0.12))); tg[1] = gp(vadd(vadd(pel, vscale(back, 0.55)), vscale(r, 0.12)));
+  }
+  tg[2] = vlerp(tg[2], vmad(shL, toPin, 0.56), aimW);          /* launcher arm aims at the pin */
+  /* ---- strikes: wind up, extend through the weak point ---- */
+  let bd = vnorm(vadd(vadd(vscale(X, -0.75 * gW - 0.5 * (1 - gW)), vscale(u, -0.55 * gW + 0.2 * (1 - gW))), vscale(r, 0.25 * gW + 0.7 * (1 - gW))));
+  for (let s = 0; s < STRIKES.length; s++) {
+    const ts = STRIKES[s].t; if (t < ts - 0.5 || t > ts + 0.5) continue;
+    const wu = pulse(ts - 0.42, ts - 0.16, ts - 0.06, ts - 0.01, t), hi = pulse(ts - 0.06, ts, ts + 0.12, ts + 0.38, t);
+    const dW = vnorm(vsub(wpPos(P, STRIKES[s].wp), shR));
+    tg[3] = vlerp(tg[3], vadd(vadd(vmad(shR, u, 0.3), vscale(X, -0.2)), vscale(r, 0.2)), wu);
+    tg[3] = vlerp(tg[3], vmad(shR, dW, 0.55), hi);
+    bd = vnorm(vlerp(bd, vnorm(vadd(vscale(X, -0.5), vscale(u, 0.85))), wu)); bd = vnorm(vlerp(bd, dW, hi));
+  }
+  /* ---- solve limbs ---- */
+  const poleLeg = function (s) { return vadd(vadd(X, vscale(u, 0.15)), vscale(r, s * 0.1)); };
+  const poleArm = function (s) { return vadd(vadd(vscale(X, -0.5), vscale(u, -0.6)), vscale(r, s * 0.5)); };
+  let q = ik2(hipL, tg[0], ULEG, LLEG, poleLeg(-1)); j[J.KNL] = q.mid; j[J.FTL] = q.end;
+  q = ik2(hipR, tg[1], ULEG, LLEG, poleLeg(1)); j[J.KNR] = q.mid; j[J.FTR] = q.end;
+  q = ik2(shL, tg[2], UARM, LARM, poleArm(-1)); j[J.ELL] = q.mid; j[J.HAL] = q.end;
+  q = ik2(shR, tg[3], UARM, LARM, poleArm(1)); j[J.ELR] = q.mid; j[J.HAR] = q.end;
+  return { j: j, bladeDir: bd, vel: v };
+}
+
+/* ---------------- Verlet ragdoll (19.000 -> 22.5), fixed 1/240 s steps, cached ---------------- */
+const RAG = { n: 0, data: null, impacts: [], t0: T_SWEEP_HIT };
+const RAG_LAUNCH = [-14, 9, -6];
+const RAG_STICKS = [[0, 1], [1, 2], [1, 3], [1, 4], [3, 4], [3, 2], [4, 2], [2, 9], [2, 10], [9, 10], [1, 9], [1, 10], [3, 5], [5, 7], [4, 6], [6, 8], [9, 11], [11, 13], [10, 12], [12, 14], [0, 3], [0, 4]];
+const RAG_MIN = [[7, 1, 0.14], [8, 1, 0.14], [13, 2, 0.34], [14, 2, 0.34], [11, 12, 0.12], [13, 14, 0.1], [11, 1, 0.3], [12, 1, 0.3], [5, 2, 0.2], [6, 2, 0.2], [7, 9, 0.1], [8, 10, 0.1], [0, 2, 0.6], [5, 6, 0.3]];
+const RAG_RAD = [0.13, 0.17, 0.15, 0.09, 0.09, 0.06, 0.06, 0.06, 0.06, 0.1, 0.1, 0.07, 0.07, 0.06, 0.06];
+function buildRagdoll() {
+  const pose = hunterPoseKin(T_SWEEP_HIT), n = NJ;
+  const x = new Float64Array(n * 3), px = new Float64Array(n * 3);
+  const com = [0, 0, 0];
+  for (let i = 0; i < n; i++) { x[i * 3] = pose.j[i][0]; x[i * 3 + 1] = pose.j[i][1]; x[i * 3 + 2] = pose.j[i][2]; com[0] += pose.j[i][0] / n; com[1] += pose.j[i][1] / n; com[2] += pose.j[i][2] / n; }
+  const prng = mulberry32(SEED ^ 0x51ED);          /* seeded tumble perturbation */
+  const w = [3.4 + (prng() - 0.5) * 1.6, 1.2 + (prng() - 0.5) * 1.2, -5.2 + (prng() - 0.5) * 1.6];
+  for (let i = 0; i < n; i++) {
+    const rel = [x[i * 3] - com[0], x[i * 3 + 1] - com[1], x[i * 3 + 2] - com[2]], sv = vcross(w, rel);
+    for (let k = 0; k < 3; k++) px[i * 3 + k] = x[i * 3 + k] - (RAG_LAUNCH[k] + sv[k]) * SUB;
+  }
+  const rest = RAG_STICKS.map(function (s) { return vdist(pose.j[s[0]], pose.j[s[1]]); });
+  const steps = Math.round((T_RAG_BLEND_END + 0.25 - T_SWEEP_HIT) / SUB);
+  RAG.n = steps; RAG.data = new Float32Array((steps + 1) * n * 3); RAG.data.set(x, 0);
+  const contact = new Uint8Array(n); let lastImp = -1;
+  for (let s = 1; s <= steps; s++) {
+    const tNow = T_SWEEP_HIT + s * SUB;
+    for (let i = 0; i < n; i++) {
+      const a = i * 3;
+      const vx = (x[a] - px[a]) * 0.9995, vy = (x[a + 1] - px[a + 1]) * 0.9995, vz = (x[a + 2] - px[a + 2]) * 0.9995;
+      px[a] = x[a]; px[a + 1] = x[a + 1]; px[a + 2] = x[a + 2];
+      const dg = x[a + 1] - terrainH(x[a], x[a + 2]);            /* tall wet grass drags anything moving through it */
+      const drag = dg < 0.45 ? 1 - 4.5 * SUB * (1 - dg / 0.45) : 1;
+      x[a] += vx * drag; x[a + 1] += vy * drag - GRAV * SUB * SUB; x[a + 2] += vz * drag;
+    }
+    for (let it = 0; it < 10; it++) {
+      for (let c = 0; c < RAG_STICKS.length; c++) {
+        const a = RAG_STICKS[c][0] * 3, b = RAG_STICKS[c][1] * 3;
+        const dx = x[b] - x[a], dy = x[b + 1] - x[a + 1], dz = x[b + 2] - x[a + 2], d = Math.sqrt(dx * dx + dy * dy + dz * dz) || 1e-6, k = (d - rest[c]) / d * 0.5;
+        x[a] += dx * k; x[a + 1] += dy * k; x[a + 2] += dz * k; x[b] -= dx * k; x[b + 1] -= dy * k; x[b + 2] -= dz * k;
+      }
+      for (let c = 0; c < RAG_MIN.length; c++) {
+        const a = RAG_MIN[c][0] * 3, b = RAG_MIN[c][1] * 3, m = RAG_MIN[c][2];
+        const dx = x[b] - x[a], dy = x[b + 1] - x[a + 1], dz = x[b + 2] - x[a + 2], d = Math.sqrt(dx * dx + dy * dy + dz * dz) || 1e-6;
+        if (d < m) { const k = (d - m) / d * 0.5; x[a] += dx * k; x[a + 1] += dy * k; x[a + 2] += dz * k; x[b] -= dx * k; x[b + 1] -= dy * k; x[b + 2] -= dz * k; }
+      }
+      for (let i = 0; i < n; i++) {                 /* ground: restitution + Coulomb-like friction */
+        const a = i * 3, g = terrainH(x[a], x[a + 2]) + RAG_RAD[i];
+        if (x[a + 1] < g) {
+          const vy = x[a + 1] - px[a + 1];
+          if (it === 0) {
+            if (!contact[i] && i < 3 && -vy / SUB > 2.5 && tNow - lastImp > 0.12) { RAG.impacts.push({ t: tNow, p: [x[a], g, x[a + 2]], v: -vy / SUB }); lastImp = tNow; }
+            contact[i] = 2;
+            const vx = x[a] - px[a], vz = x[a + 2] - px[a + 2], vh = Math.sqrt(vx * vx + vz * vz), dv = 70 * SUB * SUB;
+            if (vh > 1e-9) { const f = Math.max(0, vh - dv) / vh; px[a] = x[a] - vx * f; px[a + 2] = x[a + 2] - vz * f; }
+            if (vy < 0) px[a + 1] = g + vy * 0.22;
+          }
+          x[a + 1] = g;
+        }
+      }
+    }
+    for (let i = 0; i < n; i++) if (contact[i] > 0) contact[i]--;
+    RAG.data.set(x, s * n * 3);
+  }
+}
+function ragJoints(t) {
+  const xk = clamp((t - T_SWEEP_HIT) / SUB, 0, RAG.n - 1e-6), k = Math.floor(xk), fr = xk - k, a = k * NJ * 3, b = a + NJ * 3, d = RAG.data, j = new Array(NJ);
+  for (let i = 0; i < NJ; i++) j[i] = [d[a + i * 3] + (d[b + i * 3] - d[a + i * 3]) * fr, d[a + i * 3 + 1] + (d[b + i * 3 + 1] - d[a + i * 3 + 1]) * fr, d[a + i * 3 + 2] + (d[b + i * 3 + 2] - d[a + i * 3 + 2]) * fr];
+  return j;
+}
+/* full hunter state at motion time t */
+const _hjCache = new Map();
+function hunterState(t) {
+  let h = _hjCache.get(t); if (h) return h;
+  if (_hjCache.size > 600) _hjCache.clear();
+  let j, bd, mode = 0;
+  if (t < T_SWEEP_HIT || t >= T_RAG_BLEND_END) { const k = hunterPoseKin(t); j = k.j; bd = k.bladeDir; }
+  else {
+    const rj = ragJoints(t); mode = 1;
+    const rbd = vnorm(vsub(rj[J.HAR], rj[J.ELR]));
+    if (t < T_RAG_END) { j = rj; bd = rbd; }
+    else {                                          /* every part interpolated from ragdoll pose to the animated get-up pose */
+      const k = hunterPoseKin(t), w = smooth01((t - T_RAG_END) / (T_RAG_BLEND_END - T_RAG_END)); mode = 2;
+      j = new Array(NJ); for (let i = 0; i < NJ; i++) j[i] = vlerp(rj[i], k.j[i], w);
+      bd = vnorm(vlerp(rbd, k.bladeDir, w));
+    }
+  }
+  const fr = frameFromJoints(j);
+  h = { j: j, bladeDir: bd, u: fr.u, r: fr.r, X: fr.X, mode: mode, bladeBase: j[J.HAR], bladeTip: vmad(j[J.HAR], bd, BLADE_LEN), launcher: j[J.HAL] };
+  _hjCache.set(t, h); return h;
+}
+/* chest position table (240 Hz) -> cheap closed-form smoothing for the camera */
+const HTAB = new Float32Array((Math.round(40.6 / SUB) + 2) * 3);
+function buildChestTable() { const n = HTAB.length / 3; for (let i = 0; i < n; i++) { const c = hunterState(i * SUB).j[J.CHEST]; HTAB[i * 3] = c[0]; HTAB[i * 3 + 1] = c[1]; HTAB[i * 3 + 2] = c[2]; } _hjCache.clear(); }
+function hunterChest(t) {
+  const x = clamp(t / SUB, 0, HTAB.length / 3 - 2), i = Math.floor(x), f = x - i, a = i * 3;
+  return [HTAB[a] + (HTAB[a + 3] - HTAB[a]) * f, HTAB[a + 1] + (HTAB[a + 4] - HTAB[a + 1]) * f, HTAB[a + 2] + (HTAB[a + 5] - HTAB[a + 2]) * f];
+}
+function initHunter() {
+  seatPin2();
+  buildHunterPathA();
+  hunterPathFn = HP.pathA;
+  buildRunPhase(T_SWEEP_HIT + 0.05);
+  buildRagdoll();
+  const rj = ragJoints(T_RAG_END + 0.5), pel = rj[J.PELVIS], ch = rj[J.CHEST];   /* where the ragdoll comes to rest */
+  let lie = [ch[0] - pel[0], 0, ch[2] - pel[2]]; lie = vlen(lie) > 0.05 ? vnorm(lie) : [1, 0, 0];
+  buildHunterPathB([pel[0], 0, pel[2]], lie);
+  buildRunPhase(40.6);
+  buildChestTable();
+}
+/* =====================================================================
+   TETHERS — three real Verlet chains (40 points each): distance
+   constraints, gravity, wind, collision against capsules around the
+   Titan's bones, pinned to a bone and to the hunter's launcher.
+   Stepped at a fixed 1/240 s from each fire time and cached per step, so
+   the shape at any time is identical on every run / scrub direction.
+   The launcher spool keeps the line taut: it pays out when the chain is
+   stretched and reels in slowly when it is not.
+   ===================================================================== */
+const ROPE_N = 40;
+const ROPE_TAIL = 0.9;                               /* seconds the released line takes to whip back into the launcher */
+const ROPES = [];
+function ropePinAt(i, t) {                           /* anchor end: rides the bone; after that bone's release it falls freely */
+  const rel = BONE_REL[PIN_BONE[i]];
+  if (t <= rel) return pinPos(titanPose(t), i);
+  const p0 = pinPos(titanPose(rel), i), a = t - rel, g = terrainH(p0[0], p0[2]) + 0.3;
+  return [p0[0], Math.max(g, p0[1] - 0.5 * GRAV * a * a), p0[2]];
+}
+function seatPin2() {                                /* seat tether 2's pin on the forearm surface that faces the hunter */
+  const P = titanPose(TETHER[1].attach), b = B.RFA, ax = boneLocal(P, b, [0, -3.4, 0]);
+  const d = vnorm(vsub(P.tip[b], P.bp[b]));
+  let n = vsub([-8.8, 1.5, 3.5], ax); n = vnorm(vsub(n, vscale(d, vdot(n, d))));
+  const loc = qrot(qconj(P.bq[b]), vscale(n, BONE_RAD[b] - 0.05));
+  PIN_LOCAL[1] = [loc[0], -3.4 + loc[1], loc[2]];
+}
+function simulateRope(i) {
+  const T = TETHER[i], N = ROPE_N, t0 = T.fire, steps = Math.round((T.release + ROPE_TAIL - t0) / SUB);
+  const R = { t0: t0, steps: steps, data: new Float32Array((steps + 1) * N * 3), rest: new Float32Array(steps + 1), vis: new Uint8Array(steps + 1) };
+  const x = new Float64Array(N * 3), px = new Float64Array(N * 3);
+  const L0 = hunterState(t0).launcher;
+  for (let k = 0; k < N; k++) { x[k * 3] = px[k * 3] = L0[0]; x[k * 3 + 1] = px[k * 3 + 1] = L0[1]; x[k * 3 + 2] = px[k * 3 + 2] = L0[2]; }
+  R.data.set(x, 0); R.rest[0] = 0.2; R.vis[0] = 1;
+  let rest = 0.2;
+  const caps = new Float64Array((NB + 2) * 7); let nCaps = 0;
+  const gust = function (t, k) { return vnoise(t * 1.7 + k * 0.13, 31 + i) * 1.6; };
+  for (let s = 1; s <= steps; s++) {
+    const t = t0 + s * SUB, P = titanPose(t), L = hunterState(t).launcher;
+    const attached = t >= T.attach && t < T.release, flying = t < T.attach;
+    let head = null;
+    if (flying) { const e = (t - t0) / (T.attach - t0), pin = ropePinAt(i, t); head = [lerp(L[0], pin[0], e), lerp(L[1], pin[1], e) + 0.6 * Math.sin(PI * e), lerp(L[2], pin[2], e)]; rest = vdist(head, L) * 1.03 + 0.05; }
+    else if (attached) head = ropePinAt(i, t);
+    else rest = Math.max(0.3, rest - 55 * SUB);
+    /* capsules of the bones that still hold together */
+    nCaps = 0;
+    let bx0 = 1e9, by0 = 1e9, bz0 = 1e9, bx1 = -1e9, by1 = -1e9, bz1 = -1e9;
+    for (let k = 0; k < N; k++) { const a = k * 3; if (x[a] < bx0) bx0 = x[a]; if (x[a] > bx1) bx1 = x[a]; if (x[a + 1] < by0) by0 = x[a + 1]; if (x[a + 1] > by1) by1 = x[a + 1]; if (x[a + 2] < bz0) bz0 = x[a + 2]; if (x[a + 2] > bz1) bz1 = x[a + 2]; }
+    const addCap = function (a, b, r) {
+      const m = r + 1.2;
+      if (Math.max(a[0], b[0]) + m < bx0 || Math.min(a[0], b[0]) - m > bx1 || Math.max(a[1], b[1]) + m < by0 || Math.min(a[1], b[1]) - m > by1 || Math.max(a[2], b[2]) + m < bz0 || Math.min(a[2], b[2]) - m > bz1) return;
+      const ux = b[0] - a[0], uy = b[1] - a[1], uz = b[2] - a[2], wx = L[0] - a[0], wy = L[1] - a[1], wz = L[2] - a[2];
+      const hh = clamp((wx * ux + wy * uy + wz * uz) / (ux * ux + uy * uy + uz * uz), 0, 1);
+      if (Math.hypot(wx - ux * hh, wy - uy * hh, wz - uz * hh) < r + 0.12) return;      /* the launcher itself is inside this volume (strike reach) */
+      const o = nCaps * 7; caps[o] = a[0]; caps[o + 1] = a[1]; caps[o + 2] = a[2]; caps[o + 3] = b[0] - a[0]; caps[o + 4] = b[1] - a[1]; caps[o + 5] = b[2] - a[2]; caps[o + 6] = r; nCaps++;
+    };
+    for (let b = 0; b < NB; b++) if (t < BONE_REL[b]) addCap(P.bp[b], P.tip[b], BONE_RAD[b]);
+    if (t < T_REL.chest) addCap(P.bp[B.LUA], P.bp[B.RUA], 2.6);
+    if (t < T_REL.pelvis) addCap(P.bp[B.LTH], P.bp[B.RTH], 2.6);
+    /* integrate */
+    for (let k = 0; k < N; k++) {
+      const a = k * 3, vx = (x[a] - px[a]) * 0.992, vy = (x[a + 1] - px[a + 1]) * 0.992, vz = (x[a + 2] - px[a + 2]) * 0.992;
+      px[a] = x[a]; px[a + 1] = x[a + 1]; px[a + 2] = x[a + 2];
+      x[a] += vx + (2.4 + gust(t, k)) * SUB * SUB; x[a + 1] += vy - GRAV * SUB * SUB; x[a + 2] += vz + gust(t + 9.7, k) * 0.5 * SUB * SUB;
+    }
+    const seg = rest / (N - 1), e0 = (N - 1) * 3;
+    for (let it = 0; it < 12; it++) {
+      if (head) { x[0] = head[0]; x[1] = head[1]; x[2] = head[2]; }
+      x[e0] = L[0]; x[e0 + 1] = L[1]; x[e0 + 2] = L[2];
+      for (let k = 0; k < N - 1; k++) {
+        const a = k * 3, b = a + 3, dx = x[b] - x[a], dy = x[b + 1] - x[a + 1], dz = x[b + 2] - x[a + 2], d = Math.sqrt(dx * dx + dy * dy + dz * dz) || 1e-6, c = (d - seg) / d * 0.5;
+        x[a] += dx * c; x[a + 1] += dy * c; x[a + 2] += dz * c; x[b] -= dx * c; x[b + 1] -= dy * c; x[b + 2] -= dz * c;
+      }
+      for (let k = (head ? 1 : 0); k < N - 1; k++) {
+        const a = k * 3;
+        for (let c = 0; c < nCaps; c++) {
+          const o = c * 7, ax = caps[o], ay = caps[o + 1], az = caps[o + 2], ux = caps[o + 3], uy = caps[o + 4], uz = caps[o + 5], r = caps[o + 6] + 0.06;
+          const wx = x[a] - ax, wy = x[a + 1] - ay, wz = x[a + 2] - az;
+          let h = (wx * ux + wy * uy + wz * uz) / (ux * ux + uy * uy + uz * uz); h = h < 0 ? 0 : (h > 1 ? 1 : h);
+          const qx = wx - ux * h, qy = wy - uy * h, qz = wz - uz * h, d2 = qx * qx + qy * qy + qz * qz;
+          if (d2 < r * r) { const d = Math.sqrt(d2) || 1e-6, m = (r - d) / d; x[a] += qx * m; x[a + 1] += qy * m; x[a + 2] += qz * m; }
+        }
+        const g = terrainH(x[a], x[a + 2]) + 0.04; if (x[a + 1] < g) x[a + 1] = g;
+      }
+    }
+    if (head) { x[0] = head[0]; x[1] = head[1]; x[2] = head[2]; }
+    x[e0] = L[0]; x[e0 + 1] = L[1]; x[e0 + 2] = L[2];
+    if (attached) {                                  /* spool tension control */
+      let cur = 0; for (let k = 0; k < N - 1; k++) { const a = k * 3; cur += Math.sqrt((x[a + 3] - x[a]) * (x[a + 3] - x[a]) + (x[a + 4] - x[a + 1]) * (x[a + 4] - x[a + 1]) + (x[a + 5] - x[a + 2]) * (x[a + 5] - x[a + 2])); }
+      if (cur > rest * 1.004) rest += Math.min(cur - rest, 70 * SUB);
+      else rest = Math.max(rest - 18 * SUB, vdist(head, L) * 1.002);
+    }
+    R.data.set(x, s * N * 3); R.rest[s] = rest; R.vis[s] = (flying || attached || rest > 0.5) ? 1 : 0;
+  }
+  return R;
+}
+function initRopes() { for (let i = 0; i < 3; i++) ROPES[i] = simulateRope(i); }
+/* rope i at motion time t -> Float32Array(ROPE_N*3) (written into out) or false when the line is stowed */
+function ropeAt(i, t, out) {
+  const R = ROPES[i]; if (!R || t < R.t0 || t > R.t0 + R.steps * SUB) return false;
+  const xk = Math.min((t - R.t0) / SUB, R.steps - 1e-6), k = Math.floor(xk), f = xk - k, n3 = ROPE_N * 3, a = k * n3, b = a + n3, d = R.data;
+  if (!R.vis[k]) return false;
+  for (let q = 0; q < n3; q++) out[q] = d[a + q] + (d[b + q] - d[a + q]) * f;
+  return true;
+}
+/* precompute the stepped systems once (ragdoll, hunter tables, the three tethers) */
+initHunter();
+initRopes();
+/* =====================================================================
+   RENDERER, SCENE, SKY, ENVIRONMENT, TERRAIN, GRASS, RAIN
+   ===================================================================== */
+const COUNTS = { grassBlades: 100000, rainStreaks: 20000, splashes: 600 };
+const canvas = document.getElementById('stage');
+const renderer = new THREE.WebGLRenderer({ canvas: document.getElementById('stage'), antialias: true, alpha: true });
+renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+renderer.setSize(window.innerWidth, window.innerHeight, false);
+renderer.outputEncoding = THREE.sRGBEncoding;
+renderer.toneMapping = THREE.ACESFilmicToneMapping;
+renderer.toneMappingExposure = 1.15;
+renderer.shadowMap.enabled = true;
+renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+renderer.autoClear = false;
+const scene = new THREE.Scene();
+const FOG_BASE = new THREE.Color(0x18202b);
+scene.background = new THREE.Color(0x0c1016);          /* opaque; the procedural sky dome is drawn over it */
+scene.fog = new THREE.FogExp2(FOG_BASE.getHex(), 0.0072);
+const camera = new THREE.PerspectiveCamera(40, window.innerWidth / window.innerHeight, 0.1, 2000);
+camera.position.set(-70, 6, 50);
+
+/* uniforms shared by the custom shaders (one object per value, referenced by every material) */
+const SU = {
+  uTime: { value: 0 }, uMt: { value: 0 }, uFlash: { value: 0 }, uWet: { value: 0 },
+  uFogColor: { value: new THREE.Color(FOG_BASE.getHex()) }, uFogDensity: { value: 0.0072 },
+  uCam: { value: new THREE.Vector3() }, uKeyDir: { value: new THREE.Vector3(-0.45, 0.78, 0.43).normalize() },
+  uKeyCol: { value: new THREE.Color(0.62, 0.74, 1.0) }, uAmb: { value: new THREE.Color(0.10, 0.125, 0.16) },
+  uALp: { value: [] }, uALi: { value: new Float32Array(6) }, uFlashDir: { value: new THREE.Vector3(0.3, 0.9, 0.2).normalize() },
+  uPx: { value: 1 / 540 }                               /* world-units per pixel at unit distance (set per frame) */
+};
+for (let i = 0; i < 6; i++) SU.uALp.value.push(new THREE.Vector3());
+const GLSL_COMMON = `
+float terrainH(vec2 p){ return 0.28*sin(0.045*p.x+1.3)*cos(0.038*p.y-0.7) + 0.20*sin(0.09*p.x-0.05*p.y+2.1) + 0.10*sin(0.17*p.y+0.11*p.x); }
+float h11(float n){ return fract(sin(n*127.1)*43758.5453123); }
+float h21(vec2 p){ return fract(sin(dot(p, vec2(127.1, 311.7)))*43758.5453123); }
+float vn2(vec2 p){ vec2 i=floor(p), f=fract(p); f=f*f*(3.0-2.0*f); return mix(mix(h21(i),h21(i+vec2(1,0)),f.x), mix(h21(i+vec2(0,1)),h21(i+vec2(1,1)),f.x), f.y); }
+float fbm2(vec2 p){ float a=0.5, s=0.0; for(int i=0;i<5;i++){ s+=a*vn2(p); p=p*2.03+vec2(17.3,9.1); a*=0.5; } return s; }
+`;
+const GLSL_FOG_PARS = `uniform vec3 uFogColor; uniform float uFogDensity; uniform float uFlash;
+vec3 applyFog(vec3 c, float d){ float f = 1.0 - exp(-uFogDensity*uFogDensity*d*d); return mix(c, uFogColor*(1.0+uFlash*2.2), clamp(f,0.0,1.0)); }`;
+const GLSL_OUT = `
+#include <tonemapping_fragment>
+#include <encodings_fragment>`;
+
+/* ---------- lights: low ambient fill, one cool shadowed key, lightning flash, arc/blade point lights ---------- */
+const ambient = new THREE.AmbientLight(0x8fa6c8, 0.22);
+scene.add(ambient);
+const keyLight = new THREE.DirectionalLight(0xa6c0ff, 1.25);
+keyLight.position.copy(SU.uKeyDir.value).multiplyScalar(120).add(new THREE.Vector3(5, 0, 0));
+keyLight.target.position.set(5, 0, 0);
+keyLight.castShadow = true;
+keyLight.shadow.mapSize.set(2048, 2048);
+keyLight.shadow.camera.left = -78; keyLight.shadow.camera.right = 78; keyLight.shadow.camera.top = 78; keyLight.shadow.camera.bottom = -78;
+keyLight.shadow.camera.near = 10; keyLight.shadow.camera.far = 260;
+keyLight.shadow.bias = -0.0008; keyLight.shadow.normalBias = 0.35;
+scene.add(keyLight, keyLight.target);
+const flashLight = new THREE.DirectionalLight(0xdfe8ff, 0);
+flashLight.position.set(40, 120, 30); scene.add(flashLight, flashLight.target);
+const arcLights = [];
+for (let i = 0; i < 5; i++) { const l = new THREE.PointLight(0x7fb4ff, 0, 48, 2); scene.add(l); arcLights.push(l); }
+const bladeLight = new THREE.PointLight(0x7fe9ff, 0.9, 9, 2); scene.add(bladeLight);
+
+/* ---------- sky: layered cloud dome, drift driven by simTime ---------- */
+const skyMat = new THREE.ShaderMaterial({
+  side: THREE.BackSide, depthWrite: false, depthTest: false, fog: false,
+  uniforms: { uTime: SU.uTime, uFlash: SU.uFlash, uFogColor: SU.uFogColor, uFlashDir: SU.uFlashDir },
+  vertexShader: `varying vec3 vDir; void main(){ vDir = position; vec4 p = modelViewMatrix * vec4(position, 0.0); gl_Position = projectionMatrix * vec4(p.xyz, 1.0); gl_Position.z = gl_Position.w; }`,
+  fragmentShader: `uniform float uTime; uniform float uFlash; uniform vec3 uFogColor; uniform vec3 uFlashDir; varying vec3 vDir;` + GLSL_COMMON + `
+  void main(){
+    vec3 d = normalize(vDir);
+    float up = max(d.y, 0.0);
+    vec2 uv = d.xz / (up + 0.22);
+    float c1 = fbm2(uv * 1.1 + vec2(uTime * 0.035, uTime * 0.012));
+    float c2 = fbm2(uv * 2.6 + vec2(uTime * 0.075, -uTime * 0.02) + 7.0);
+    float cl = smoothstep(0.25, 0.85, c1 * 0.65 + c2 * 0.45);
+    vec3 zen = vec3(0.035, 0.045, 0.065), mid = vec3(0.10, 0.125, 0.165), lightC = vec3(0.22, 0.26, 0.33);
+    vec3 col = mix(zen, mid, cl);
+    col = mix(col, lightC, smoothstep(0.55, 1.0, c2) * 0.35 * (1.0 - cl * 0.5));
+    float band = exp(-up * 7.0);                          /* brighter band above the horizon */
+    col = mix(col, vec3(0.21, 0.245, 0.30), band * 0.75);
+    col = mix(col, uFogColor, smoothstep(0.10, -0.02, d.y));
+    float fl = uFlash * (0.55 + 1.6 * pow(max(dot(d, uFlashDir), 0.0), 3.0)) * (0.5 + 0.8 * cl);
+    col += vec3(0.55, 0.62, 0.8) * fl;
+    gl_FragColor = vec4(col, 1.0);` + GLSL_OUT + `
+  }`
+});
+const sky = new THREE.Mesh(new THREE.SphereGeometry(900, 32, 20), skyMat);
+sky.renderOrder = -10; sky.frustumCulled = false; scene.add(sky);
+
+/* ---------- storm environment map (PMREM) from an in-memory scene: dark dome, brighter horizon band ---------- */
+(function () {
+  const pm = new THREE.PMREMGenerator(renderer);
+  const es = new THREE.Scene();
+  es.add(new THREE.Mesh(new THREE.SphereGeometry(50, 32, 16), new THREE.ShaderMaterial({
+    side: THREE.BackSide,
+    vertexShader: `varying vec3 vDir; void main(){ vDir = position; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }`,
+    fragmentShader: `varying vec3 vDir;` + GLSL_COMMON + `
+    void main(){ vec3 d = normalize(vDir); float up = max(d.y, 0.0);
+      float c = fbm2(d.xz / (up + 0.25) * 1.3 + 3.0);
+      vec3 col = mix(vec3(0.05, 0.065, 0.09), vec3(0.16, 0.19, 0.25), smoothstep(0.3, 0.8, c));
+      col = mix(col, vec3(0.42, 0.48, 0.60), exp(-abs(d.y - 0.05) * 9.0) * 0.9);
+      col = mix(col, vec3(0.02, 0.03, 0.025), smoothstep(0.0, -0.25, d.y));
+      gl_FragColor = vec4(col, 1.0);
+      #include <encodings_fragment>
+    }`
+  })));
+  const rt = pm.fromScene(es, 0.02, 0.1, 100);
+  scene.environment = rt.texture;
+  pm.dispose();
+})();
+
+/* ---------- small in-memory textures ---------- */
+function makeCanvas(w, h) { const c = document.createElement('canvas'); c.width = w; c.height = h; return c; }   /* never attached to the DOM */
+const groundTex = (function () {
+  const c = makeCanvas(512, 512), g = c.getContext('2d'), r = mulberry32(SEED + 11);
+  g.fillStyle = '#26301a'; g.fillRect(0, 0, 512, 512);
+  for (let i = 0; i < 5200; i++) {
+    const x = r() * 512, y = r() * 512, s = 3 + r() * 22, k = r();
+    g.fillStyle = k < 0.45 ? 'rgba(52,74,30,0.16)' : (k < 0.75 ? 'rgba(24,30,16,0.2)' : (k < 0.92 ? 'rgba(72,62,40,0.14)' : 'rgba(96,110,60,0.1)'));
+    g.beginPath(); g.ellipse(x, y, s, s * (0.4 + r() * 0.8), r() * 3.14, 0, 6.2832); g.fill();
+    if (x < 30) { g.beginPath(); g.ellipse(x + 512, y, s, s * 0.6, 0, 0, 6.2832); g.fill(); }
+    if (y < 30) { g.beginPath(); g.ellipse(x, y + 512, s, s * 0.6, 0, 0, 6.2832); g.fill(); }
+  }
+  const t = new THREE.CanvasTexture(c); t.wrapS = t.wrapT = THREE.RepeatWrapping; t.encoding = THREE.sRGBEncoding; t.anisotropy = 4; return t;
+})();
+const groundNrm = (function () {                         /* lumpy soil / puddle normals so the wet ground glints instead of mirroring */
+  const S = 256, c = makeCanvas(S, S), g = c.getContext('2d'), img = g.createImageData(S, S), hgt = new Float32Array(S * S);
+  for (let y = 0; y < S; y++) for (let x = 0; x < S; x++) {
+    let h = 0, f = 4, a = 1;
+    for (let o = 0; o < 4; o++) {                         /* tileable value noise */
+      const fx = x / S * f, fy = y / S * f, ix = Math.floor(fx), iy = Math.floor(fy), ux = fx - ix, uy = fy - iy, sx = ux * ux * (3 - 2 * ux), sy = uy * uy * (3 - 2 * uy);
+      const v = function (i, j) { return hash01(((i % f) + f) % f, ((j % f) + f) % f, 60 + o); };
+      h += a * lerp(lerp(v(ix, iy), v(ix + 1, iy), sx), lerp(v(ix, iy + 1), v(ix + 1, iy + 1), sx), sy); f *= 2; a *= 0.55;
+    }
+    hgt[y * S + x] = h;
+  }
+  for (let y = 0; y < S; y++) for (let x = 0; x < S; x++) {
+    const dx = (hgt[y * S + (x + 1) % S] - hgt[y * S + (x + S - 1) % S]) * 5.5, dy = (hgt[((y + 1) % S) * S + x] - hgt[((y + S - 1) % S) * S + x]) * 5.5;
+    const l = Math.sqrt(dx * dx + dy * dy + 1), o = (y * S + x) * 4;
+    img.data[o] = (-dx / l * 0.5 + 0.5) * 255; img.data[o + 1] = (-dy / l * 0.5 + 0.5) * 255; img.data[o + 2] = (1 / l * 0.5 + 0.5) * 255; img.data[o + 3] = 255;
+  }
+  g.putImageData(img, 0, 0);
+  const t = new THREE.CanvasTexture(c); t.wrapS = t.wrapT = THREE.RepeatWrapping; return t;
+})();
+
+/* ---------- plateau: disc of radius 90 with gentle height variation and a cliff falling into fog ---------- */
+const wetMats = [];                                     /* materials whose roughness follows the global wetness */
+function wetMaterial(m, dry, env) { m.userData.dryRough = dry === undefined ? 0.9 : dry; m.userData.env = env === undefined ? 1 : env; m.userData.baseColor = m.color.clone(); wetMats.push(m); return m; }
+(function () {
+  const rings = 64, segs = 128, pos = [], uv = [], idx = [];
+  for (let i = 0; i <= rings; i++) {
+    const rr0 = PLATEAU_R * Math.pow(i / rings, 0.8);
+    for (let j = 0; j <= segs; j++) { const a = j / segs * TAU, x = Math.cos(a) * rr0, z = Math.sin(a) * rr0; pos.push(x, terrainH(x, z), z); uv.push(x / 9, z / 9); }
+  }
+  for (let i = 0; i < rings; i++) for (let j = 0; j < segs; j++) { const a = i * (segs + 1) + j, b = a + segs + 1; idx.push(a, a + 1, b, b, a + 1, b + 1); }
+  const g = new THREE.BufferGeometry();
+  g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3)); g.setAttribute('uv', new THREE.Float32BufferAttribute(uv, 2)); g.setIndex(idx); g.computeVertexNormals();
+  const m = wetMaterial(new THREE.MeshStandardMaterial({ map: groundTex, normalMap: groundNrm, normalScale: new THREE.Vector2(1.6, 1.6), color: 0xaab498, roughness: 0.9, metalness: 0 }), 0.9, 0.07);
+  const ground = new THREE.Mesh(g, m); ground.receiveShadow = true; scene.add(ground);
+  /* cliff wall */
+  const cp = [], ci = [], rows = 10, pr = mulberry32(SEED + 23);
+  for (let i = 0; i <= rows; i++) {
+    const f = i / rows, y0 = -f * 75;
+    for (let j = 0; j <= segs; j++) {
+      const a = j / segs * TAU, jj = j % segs;
+      const bulge = (i === 0 ? 0 : (hash01(jj, i, 5) - 0.5) * 3.0 + Math.sin(a * 9 + i) * 1.2) - f * 5;
+      const r = PLATEAU_R + bulge, x = Math.cos(a) * r, z = Math.sin(a) * r;
+      cp.push(x, (i === 0 ? terrainH(Math.cos(a) * PLATEAU_R, Math.sin(a) * PLATEAU_R) : y0 + (hash01(jj, i, 9) - 0.5) * 2), z);
+    }
+  }
+  for (let i = 0; i < rows; i++) for (let j = 0; j < segs; j++) { const a = i * (segs + 1) + j, b = a + segs + 1; ci.push(a, b, a + 1, b, b + 1, a + 1); }
+  const cg = new THREE.BufferGeometry(); cg.setAttribute('position', new THREE.Float32BufferAttribute(cp, 3)); cg.setIndex(ci); cg.computeVertexNormals();
+  const cm = wetMaterial(new THREE.MeshStandardMaterial({ color: 0x2b2e33, roughness: 0.9, metalness: 0, flatShading: true }), 0.9, 0.6);
+  scene.add(new THREE.Mesh(cg, cm));
+})();
+
+/* ---------- grass: 100,000 instanced blades; all bending is closed-form in the vertex shader ---------- */
+const NEV = 24;                                         /* footfall / shockwave rings visible to the shader at once */
+const GRASS_EVENTS = [];                                /* {x, z, t, s (strength), r (reach in metres)} — filled from the event table */
+const grassU = {
+  uMt: SU.uMt, uFogColor: SU.uFogColor, uFogDensity: SU.uFogDensity, uFlash: SU.uFlash, uWet: SU.uWet, uCam: SU.uCam,
+  uKeyDir: SU.uKeyDir, uKeyCol: SU.uKeyCol, uAmb: SU.uAmb, uALp: SU.uALp, uALi: SU.uALi, uFlashDir: SU.uFlashDir,
+  uEvA: { value: [] }, uEvB: { value: new Float32Array(NEV) }, uBlob: { value: new THREE.Vector4(40, 0, 15, 0.45) }
+};
+for (let i = 0; i < NEV; i++) grassU.uEvA.value.push(new THREE.Vector4(0, 0, -100, 0));
+function buildGrass() {                                  /* called once the collapse is known (blades stay flat around fallen stones) */
+  const N = COUNTS.grassBlades, r = mulberry32(SEED + 101);
+  const g = new THREE.InstancedBufferGeometry();
+  g.setAttribute('position', new THREE.Float32BufferAttribute([-0.5, 0, 0, 0.5, 0, 0, -0.5, 0.34, 0, 0.5, 0.34, 0, -0.5, 0.68, 0, 0.5, 0.68, 0, 0, 1, 0], 3));
+  g.setIndex([0, 1, 2, 1, 3, 2, 2, 3, 4, 3, 5, 4, 4, 5, 6]);
+  const off = new Float32Array(N * 3), par = new Float32Array(N * 4), rnd = new Float32Array(N * 3);
+  for (let i = 0; i < N; i++) {
+    let x, z;
+    if (r() < 0.55) { const a = r() * TAU, d = (PLATEAU_R - 0.6) * Math.sqrt(r()); x = Math.cos(a) * d; z = Math.sin(a) * d; }
+    else { do { const a = r() * TAU, d = Math.sqrt(-2 * Math.log(1 - r() * 0.999)); x = -6 + Math.cos(a) * d * 30; z = Math.sin(a) * d * 22; } while (x * x + z * z > (PLATEAU_R - 0.6) * (PLATEAU_R - 0.6)); }   /* denser where the fight happens, smooth falloff */
+    off[i * 3] = x; off[i * 3 + 1] = terrainH(x, z); off[i * 3 + 2] = z;
+    par[i * 4] = 0.4 + 0.5 * r();                       /* height 0.4 .. 0.9 m */
+    par[i * 4 + 1] = 0.085 + 0.06 * r();                /* base width */
+    par[i * 4 + 2] = r() * TAU;                         /* facing */
+    par[i * 4 + 3] = 0.1 + 0.3 * r();                   /* seeded lean */
+    rnd[i * 3] = r(); rnd[i * 3 + 1] = r(); rnd[i * 3 + 2] = r();
+  }
+  g.setAttribute('aOff', new THREE.InstancedBufferAttribute(off, 3));
+  g.setAttribute('aPar', new THREE.InstancedBufferAttribute(par, 4));
+  g.setAttribute('aRnd', new THREE.InstancedBufferAttribute(rnd, 3));
+  /* permanent flattening where each boulder lands and where it comes to rest: (time, outward dir * amount) per blade */
+  const fall = new Float32Array(N * 3), spots = [];
+  let bx0 = 1e9, bx1 = -1e9, bz0 = 1e9, bz1 = -1e9;
+  for (let k = 0; k < NBLD; k++) {
+    const f = BOULDERS[k].fall, rad = BOULDERS[k].rad;
+    spots.push([f.p1[0], f.p1[2], rad * 1.3 + 0.8, f.T + f.t1], [f.p2[0], f.p2[2], rad * 1.5 + 1.0, f.T + f.t1 + f.t2]);
+  }
+  for (let k = 0; k < spots.length; k++) { bx0 = Math.min(bx0, spots[k][0] - 6); bx1 = Math.max(bx1, spots[k][0] + 6); bz0 = Math.min(bz0, spots[k][1] - 6); bz1 = Math.max(bz1, spots[k][1] + 6); }
+  for (let i = 0; i < N; i++) {
+    const x = off[i * 3], z = off[i * 3 + 2]; if (x < bx0 || x > bx1 || z < bz0 || z > bz1) continue;
+    let best = 0, bt = 0, bdx = 0, bdz = 0;
+    for (let k = 0; k < spots.length; k++) {
+      const dx = x - spots[k][0], dz = z - spots[k][1], d2 = dx * dx + dz * dz, rr2 = spots[k][2];
+      if (d2 < rr2 * rr2) { const d = Math.sqrt(d2) || 0.01, a = Math.min(1, (1 - d / rr2) * 2.2); if (a > best) { best = a; bt = spots[k][3]; bdx = dx / d; bdz = dz / d; } }
+    }
+    if (best > 0) { fall[i * 3] = bt; fall[i * 3 + 1] = bdx * best; fall[i * 3 + 2] = bdz * best; }
+  }
+  g.setAttribute('aFall', new THREE.InstancedBufferAttribute(fall, 3));
+  g.instanceCount = N;
+  const m = new THREE.ShaderMaterial({
+    side: THREE.DoubleSide, uniforms: grassU, defines: { NEV: NEV },
+    vertexShader: `
+    attribute vec3 aOff; attribute vec4 aPar; attribute vec3 aRnd; attribute vec3 aFall;
+    uniform float uMt; uniform vec4 uEvA[NEV]; uniform float uEvB[NEV];
+    varying vec3 vN; varying vec3 vW; varying float vH; varying vec3 vRnd; varying float vDepth; varying float vFlat;
+    void main(){
+      float h = position.y, hgt = aPar.x, rot = aPar.z;
+      /* travelling wind sway toward +X */
+      float w1 = sin(aOff.x * 0.12 - uMt * 2.4 + aOff.z * 0.045 + aRnd.x * 1.7);
+      float w2 = sin(aOff.x * 0.37 - uMt * 4.6 + aRnd.y * 6.2831);
+      float gust = 0.6 + 0.4 * sin(aOff.x * 0.028 - uMt * 0.8 + aOff.z * 0.017);
+      vec2 bend = vec2(1.0, 0.0) * (0.34 + 0.24 * w1 + 0.08 * w2) * gust + vec2(0.0, 0.10 * w2);
+      bend += vec2(cos(rot), sin(rot)) * aPar.w;
+      /* footfalls and shockwave rings: radius grows 30 m/s, 4 m front flattens outward, 1.5 s recovery */
+      float fl = 0.0;
+      for (int i = 0; i < NEV; i++) {
+        vec4 e = uEvA[i]; float dt = uMt - e.z;
+        if (e.w > 0.0 && dt > 0.0) {
+          vec2 d = aOff.xz - e.xy; float dist = length(d);
+          float a = smoothstep(0.0, 4.0 / 30.0, dt - (dist - 2.0) / 30.0) * (1.0 - smoothstep(0.0, 1.5, dt - (dist + 2.0) / 30.0));
+          a *= e.w * pow(clamp(1.0 - dist / uEvB[i], 0.0, 1.0), 0.6);
+          bend += d / max(dist, 0.001) * a * 1.5; fl = max(fl, a);
+        }
+      }
+      if (aFall.x > 0.0) { float a2 = smoothstep(0.0, 0.3, uMt - aFall.x); bend += aFall.yz * a2 * 1.7; fl = max(fl, a2 * length(aFall.yz)); }
+      float b = min(length(bend), 1.42); vec2 bd = bend / max(length(bend), 1e-4);
+      float ang = b * h, k = max(b, 1e-3);
+      float along = hgt * (1.0 - cos(ang)) / k, upy = hgt * sin(ang) / k;
+      vec2 wd = vec2(-sin(rot), cos(rot));
+      float wid = aPar.y * (1.0 - 0.86 * h);
+      vec3 p = vec3(aOff.x + bd.x * along + wd.x * position.x * wid, aOff.y + upy, aOff.z + bd.y * along + wd.y * position.x * wid);
+      vec3 tang = normalize(vec3(bd.x * sin(ang), cos(ang), bd.y * sin(ang)));
+      vN = normalize(cross(vec3(wd.x, 0.0, wd.y), tang));
+      vW = p; vH = h; vRnd = aRnd; vFlat = fl;
+      vec4 mv = viewMatrix * vec4(p, 1.0); vDepth = -mv.z;
+      gl_Position = projectionMatrix * mv;
+    }`,
+    fragmentShader: `
+    uniform vec3 uCam, uKeyDir, uKeyCol, uAmb, uFlashDir; uniform float uWet; uniform vec3 uALp[6]; uniform float uALi[6]; uniform vec4 uBlob;
+    varying vec3 vN; varying vec3 vW; varying float vH; varying vec3 vRnd; varying float vDepth; varying float vFlat;` + GLSL_FOG_PARS + `
+    void main(){
+      vec3 N = normalize(vN); if (!gl_FrontFacing) N = -N;
+      vec3 Nl = normalize(N + vec3(0.0, 1.1, 0.0));
+      vec3 base = mix(vec3(0.030, 0.085, 0.022), vec3(0.085, 0.19, 0.045), vRnd.z);          /* two-tone green */
+      vec3 tip = mix(vec3(0.30, 0.42, 0.14), vec3(0.42, 0.47, 0.20), vRnd.x);                  /* paler tip */
+      vec3 alb = mix(base, tip, smoothstep(0.25, 1.0, vH)) * (0.55 + 0.45 * vH);
+      alb *= 1.0 - 0.30 * uWet;                                                                  /* wet blades darken */
+      vec3 V = normalize(uCam - vW);
+      float blob = 1.0 - uBlob.w * (1.0 - smoothstep(0.35, 1.0, length(vW.xz - uBlob.xy) / uBlob.z));
+      float ndl = max(dot(Nl, uKeyDir), 0.0);
+      vec3 L = uAmb * 1.25 + uKeyCol * (0.25 + 0.75 * ndl) * blob;
+      L += vec3(1.35, 1.5, 1.8) * uFlash * (0.4 + 0.6 * max(dot(Nl, uFlashDir), 0.0));
+      for (int i = 0; i < 6; i++) { vec3 d = uALp[i] - vW; float d2 = dot(d, d); vec3 c = i == 5 ? vec3(0.45, 0.95, 1.0) : vec3(0.42, 0.62, 1.0);
+        L += c * uALi[i] / (1.0 + d2 * 0.014) * (0.45 + 0.55 * max(dot(Nl, d * inversesqrt(d2 + 1e-4)), 0.0)); }
+      vec3 col = alb * L;
+      vec3 Hh = normalize(uKeyDir + V);
+      float sp = pow(max(dot(N, Hh), 0.0), 40.0) + 0.6 * pow(max(dot(N, normalize(uFlashDir + V)), 0.0), 24.0) * uFlash * 6.0;
+      col += vec3(0.5, 0.6, 0.75) * sp * (0.04 + 0.5 * uWet) * (0.4 + vH);
+      gl_FragColor = vec4(applyFog(col, vDepth), 1.0);` + GLSL_OUT + `
+    }`
+  });
+  const mesh = new THREE.Mesh(g, m); mesh.frustumCulled = false; scene.add(mesh);
+}
+
+/* ---------- rain: 20,000 streaks, positions closed-form (seed + velocity * time, wrapped in a camera-following volume) ---------- */
+const RAIN_VEL = new THREE.Vector3(Math.sin(30 * DEG), -Math.cos(30 * DEG), 0).multiplyScalar(26);
+(function () {
+  const N = COUNTS.rainStreaks, r = mulberry32(SEED + 202);
+  const g = new THREE.InstancedBufferGeometry();
+  g.setAttribute('position', new THREE.Float32BufferAttribute([-1, 0, 0, 1, 0, 0, -1, 1, 0, 1, 1, 0], 3)); g.setIndex([0, 1, 2, 1, 3, 2]);
+  const p0 = new Float32Array(N * 3), sp = new Float32Array(N * 2);
+  for (let i = 0; i < N; i++) { p0[i * 3] = r(); p0[i * 3 + 1] = r(); p0[i * 3 + 2] = r(); sp[i * 2] = 0.8 + 0.4 * r(); sp[i * 2 + 1] = 0.9 + 1.0 * r(); }
+  g.setAttribute('aP0', new THREE.InstancedBufferAttribute(p0, 3)); g.setAttribute('aS', new THREE.InstancedBufferAttribute(sp, 2)); g.instanceCount = N;
+  const m = new THREE.ShaderMaterial({
+    transparent: true, depthWrite: false, side: THREE.DoubleSide, uniforms: { uMt: SU.uMt, uCam: SU.uCam, uVel: { value: RAIN_VEL }, uFogColor: SU.uFogColor, uFogDensity: SU.uFogDensity, uFlash: SU.uFlash, uPx: SU.uPx },
+    vertexShader: `attribute vec3 aP0; attribute vec2 aS; uniform float uMt; uniform vec3 uCam, uVel; uniform float uPx; varying float vA; varying float vDepth; varying float vV;
+    void main(){ vec3 size = vec3(64.0, 44.0, 64.0); vec3 lo = uCam - size * 0.5;
+      vec3 p = aP0 * size + uVel * aS.x * uMt; p = mod(p - lo, size) + lo;
+      vec3 dir = normalize(uVel); vec3 toC = uCam - p; float dist = length(toC);
+      vec3 sd = normalize(cross(dir, toC));
+      float w = max(0.009, dist * uPx * 0.65);
+      vec3 pos = p - dir * (position.y * aS.y * 1.25) + sd * position.x * w;
+      vec4 mv = viewMatrix * vec4(pos, 1.0); vDepth = -mv.z; vV = position.y;
+      vA = smoothstep(1.4, 5.0, dist) * (1.0 - smoothstep(22.0, 32.0, dist)) * min(1.0, 0.009 / w * 3.0);
+      gl_Position = projectionMatrix * mv; }`,
+    fragmentShader: `varying float vA; varying float vDepth; varying float vV;` + GLSL_FOG_PARS + `
+    void main(){ float a = vA * 0.36 * sin(vV * 3.14159);
+      vec3 col = vec3(0.62, 0.70, 0.84) * (0.9 + uFlash * 3.0);
+      gl_FragColor = vec4(applyFog(col, vDepth * 0.5), a);` + GLSL_OUT + ` }`
+  });
+  const mesh = new THREE.Mesh(g, m); mesh.frustumCulled = false; mesh.renderOrder = 6; scene.add(mesh);
+  /* splash rings where streaks meet the ground near the camera (seeded cell + cycle index -> closed-form) */
+  const M = COUNTS.splashes, sg = new THREE.InstancedBufferGeometry();
+  sg.setAttribute('position', new THREE.Float32BufferAttribute([-1, 0, -1, 1, 0, -1, -1, 0, 1, 1, 0, 1], 3)); sg.setIndex([0, 2, 1, 1, 2, 3]);
+  const sd = new Float32Array(M * 2); for (let i = 0; i < M; i++) { sd[i * 2] = r(); sd[i * 2 + 1] = r(); }
+  sg.setAttribute('aSeed', new THREE.InstancedBufferAttribute(sd, 2)); sg.instanceCount = M;
+  const sm = new THREE.ShaderMaterial({
+    transparent: true, depthWrite: false, uniforms: { uMt: SU.uMt, uCam: SU.uCam, uFogColor: SU.uFogColor, uFogDensity: SU.uFogDensity, uFlash: SU.uFlash },
+    vertexShader: `attribute vec2 aSeed; uniform float uMt; uniform vec3 uCam; varying vec2 vUv; varying float vF; varying float vDepth;` + GLSL_COMMON + `
+    void main(){ float cyc = uMt / 0.42 + aSeed.x; float k = floor(cyc); float f = fract(cyc);
+      vec2 rn = vec2(h21(vec2(k, aSeed.y * 91.7)), h21(vec2(aSeed.y * 37.3, k + 3.1)));
+      vec2 lo = uCam.xz - 15.0; vec2 xz = mod(rn * 30.0 - lo, 30.0) + lo;
+      float rad = 0.04 + 0.26 * f;
+      vec3 pos = vec3(xz.x + position.x * rad, terrainH(xz) + 0.42 + 0.3 * aSeed.x, xz.y + position.z * rad);
+      vUv = position.xz; vF = f; vec4 mv = viewMatrix * vec4(pos, 1.0); vDepth = -mv.z; gl_Position = projectionMatrix * mv; }`,
+    fragmentShader: `varying vec2 vUv; varying float vF; varying float vDepth;` + GLSL_FOG_PARS + `
+    void main(){ float r = length(vUv); float ring = smoothstep(0.55, 0.8, r) * (1.0 - smoothstep(0.85, 1.0, r));
+      float a = ring * (1.0 - vF) * 0.7 * (1.0 - smoothstep(10.0, 15.0, vDepth));
+      gl_FragColor = vec4(applyFog(vec3(0.62, 0.70, 0.82) * (0.6 + uFlash * 3.0), vDepth * 0.5), a);` + GLSL_OUT + ` }`
+  });
+  const sm2 = new THREE.Mesh(sg, sm); sm2.frustumCulled = false; sm2.renderOrder = 5; scene.add(sm2);
+})();
+/* =====================================================================
+   TITAN GRAPHICS — instanced boulders, collapse ballistics, weak points,
+   binding lightning arcs (20 Hz seeded), sky bolts.
+   ===================================================================== */
+const BOULDER_COUNT_PER_BONE = [12, 8, 12, 9, 8, 8, 6, 8, 8, 6, 9, 8, 6, 9, 8, 6];
+const BOULDER_SIZE = [[0.95, 1.8], [0.9, 1.5], [1.0, 2.0], [0.8, 1.5], [0.75, 1.25], [0.7, 1.15], [0.62, 0.95], [0.75, 1.25], [0.7, 1.15], [0.62, 0.95], [0.85, 1.45], [0.7, 1.2], [0.6, 0.82], [0.85, 1.45], [0.7, 1.2], [0.6, 0.82]];
+const BOULDERS = [];
+const REF_T = 16.4;                                     /* neutral standing pose used to keep boulders from touching */
+(function generateBoulders() {
+  const P = titanPose(REF_T), placed = [];
+  const wps = [wpPos(P, 0), wpPos(P, 1), wpPos(P, 2)], pins = [pinPos(P, 0), pinPos(P, 2)];
+  function tryPlace(b, loc, rad, opts) {
+    const w = boneLocal(P, b, loc);
+    if (!(opts && (opts.force || opts.cover))) for (let k = 0; k < placed.length; k++) if (vdist(w, placed[k].w) < 1.1 * (rad + placed[k].rad) + 0.22) return false;
+    if (!opts) {
+      for (let k = 0; k < 3; k++) if (vdist(w, wps[k]) < rad * 1.1 + 1.15) return false;
+      for (let k = 0; k < 2; k++) if (vdist(w, pins[k]) < rad * 1.1 + 0.35) return false;
+      if (b === B.CHEST && loc[0] > 0.6 && Math.abs(loc[1] - 3.4) < rad + 1.9 && Math.abs(loc[2]) < rad + 2.1) return false;   /* keep the core's window for the cover stones */
+    }
+    const sc = opts && opts.sc ? opts.sc : [rad * rr(0.86, 1.0), rad * rr(0.84, 1.0), rad * rr(0.86, 1.0)];      /* every stone stays 1 - 4 m across */
+    const ax = vnorm([rr(-1, 1), rr(-1, 1), rr(-1, 1)]);
+    BOULDERS.push({ bone: b, loc: loc, rad: rad, sc: sc, q0: opts && opts.cover ? [0, 0, 0, 1] : qaxis(vnorm([rr(-1, 1), rr(-1, 1), rr(-1, 1)]), rr(0, TAU)),
+      ax: ax, spin: opts && opts.cover ? 0 : rr(0.08, 0.32) * (rng() < 0.5 ? -1 : 1), dA: opts && opts.cover ? 0.03 : rr(0.05, 0.13),
+      dP: [rr(0, TAU), rr(0, TAU), rr(0, TAU)], dF: [rr(0.35, 0.9), rr(0.35, 0.9), rr(0.35, 0.9)], seed: rng(), cover: opts && opts.cover ? opts.cover : 0 });
+    placed.push({ w: w, rad: rad });
+    return true;
+  }
+  /* the two cover stones that hide W3 until the lightning parts them */
+  tryPlace(B.CHEST, [3.6, 3.4, 1.02], 0.95, { cover: 1, sc: [0.95, 1.8, 0.95] });
+  tryPlace(B.CHEST, [3.6, 3.4, -1.02], 0.95, { cover: -1, sc: [0.95, 1.8, 0.95] });
+  for (let b = 0; b < NB; b++) {
+    const n = BOULDER_COUNT_PER_BONE[b] - (b === B.CHEST ? 2 : 0), L = BONE_LEN[b], R = BONE_RAD[b];
+    for (let k = 0; k < n; k++) {
+      let rad = lerp(BOULDER_SIZE[b][0], BOULDER_SIZE[b][1], rng()), ok = false, loc = null;
+      for (let tr = 0; tr < 600 && !ok; tr++) {
+        if (tr > 0 && tr % 20 === 0) rad = Math.max(0.6, rad * 0.93);
+        const s = (k + 0.5 + rr(-0.5, 0.5) * (1 + tr / 150)) / n, ex = 1 + Math.min(0.5, tr / 600);
+        if (b === B.PELVIS) loc = [rr(-1.7, 1.7) * ex, rr(-0.7, 2.5), rr(-5.4, 5.4)];
+        else if (b === B.CHEST) loc = [rr(-2.4, 2.1) * ex, rr(0.5, 7.1), (k < 4 ? (k % 2 ? 1 : -1) * rr(5.2, 7.7) : rr(-5.7, 5.7))];
+        else if (b === B.SPINE) loc = [rr(-1.6, 1.6) * ex, lerp(0.4, 5.7, clamp(s, 0, 1)), rr(-2.5, 2.5) * ex];
+        else if (b === B.HEAD) loc = [rr(-1.6, 1.6) * ex, lerp(0.7, 5.4, clamp(s, 0, 1)), rr(-1.9, 1.9) * ex];
+        else if (b === B.LFT || b === B.RFT) loc = [lerp(0.0, 3.6, clamp(s, 0, 1)), rr(-0.05, 0.75) * ex, rr(-1.15, 1.15) * ex];
+        else if (b === B.LFI || b === B.RFI) { const an = rr(0, TAU), ro = rr(0.1, 1.55) * ex; loc = [Math.cos(an) * ro, -lerp(0.1, 2.9, clamp(s, 0, 1)), Math.sin(an) * ro]; }
+        else { const a = lerp(0.1, 0.93, clamp(s, 0, 1)) * L, ro = rr(0.15, 1) * Math.max(0.25, R - rad * 0.85) * ex, an = k * 2.39996 + rr(-0.5, 0.5) * (1 + tr / 40); loc = [Math.cos(an) * ro, -a, Math.sin(an) * ro]; }
+        ok = tryPlace(b, loc, rad);
+      }
+      if (!ok) tryPlace(b, loc, 0.6, { sc: [0.56, 0.52, 0.56], force: true });
+    }
+  }
+})();
+const NBLD = BOULDERS.length;
+
+/* position / orientation of boulder i while its bone still holds (pose P at motion time t) */
+function boulderLive(i, t, P, outP) {
+  const b = BOULDERS[i], c = P.charge[b.bone];
+  const loose = c < 1 ? 1 + 0.16 * (1 - c) : 1 - 0.05 * (c - 1);
+  let lx = b.loc[0] * (b.bone >= 4 ? loose : 1) + b.dA * Math.sin(t * b.dF[0] + b.dP[0]);
+  let ly = b.loc[1] + b.dA * Math.sin(t * b.dF[1] + b.dP[1]);
+  let lz = b.loc[2] * loose + b.dA * Math.sin(t * b.dF[2] + b.dP[2]);
+  if (b.cover) { const e = sstep(SKY_BOLTS[1], SKY_BOLTS[1] + 0.55, t); lz += b.cover * 2.7 * e; lx += 0.5 * e; ly += b.cover * 0.5 * e; }
+  const w = qrot(P.bq[b.bone], [lx, ly, lz]);
+  outP[0] = P.bp[b.bone][0] + w[0]; outP[1] = P.bp[b.bone][1] + w[1]; outP[2] = P.bp[b.bone][2] + w[2];
+  return qmul(P.bq[b.bone], qmul(b.q0, qaxis(b.ax, b.spin * t)));
+}
+/* ---------- collapse: closed-form ballistic fall from the release pose, one bounce, rest ---------- */
+const IMPACTS = [];
+(function initCollapse() {
+  const pr = mulberry32(SEED + 707), tmp = [0, 0, 0], tmp2 = [0, 0, 0];
+  for (let i = 0; i < NBLD; i++) {
+    const b = BOULDERS[i], T = BONE_REL[b.bone], P = titanPose(T), Pp = titanPose(T - 0.03);
+    const q = boulderLive(i, T, P, tmp); boulderLive(i, T - 0.03, Pp, tmp2);
+    const p0 = tmp.slice(); let v0 = [(tmp[0] - tmp2[0]) / 0.03, (tmp[1] - tmp2[1]) / 0.03, (tmp[2] - tmp2[2]) / 0.03];
+    const vl = vlen(v0); if (vl > 5) v0 = vscale(v0, 5 / vl);
+    const out = vnorm([p0[0] - P.G[0] + (pr() - 0.5), 0, p0[2] - P.G[2] + (pr() - 0.5)]), push = 0.8 + 2.6 * pr();
+    v0 = [v0[0] + out[0] * push - 1.2 * pr(), v0[1] + pr() * 1.5, v0[2] + out[2] * push];
+    const re = b.rad * 0.8;
+    let t1 = 1, gh = 0;
+    for (let it = 0; it < 3; it++) { gh = terrainH(p0[0] + v0[0] * t1, p0[2] + v0[2] * t1) + re; t1 = (v0[1] + Math.sqrt(Math.max(0, v0[1] * v0[1] + 2 * GRAV * (p0[1] - gh)))) / GRAV; }
+    const p1 = [p0[0] + v0[0] * t1, gh, p0[2] + v0[2] * t1], vy1 = v0[1] - GRAV * t1;
+    const vb = -0.2 * vy1, t2 = Math.max(0.28, 2 * vb / GRAV);
+    const p2 = [p1[0] + v0[0] * 0.4 * t2, 0, p1[2] + v0[2] * 0.4 * t2];
+    b.fall = { T: T, p0: p0, v0: v0, t1: t1, p1: p1, t2: t2, p2: p2, q: q, ax: vnorm([pr() - 0.5, pr() - 0.5, pr() - 0.5]), w: (1.2 + 2.2 * pr()) * (pr() < 0.5 ? -1 : 1), re: re, vy1: vy1 };
+  }
+  for (let it = 0; it < 60; it++) for (let i = 0; i < NBLD; i++) for (let j = i + 1; j < NBLD; j++) {      /* settle so the fallen stones do not interpenetrate */
+    const a = BOULDERS[i].fall, c = BOULDERS[j].fall, dx = c.p2[0] - a.p2[0], dz = c.p2[2] - a.p2[2], d = Math.hypot(dx, dz) || 0.01, m = (BOULDERS[i].rad + BOULDERS[j].rad) * 0.98;
+    if (d < m) { const k = (m - d) / d * 0.5; a.p2[0] -= dx * k; a.p2[2] -= dz * k; c.p2[0] += dx * k; c.p2[2] += dz * k; }
+  }
+  for (let i = 0; i < NBLD; i++) {
+    const f = BOULDERS[i].fall; f.p2[1] = terrainH(f.p2[0], f.p2[2]) + f.re * 0.85;
+    f.vb = (f.p2[1] - f.p1[1] + 0.5 * GRAV * f.t2 * f.t2) / f.t2;
+    IMPACTS.push({ t: f.T + f.t1, p: f.p1, v: -f.vy1, rad: BOULDERS[i].rad, i: i });
+  }
+  IMPACTS.sort(function (a, c) { return a.t - c.t; });
+})();
+function boulderFallen(i, t, outP) {
+  const b = BOULDERS[i], f = b.fall, a = t - f.T; let ang;
+  if (a < f.t1) { outP[0] = f.p0[0] + f.v0[0] * a; outP[1] = f.p0[1] + f.v0[1] * a - 0.5 * GRAV * a * a; outP[2] = f.p0[2] + f.v0[2] * a; ang = f.w * a; }
+  else if (a < f.t1 + f.t2) { const c = a - f.t1, u = c / f.t2; outP[0] = lerp(f.p1[0], f.p2[0], u); outP[1] = f.p1[1] + f.vb * c - 0.5 * GRAV * c * c; outP[2] = lerp(f.p1[2], f.p2[2], u); ang = f.w * f.t1 + f.w * 0.4 * c; }
+  else { outP[0] = f.p2[0]; outP[1] = f.p2[1]; outP[2] = f.p2[2]; ang = f.w * f.t1 + f.w * 0.4 * f.t2; }
+  return qmul(qaxis(f.ax, ang), f.q);
+}
+/* weak points ride their bone; once that bone is released they drop with the rubble */
+function weakPointWorld(i, t, P) {
+  const rel = BONE_REL[WP_BONE[i]]; if (t <= rel) return wpPos(P, i);
+  const p0 = wpPos(titanPose(rel), i), a = t - rel, g = terrainH(p0[0], p0[2]) + 0.5;
+  return [p0[0], Math.max(g, p0[1] - 0.5 * GRAV * a * a), p0[2]];
+}
+function wpIntact(i, simT) { return i === 0 ? simT < STRIKES[0].t : (i === 1 ? simT < STRIKES[1].t : simT < STRIKES[3].t); }
+function wpExposed(i, simT) { return i < 2 ? true : simT >= SKY_BOLTS[1]; }
+
+/* ---------- boulder mesh: faceted basalt, procedural cracks, blue ore veins that brighten near arcs ---------- */
+const boulderGeo = (function () {
+  const g = new THREE.IcosahedronGeometry(1, 2), p = g.attributes.position, v = new THREE.Vector3();
+  for (let i = 0; i < p.count; i++) {
+    v.fromBufferAttribute(p, i).normalize();
+    const n = Math.sin(v.x * 3.1 + 1.7) * Math.cos(v.y * 2.7 - 0.4) * 0.16 + Math.sin(v.z * 4.3 + v.x * 2.2) * 0.10 + Math.cos(v.y * 6.1 + v.z * 3.3) * 0.06;
+    v.multiplyScalar(1 + n - 0.05); p.setXYZ(i, v.x, v.y, v.z);
+  }
+  g.computeVertexNormals(); return g;
+})();
+const boulderSeed = new Float32Array(NBLD), boulderGlow = new Float32Array(NBLD);
+for (let i = 0; i < NBLD; i++) boulderSeed[i] = BOULDERS[i].seed;
+boulderGeo.setAttribute('aSeed', new THREE.InstancedBufferAttribute(boulderSeed, 1));
+const boulderGlowAttr = new THREE.InstancedBufferAttribute(boulderGlow, 1); boulderGlowAttr.setUsage(THREE.DynamicDrawUsage);
+boulderGeo.setAttribute('aGlow', boulderGlowAttr);
+const boulderMat = wetMaterial(new THREE.MeshStandardMaterial({ color: 0x1c1e22, roughness: 0.9, metalness: 0.02 }), 0.9, 0.9);
+boulderMat.onBeforeCompile = function (sh) {
+  sh.uniforms.uWet = SU.uWet;
+  sh.vertexShader = sh.vertexShader.replace('#include <common>', '#include <common>\nattribute float aSeed; attribute float aGlow; varying vec3 vObj; varying float vSeed; varying float vGlow;')
+    .replace('#include <begin_vertex>', '#include <begin_vertex>\nvObj = position; vSeed = aSeed; vGlow = aGlow;');
+  sh.fragmentShader = sh.fragmentShader.replace('#include <common>', `#include <common>
+    uniform float uWet; varying vec3 vObj; varying float vSeed; varying float vGlow;
+    float bh(vec3 p){ return fract(sin(dot(p, vec3(127.1, 311.7, 74.7))) * 43758.5453); }
+    float bn(vec3 p){ vec3 i = floor(p), f = fract(p); f = f*f*(3.0-2.0*f);
+      return mix(mix(mix(bh(i), bh(i+vec3(1,0,0)), f.x), mix(bh(i+vec3(0,1,0)), bh(i+vec3(1,1,0)), f.x), f.y),
+                 mix(mix(bh(i+vec3(0,0,1)), bh(i+vec3(1,0,1)), f.x), mix(bh(i+vec3(0,1,1)), bh(i+vec3(1,1,1)), f.x), f.y), f.z); }
+    float bf(vec3 p){ return bn(p) * 0.55 + bn(p * 2.1 + 3.7) * 0.3 + bn(p * 4.3 + 9.1) * 0.15; }`)
+    .replace('#include <color_fragment>', `#include <color_fragment>
+    vec3 bp = vObj * 1.9 + vSeed * 37.0;
+    float n1 = bf(bp), n2 = bf(bp * 1.7 + 11.0);
+    float crack = 1.0 - smoothstep(0.0, 0.035, abs(n1 - 0.5));
+    float vein = (1.0 - smoothstep(0.0, 0.013, abs(n2 - 0.52))) * smoothstep(0.42, 0.62, n1);
+    diffuseColor.rgb *= (0.5 + 0.7 * n2) * (1.0 - 0.65 * crack);
+    diffuseColor.rgb *= 1.0 - 0.32 * uWet;`)
+    .replace('#include <emissivemap_fragment>', `#include <emissivemap_fragment>
+    totalEmissiveRadiance += vec3(0.14, 0.40, 1.0) * vein * (0.16 + 2.4 * vGlow) + vec3(0.06, 0.16, 0.5) * crack * vGlow * 0.22;`);
+};
+const boulderMesh = new THREE.InstancedMesh(boulderGeo, boulderMat, NBLD);
+boulderMesh.castShadow = true; boulderMesh.receiveShadow = true; boulderMesh.frustumCulled = false;
+boulderMesh.instanceMatrix.setUsage(THREE.DynamicDrawUsage); scene.add(boulderMesh);
+const boulderPos = new Float32Array(NBLD * 3);          /* world centres this frame (arcs / lights read them) */
+
+/* ---------- soft glow sprite texture ---------- */
+const glowTex = (function () {
+  const c = makeCanvas(64, 64), g = c.getContext('2d'), gr = g.createRadialGradient(32, 32, 0, 32, 32, 32);
+  gr.addColorStop(0, 'rgba(255,255,255,1)'); gr.addColorStop(0.25, 'rgba(255,255,255,0.55)'); gr.addColorStop(0.6, 'rgba(255,255,255,0.12)'); gr.addColorStop(1, 'rgba(255,255,255,0)');
+  g.fillStyle = gr; g.fillRect(0, 0, 64, 64); return new THREE.CanvasTexture(c);
+})();
+/* ---------- weak points: 1.2 m emissive cores ---------- */
+const wpMeshes = [], wpGlows = [];
+for (let i = 0; i < 3; i++) {
+  const m = new THREE.Mesh(new THREE.SphereGeometry(0.6, 24, 16), new THREE.MeshStandardMaterial({ color: 0x2a1c0c, emissive: 0xff8a1e, emissiveIntensity: 1.4, roughness: 0.4 }));
+  scene.add(m); wpMeshes.push(m);
+  const s = new THREE.Sprite(new THREE.SpriteMaterial({ map: glowTex, color: 0xffa040, blending: THREE.AdditiveBlending, depthWrite: false, transparent: true, fog: false }));
+  s.scale.set(4, 4, 1); s.renderOrder = 8; scene.add(s); wpGlows.push(s);
+}
+const wpLight = new THREE.PointLight(0xff9a3c, 0, 26, 2); scene.add(wpLight);
+
+/* ---------- camera-facing ribbon batch (arcs, sky bolts, tethers) ---------- */
+function RibbonBatch(maxSeg, colorCore, order) {
+  this.max = maxSeg; this.n = 0;
+  this.pos = new Float32Array(maxSeg * 4 * 3); this.uvx = new Float32Array(maxSeg * 4 * 2); this.col = new Float32Array(maxSeg * 4 * 4);
+  const idx = new Uint16Array(maxSeg * 6);
+  for (let i = 0; i < maxSeg; i++) { const a = i * 4, o = i * 6; idx[o] = a; idx[o + 1] = a + 1; idx[o + 2] = a + 2; idx[o + 3] = a + 1; idx[o + 4] = a + 3; idx[o + 5] = a + 2; }
+  const g = new THREE.BufferGeometry();
+  this.aPos = new THREE.BufferAttribute(this.pos, 3); this.aUv = new THREE.BufferAttribute(this.uvx, 2); this.aCol = new THREE.BufferAttribute(this.col, 4);
+  this.aPos.setUsage(THREE.DynamicDrawUsage); this.aUv.setUsage(THREE.DynamicDrawUsage); this.aCol.setUsage(THREE.DynamicDrawUsage);
+  g.setAttribute('position', this.aPos); g.setAttribute('aUv', this.aUv); g.setAttribute('aCol', this.aCol); g.setIndex(new THREE.BufferAttribute(idx, 1));
+  const m = new THREE.ShaderMaterial({
+    transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, side: THREE.DoubleSide,
+    vertexShader: `attribute vec2 aUv; attribute vec4 aCol; varying vec2 vU; varying vec4 vC; void main(){ vU = aUv; vC = aCol; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }`,
+    fragmentShader: `varying vec2 vU; varying vec4 vC; void main(){ float a = abs(vU.x); float core = 1.0 - smoothstep(0.0, 0.26, a); float glow = pow(max(1.0 - a, 0.0), 2.6) * 0.42;
+      vec3 col = mix(vC.rgb, vec3(1.0), core * 0.85) * (core * 1.7 + glow) * vC.a; gl_FragColor = vec4(col, 1.0);` + GLSL_OUT + ` }`
+  });
+  this.mesh = new THREE.Mesh(g, m); this.mesh.frustumCulled = false; this.mesh.renderOrder = order || 7; this.geo = g; scene.add(this.mesh);
+}
+RibbonBatch.prototype.begin = function () { this.n = 0; };
+/* pts: flat array of xyz (count points); w: half-width in metres; minPx: minimum half-width in pixels */
+RibbonBatch.prototype.line = function (pts, count, w, minPx, r, g, b, inten, cam, pxw) {
+  let sx = 0, sy = 0, sz = 0, psx = 0, psy = 0, psz = 0;
+  for (let k = 0; k < count; k++) {
+    const a = k * 3, k0 = Math.max(0, k - 1) * 3, k1 = Math.min(count - 1, k + 1) * 3;
+    const tx = pts[k1] - pts[k0], ty = pts[k1 + 1] - pts[k0 + 1], tz = pts[k1 + 2] - pts[k0 + 2];
+    const cx = cam.x - pts[a], cy = cam.y - pts[a + 1], cz = cam.z - pts[a + 2];
+    let nx = ty * cz - tz * cy, ny = tz * cx - tx * cz, nz = tx * cy - ty * cx; const nl = Math.sqrt(nx * nx + ny * ny + nz * nz) || 1;
+    const ww = Math.max(w, Math.sqrt(cx * cx + cy * cy + cz * cz) * pxw * minPx) / nl;
+    psx = sx; psy = sy; psz = sz; sx = nx * ww; sy = ny * ww; sz = nz * ww;
+    if (k > 0 && this.n < this.max) {
+      const o = this.n * 12, p = (k - 1) * 3, u = this.n * 8, c = this.n * 16;
+      this.pos[o] = pts[p] - psx; this.pos[o + 1] = pts[p + 1] - psy; this.pos[o + 2] = pts[p + 2] - psz;
+      this.pos[o + 3] = pts[p] + psx; this.pos[o + 4] = pts[p + 1] + psy; this.pos[o + 5] = pts[p + 2] + psz;
+      this.pos[o + 6] = pts[a] - sx; this.pos[o + 7] = pts[a + 1] - sy; this.pos[o + 8] = pts[a + 2] - sz;
+      this.pos[o + 9] = pts[a] + sx; this.pos[o + 10] = pts[a + 1] + sy; this.pos[o + 11] = pts[a + 2] + sz;
+      this.uvx[u] = -1; this.uvx[u + 2] = 1; this.uvx[u + 4] = -1; this.uvx[u + 6] = 1;
+      for (let q = 0; q < 4; q++) { this.col[c + q * 4] = r; this.col[c + q * 4 + 1] = g; this.col[c + q * 4 + 2] = b; this.col[c + q * 4 + 3] = inten; }
+      this.n++;
+    }
+  }
+};
+RibbonBatch.prototype.end = function () { this.geo.setDrawRange(0, this.n * 6); this.aPos.needsUpdate = true; this.aUv.needsUpdate = true; this.aCol.needsUpdate = true; this.mesh.visible = this.n > 0; };
+
+/* ---------- binding lightning: candidate pairs between neighbouring boulders and along each bone ---------- */
+const ARC_BASE = [4, 3, 5, 3, 3, 3, 2, 3, 3, 2, 3, 3, 3, 3, 3, 3];       /* arcs per bone at charge 1  (sum 49) */
+const ARC_SEG = 7, ARC_MAX = 112;
+const arcCands = [];                                     /* per bone: list of [i, j] */
+const afterArcs = [];                                    /* pairs of neighbouring fallen boulders (aftermath) */
+(function () {
+  const P = titanPose(REF_T), w = [], tmp = [0, 0, 0];
+  for (let i = 0; i < NBLD; i++) { boulderLive(i, REF_T, P, tmp); w.push(tmp.slice()); }
+  for (let b = 0; b < NB; b++) {
+    const list = [], mine = []; for (let i = 0; i < NBLD; i++) if (BOULDERS[i].bone === b) mine.push(i);
+    const seen = {};
+    for (let a = 0; a < mine.length; a++) {
+      const ds = []; for (let c = 0; c < mine.length; c++) if (c !== a) ds.push([vdist(w[mine[a]], w[mine[c]]), mine[c]]);
+      ds.sort(function (x, y) { return x[0] - y[0]; });
+      for (let k = 0; k < Math.min(2, ds.length); k++) { const i = Math.min(mine[a], ds[k][1]), j = Math.max(mine[a], ds[k][1]), key = i + '_' + j; if (!seen[key]) { seen[key] = 1; list.push([i, j]); } }
+    }
+    if (BONE_PARENT[b] >= 0) {                           /* arcs that bridge the joint to the parent bone */
+      const par = []; for (let i = 0; i < NBLD; i++) if (BOULDERS[i].bone === BONE_PARENT[b]) par.push(i);
+      const ds = []; for (let a = 0; a < mine.length; a++) for (let c = 0; c < par.length; c++) ds.push([vdist(w[mine[a]], w[par[c]]), mine[a], par[c]]);
+      ds.sort(function (x, y) { return x[0] - y[0]; });
+      for (let k = 0; k < Math.min(3, ds.length); k++) list.push([ds[k][1], ds[k][2]]);
+    }
+    arcCands.push(list);
+  }
+  for (let i = 0; i < NBLD; i++) {
+    let best = -1, bd = 7; for (let j = 0; j < NBLD; j++) if (j !== i) { const d = vdist(BOULDERS[i].fall.p2, BOULDERS[j].fall.p2); if (d < bd) { bd = d; best = j; } }
+    if (best > i) afterArcs.push([i, best]);
+  }
+})();
+const arcBatch = new RibbonBatch(ARC_MAX * ARC_SEG, 0, 7);
+const arcPts = new Float32Array((ARC_SEG + 1) * 3);
+let arcCountNow = 0;
+function buildArc(i, j, tick, salt, inten, cam, pxw) {
+  const ax = boulderPos[i * 3], ay = boulderPos[i * 3 + 1], az = boulderPos[i * 3 + 2], bx = boulderPos[j * 3], by = boulderPos[j * 3 + 1], bz = boulderPos[j * 3 + 2];
+  let dx = bx - ax, dy = by - ay, dz = bz - az; const L = Math.sqrt(dx * dx + dy * dy + dz * dz) || 1; dx /= L; dy /= L; dz /= L;
+  const ra = BOULDERS[i].rad * 0.7, rb = BOULDERS[j].rad * 0.7, span = Math.max(0.3, L - ra - rb);
+  let px = dy * 0.31 - dz * 0.93, py = dz * 0.2 - dx * 0.31, pz = dx * 0.93 - dy * 0.2; const pl = Math.sqrt(px * px + py * py + pz * pz) || 1; px /= pl; py /= pl; pz /= pl;
+  const qx = dy * pz - dz * py, qy = dz * px - dx * pz, qz = dx * py - dy * px;
+  for (let k = 0; k <= ARC_SEG; k++) {
+    const u = k / ARC_SEG, s = ra + span * u, env = Math.sin(PI * u) * span * 0.2;
+    const o1 = (hash01(tick, salt * 31 + k, 3) - 0.5) * 2 * env, o2 = (hash01(tick, salt * 31 + k, 5) - 0.5) * 2 * env;
+    arcPts[k * 3] = ax + dx * s + px * o1 + qx * o2; arcPts[k * 3 + 1] = ay + dy * s + py * o1 + qy * o2; arcPts[k * 3 + 2] = az + dz * s + pz * o1 + qz * o2;
+  }
+  arcBatch.line(arcPts, ARC_SEG + 1, 0.16, 1.6, 0.36, 0.62, 1.0, inten, cam, pxw);
+  arcCountNow++;
+}
+const _rank = [];
+function updateArcs(simT, mt, P, cam, pxw) {
+  const tick = Math.floor(simT * 20);                     /* path regenerated from a seeded hash of floor(simTime * 20) */
+  arcBatch.begin(); arcCountNow = 0; boulderGlow.fill(0);
+  for (let b = 0; b < NB; b++) {
+    const c = P.charge[b]; if (c <= 0.02) continue;
+    const list = arcCands[b], n = Math.min(list.length, Math.round(ARC_BASE[b] * c));
+    _rank.length = 0; for (let k = 0; k < list.length; k++) _rank.push([hash01(tick, b * 131 + k, 17), k]);
+    _rank.sort(function (x, y) { return x[0] - y[0]; });
+    for (let q = 0; q < n; q++) {
+      const pr = list[_rank[q][1]], it = c * (0.75 + 0.5 * hash01(tick, b * 977 + q, 23));
+      buildArc(pr[0], pr[1], tick, b * 64 + _rank[q][1], it, cam, pxw);
+      boulderGlow[pr[0]] = Math.min(1.6, boulderGlow[pr[0]] + 0.45 * c); boulderGlow[pr[1]] = Math.min(1.6, boulderGlow[pr[1]] + 0.45 * c);
+    }
+  }
+  if (mt > T_REL.head) {                                  /* last arcs crawl over the fallen stones and die */
+    const life = 1 - sstep(35.5, 39.4, mt), n = Math.round(9 * life * sstep(T_REL.head, T_REL.legs + 1.5, mt));
+    _rank.length = 0; for (let k = 0; k < afterArcs.length; k++) _rank.push([hash01(tick, k, 41), k]);
+    _rank.sort(function (x, y) { return x[0] - y[0]; });
+    let made = 0;
+    for (let q = 0; q < _rank.length && made < n; q++) {
+      const pr = afterArcs[_rank[q][1]], f1 = BOULDERS[pr[0]].fall, f2 = BOULDERS[pr[1]].fall;
+      if (mt < f1.T + f1.t1 + f1.t2 || mt < f2.T + f2.t1 + f2.t2) continue;
+      buildArc(pr[0], pr[1], tick, 5000 + _rank[q][1], 0.35 + 0.5 * life, cam, pxw); made++;
+      boulderGlow[pr[0]] = Math.min(1.2, boulderGlow[pr[0]] + 0.4); boulderGlow[pr[1]] = Math.min(1.2, boulderGlow[pr[1]] + 0.4);
+    }
+  }
+  arcBatch.end(); boulderGlowAttr.needsUpdate = true;
+  return tick;
+}
+
+/* ---------- sky lightning: three seeded branching bolts ---------- */
+const BOLT_TARGETS = [[84.6, terrainH(84.6, 30.8), 30.8], titanPose(SKY_BOLTS[1]).tip[B.HEAD].slice(), [250, -30, 120]];
+const BOLTS = [];
+(function () {
+  const pr = mulberry32(SEED + 909);
+  for (let b = 0; b < 3; b++) {
+    const end = BOLT_TARGETS[b], top = [end[0] + (pr() - 0.5) * 50, 190, end[2] + (pr() - 0.5) * 50], lines = [];
+    const trunk = [], N = 26;
+    for (let k = 0; k <= N; k++) { const u = k / N, j = Math.sin(PI * u) * 9; trunk.push(lerp(top[0], end[0], u) + (pr() - 0.5) * j, lerp(top[1], end[1], u), lerp(top[2], end[2], u) + (pr() - 0.5) * j); }
+    lines.push({ pts: new Float32Array(trunk), n: N + 1, w: 1 });
+    for (let q = 0; q < 6; q++) {
+      const s = 3 + Math.floor(pr() * (N - 8)), len = 5 + Math.floor(pr() * 7), br = [], dir = [(pr() - 0.5) * 2, -0.5 - pr() * 0.6, (pr() - 0.5) * 2];
+      let x = trunk[s * 3], y = trunk[s * 3 + 1], z = trunk[s * 3 + 2];
+      for (let k = 0; k < len; k++) { br.push(x, y, z); x += dir[0] * 5 + (pr() - 0.5) * 5; y += dir[1] * 6; z += dir[2] * 5 + (pr() - 0.5) * 5; }
+      lines.push({ pts: new Float32Array(br), n: len, w: 0.45 });
+    }
+    BOLTS.push({ t: SKY_BOLTS[b], lines: lines, top: top, end: end, far: b === 2 });
+  }
+})();
+const boltBatch = new RibbonBatch(260, 0, 9);
+function updateBolts(simT, cam, pxw) {
+  boltBatch.begin();
+  for (let b = 0; b < 3; b++) {
+    const d = simT - BOLTS[b].t; if (d < 0 || d >= 0.25) continue;             /* visible for 0.25 s, with a re-strike flicker */
+    const fl = (d < 0.07 ? 1 : (d < 0.11 ? 0.25 : (d < 0.18 ? 0.85 : 0.4 * (1 - (d - 0.18) / 0.07)))) * (BOLTS[b].far ? 0.6 : 1);
+    for (let k = 0; k < BOLTS[b].lines.length; k++) { const L = BOLTS[b].lines[k]; boltBatch.line(L.pts, L.n, 0.5 * L.w, 2.6 * L.w, 0.6, 0.72, 1.0, 3.2 * fl * L.w, cam, pxw); }
+  }
+  boltBatch.end();
+}
+/* =====================================================================
+   HUNTER MESHES, TETHER LINES, STRIKE SPARKS, DEBRIS, DUST, GRASS EVENTS
+   ===================================================================== */
+const hunterGroup = new THREE.Group(); scene.add(hunterGroup);
+const HM = {
+  cloth: wetMaterial(new THREE.MeshStandardMaterial({ color: 0x33414d, roughness: 0.9, metalness: 0 }), 0.9, 0.6),
+  leather: wetMaterial(new THREE.MeshStandardMaterial({ color: 0x5a3d28, roughness: 0.9, metalness: 0 }), 0.9, 0.7),
+  metal: wetMaterial(new THREE.MeshStandardMaterial({ color: 0xa3adb8, roughness: 0.9, metalness: 0.8 }), 0.9, 1.2),
+  accent: wetMaterial(new THREE.MeshStandardMaterial({ color: 0xff4a12, roughness: 0.9, metalness: 0, emissive: 0x7a1c02, emissiveIntensity: 1.0, side: THREE.DoubleSide }), 0.9, 0.5),
+  blade: new THREE.MeshBasicMaterial({ color: new THREE.Color(1.6, 3.4, 3.8) }),
+  tip: new THREE.MeshBasicMaterial({ color: new THREE.Color(1.2, 2.6, 3.0) })
+};
+function segGeo(r0, r1) { const g = new THREE.CylinderGeometry(r1, r0, 1, 8); g.translate(0, 0.5, 0); return g; }
+function boxGeo(x, y, z, oy) { const g = new THREE.BoxGeometry(x, y, z); g.translate(0, oy === undefined ? y / 2 : oy, 0); return g; }
+function hPart(geo, mat) { const m = new THREE.Mesh(geo, mat); m.castShadow = true; hunterGroup.add(m); return m; }
+const HPART = {
+  torso: hPart(boxGeo(0.2, 1, 0.36), HM.cloth), plate: hPart(boxGeo(0.25, 0.24, 0.39), HM.metal), pelvis: hPart(boxGeo(0.21, 0.2, 0.3, 0), HM.leather),
+  head: hPart(new THREE.SphereGeometry(0.115, 14, 10), HM.cloth), visor: hPart(new THREE.BoxGeometry(0.03, 0.035, 0.13), HM.tip),
+  uaL: hPart(segGeo(0.058, 0.05), HM.cloth), uaR: hPart(segGeo(0.058, 0.05), HM.cloth), laL: hPart(segGeo(0.05, 0.042), HM.leather), laR: hPart(segGeo(0.05, 0.042), HM.leather),
+  haL: hPart(new THREE.SphereGeometry(0.05, 8, 6), HM.leather), haR: hPart(new THREE.SphereGeometry(0.05, 8, 6), HM.leather),
+  ulL: hPart(segGeo(0.082, 0.066), HM.cloth), ulR: hPart(segGeo(0.082, 0.066), HM.cloth), llL: hPart(segGeo(0.064, 0.05), HM.leather), llR: hPart(segGeo(0.064, 0.05), HM.leather),
+  ftL: hPart(boxGeo(0.25, 0.075, 0.095, 0), HM.leather), ftR: hPart(boxGeo(0.25, 0.075, 0.095, 0), HM.leather),
+  launcher: hPart(segGeo(0.062, 0.062), HM.metal), launcherTip: hPart(new THREE.SphereGeometry(0.04, 8, 6), HM.tip),
+  pauldron: hPart(new THREE.SphereGeometry(0.105, 10, 8), HM.metal), blade: hPart(boxGeo(0.014, 1, 0.06), HM.blade)
+};
+HPART.blade.castShadow = false;
+const bladeGlow = new THREE.Sprite(new THREE.SpriteMaterial({ map: glowTex, color: 0x66e6ff, blending: THREE.AdditiveBlending, depthWrite: false, transparent: true, fog: false }));
+bladeGlow.scale.set(1.5, 1.5, 1); bladeGlow.renderOrder = 8; scene.add(bladeGlow);
+/* cloak: 5 x 6 grid recomputed in closed form every frame */
+const CLOAK_C = 5, CLOAK_R = 6;
+const cloakGeo = new THREE.BufferGeometry();
+const cloakPos = new Float32Array(CLOAK_C * CLOAK_R * 3);
+(function () {
+  const idx = []; for (let i = 0; i < CLOAK_R - 1; i++) for (let s = 0; s < CLOAK_C - 1; s++) { const a = i * CLOAK_C + s, b = a + CLOAK_C; idx.push(a, b, a + 1, a + 1, b, b + 1); }
+  cloakGeo.setAttribute('position', new THREE.BufferAttribute(cloakPos, 3).setUsage(THREE.DynamicDrawUsage)); cloakGeo.setIndex(idx);
+})();
+const cloakMesh = new THREE.Mesh(cloakGeo, HM.accent); cloakMesh.frustumCulled = false; cloakMesh.castShadow = true; scene.add(cloakMesh);
+
+const _vA = new THREE.Vector3(), _vB = new THREE.Vector3(), _vC = new THREE.Vector3(), _m4 = new THREE.Matrix4(), _q4 = new THREE.Quaternion(), _s3 = new THREE.Vector3();
+function setBasis(mesh, pos, X, Y, Z, sx, sy, sz) {
+  _m4.makeBasis(_vA.set(X[0], X[1], X[2]), _vB.set(Y[0], Y[1], Y[2]), _vC.set(Z[0], Z[1], Z[2]));
+  mesh.quaternion.setFromRotationMatrix(_m4); mesh.position.set(pos[0], pos[1], pos[2]); mesh.scale.set(sx === undefined ? 1 : sx, sy === undefined ? 1 : sy, sz === undefined ? 1 : sz);
+}
+function placeSeg(mesh, a, b, ref) {
+  let Y = vsub(b, a); const len = vlen(Y) || 1e-4; Y = vscale(Y, 1 / len);
+  let X = vsub(ref, vscale(Y, vdot(ref, Y))); if (vlen(X) < 1e-4) X = vcross(Y, [0.3, 0.2, 0.9]); X = vnorm(X);
+  setBasis(mesh, a, X, Y, vcross(X, Y), 1, len, 1);
+}
+function updateHunter(mt) {
+  const h = hunterState(mt), j = h.j, X = h.X, u = h.u, r = h.r;
+  setBasis(HPART.torso, vmad(j[J.PELVIS], u, 0.02), X, u, r, 1, TORSO + 0.1, 1);
+  setBasis(HPART.plate, vadd(vmad(j[J.CHEST], u, -0.2), vscale(X, 0.0)), X, u, r);
+  setBasis(HPART.pelvis, vmad(j[J.PELVIS], u, -0.04), X, u, r);
+  const hu = vnorm(vsub(j[J.HEAD], j[J.CHEST]));
+  HPART.head.position.set(j[J.HEAD][0], j[J.HEAD][1], j[J.HEAD][2]);
+  setBasis(HPART.visor, vadd(j[J.HEAD], vscale(X, 0.105)), X, hu, vcross(X, hu));
+  placeSeg(HPART.uaL, j[J.SHL], j[J.ELL], X); placeSeg(HPART.uaR, j[J.SHR], j[J.ELR], X);
+  placeSeg(HPART.laL, j[J.ELL], j[J.HAL], X); placeSeg(HPART.laR, j[J.ELR], j[J.HAR], X);
+  HPART.haL.position.set(j[J.HAL][0], j[J.HAL][1], j[J.HAL][2]); HPART.haR.position.set(j[J.HAR][0], j[J.HAR][1], j[J.HAR][2]);
+  placeSeg(HPART.ulL, j[J.HIPL], j[J.KNL], X); placeSeg(HPART.ulR, j[J.HIPR], j[J.KNR], X);
+  placeSeg(HPART.llL, j[J.KNL], j[J.FTL], X); placeSeg(HPART.llR, j[J.KNR], j[J.FTR], X);
+  for (let s = 0; s < 2; s++) {
+    const kn = j[s ? J.KNR : J.KNL], ft = j[s ? J.FTR : J.FTL], sh = vnorm(vsub(kn, ft));
+    let fx = vsub(X, vscale(sh, vdot(X, sh))); if (vlen(fx) < 1e-4) fx = vcross(sh, r); fx = vnorm(fx);
+    setBasis(s ? HPART.ftR : HPART.ftL, vadd(ft, vscale(fx, 0.06)), fx, sh, vcross(fx, sh));
+  }
+  const fa = vnorm(vsub(j[J.HAL], j[J.ELL]));
+  placeSeg(HPART.launcher, vmad(j[J.ELL], fa, LARM * 0.45), vmad(j[J.ELL], fa, LARM * 0.98), X);
+  HPART.launcherTip.position.set(j[J.HAL][0] + fa[0] * 0.05, j[J.HAL][1] + fa[1] * 0.05, j[J.HAL][2] + fa[2] * 0.05);
+  HPART.pauldron.position.set(j[J.SHL][0] - r[0] * 0.03, j[J.SHL][1] - r[1] * 0.03 + 0.02, j[J.SHL][2] - r[2] * 0.03);
+  placeSeg(HPART.blade, h.bladeBase, h.bladeTip, X);
+  const bm = vlerp(h.bladeBase, h.bladeTip, 0.55);
+  bladeGlow.position.set(bm[0], bm[1], bm[2]); bladeLight.position.set(bm[0], bm[1], bm[2]);
+  SU.uALp.value[5].set(bm[0], bm[1], bm[2]); SU.uALi.value[5] = 0.55;
+  /* cloak */
+  const c0 = hunterChest(mt), c1 = hunterChest(mt - 0.04);
+  let v = [(c0[0] - c1[0]) / 0.04, (c0[1] - c1[1]) / 0.04, (c0[2] - c1[2]) / 0.04]; const sp = vlen(v); if (sp > 14) v = vscale(v, 14 / sp);
+  const hang = vnorm([-u[0] - X[0] * 0.35 - v[0] * 0.055 + 0.22, -u[1] - X[1] * 0.35 - v[1] * 0.055 - 0.25, -u[2] - X[2] * 0.35 - v[2] * 0.055]);
+  for (let i = 0; i < CLOAK_R; i++) for (let s = 0; s < CLOAK_C; s++) {
+    const sv = (s / (CLOAK_C - 1)) * 2 - 1, f = i / (CLOAK_R - 1), o = (i * CLOAK_C + s) * 3;
+    const rip = Math.sin(mt * 8.5 + i * 1.1 + sv * 1.7) * 0.04 * f * (1 + 0.1 * Math.min(sp, 14)), len = f * 0.86 * (1 + 0.12 * Math.abs(sv));
+    const lat = sv * (0.23 + 0.08 * f), back = -0.105 - 0.05 * f * (1 - sv * sv);
+    cloakPos[o] = j[J.CHEST][0] + u[0] * 0.07 + X[0] * (back + rip) + r[0] * lat + hang[0] * len;
+    cloakPos[o + 1] = j[J.CHEST][1] + u[1] * 0.07 + X[1] * (back + rip) + r[1] * lat + hang[1] * len;
+    cloakPos[o + 2] = j[J.CHEST][2] + u[2] * 0.07 + X[2] * (back + rip) + r[2] * lat + hang[2] * len;
+  }
+  cloakGeo.attributes.position.needsUpdate = true; cloakGeo.computeVertexNormals();
+  return h;
+}
+/* ---------- tether lines ---------- */
+const ropeBatch = new RibbonBatch(3 * (ROPE_N - 1), 0, 7);
+const ropeBuf = new Float32Array(ROPE_N * 3);
+function updateRopes(mt, cam, pxw) {
+  ropeBatch.begin();
+  for (let i = 0; i < 3; i++) if (ropeAt(i, mt, ropeBuf)) ropeBatch.line(ropeBuf, ROPE_N, 0.028, 1.25, 0.45, 0.92, 1.0, 0.95, cam, pxw);
+  ropeBatch.end();
+}
+
+/* ---------- strike sparks: 72 per strike, ballistic and closed-form from the strike time (simTime) ---------- */
+const SPARKS_PER = 72;
+(function () {
+  const N = SPARKS_PER * STRIKES.length, pr = mulberry32(SEED + 303);
+  const g = new THREE.InstancedBufferGeometry();
+  g.setAttribute('position', new THREE.Float32BufferAttribute([-1, 0, 0, 1, 0, 0, -1, 1, 0, 1, 1, 0], 3)); g.setIndex([0, 1, 2, 1, 3, 2]);
+  const aO = new Float32Array(N * 3), aV = new Float32Array(N * 3), aT = new Float32Array(N * 3);
+  for (let s = 0; s < STRIKES.length; s++) {
+    const ts = STRIKES[s].t, P = titanPose(ts), w = wpPos(P, STRIKES[s].wp);
+    const d = vnorm(vsub(hunterChest(ts), hunterChest(ts - 0.07)));          /* blade's direction of travel */
+    let e1 = vnorm(vcross(d, [0.2, 1, 0.1])), e2 = vcross(d, e1);
+    for (let k = 0; k < SPARKS_PER; k++) {
+      const i = s * SPARKS_PER + k, sp = 8 + 20 * pr(), a = pr() * TAU, c = 0.55 * Math.pow(pr(), 0.7) * sp;
+      aO[i * 3] = w[0]; aO[i * 3 + 1] = w[1]; aO[i * 3 + 2] = w[2];
+      aV[i * 3] = d[0] * sp + (e1[0] * Math.cos(a) + e2[0] * Math.sin(a)) * c; aV[i * 3 + 1] = d[1] * sp + (e1[1] * Math.cos(a) + e2[1] * Math.sin(a)) * c + 2.5 * pr();
+      aV[i * 3 + 2] = d[2] * sp + (e1[2] * Math.cos(a) + e2[2] * Math.sin(a)) * c;
+      aT[i * 3] = ts; aT[i * 3 + 1] = 0.45 + 0.6 * pr(); aT[i * 3 + 2] = pr();
+    }
+    STRIKES[s].dir = d; STRIKES[s].pos = w;
+  }
+  g.setAttribute('aO', new THREE.InstancedBufferAttribute(aO, 3)); g.setAttribute('aV', new THREE.InstancedBufferAttribute(aV, 3)); g.setAttribute('aT', new THREE.InstancedBufferAttribute(aT, 3));
+  g.instanceCount = N;
+  const m = new THREE.ShaderMaterial({
+    transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, side: THREE.DoubleSide, uniforms: { uTime: SU.uTime, uCam: SU.uCam, uPx: SU.uPx },
+    vertexShader: `attribute vec3 aO, aV, aT; uniform float uTime, uPx; uniform vec3 uCam; varying float vL; varying float vX; varying float vE;
+    void main(){ float a = uTime - aT.x; float life = aT.y; float on = step(0.0, a) * step(a, life);
+      vec3 g = vec3(0.0, -9.81, 0.0);
+      vec3 p = aO + aV * a + 0.5 * g * a * a; vec3 vel = aV + g * a;
+      float len = min(1.4, length(vel) * 0.045) * on;
+      vec3 dir = normalize(vel); vec3 toC = uCam - p; float dist = length(toC); vec3 sd = normalize(cross(dir, toC));
+      float w = max(0.022, dist * uPx * 1.1) * on;
+      vec3 pos = p - dir * len * position.y + sd * position.x * w;
+      vL = a / life; vX = position.x; vE = position.y;
+      gl_Position = projectionMatrix * viewMatrix * vec4(pos, 1.0); }`,
+    fragmentShader: `varying float vL; varying float vX; varying float vE;
+    void main(){ float f = (1.0 - abs(vX)) * (1.0 - vE * 0.85); vec3 col = mix(vec3(1.0, 0.97, 0.85), vec3(1.0, 0.45, 0.08), smoothstep(0.0, 0.7, vL)) * 3.2 * f * (1.0 - vL * vL);
+      gl_FragColor = vec4(col, 1.0);` + GLSL_OUT + ` }`
+  });
+  const mesh = new THREE.Mesh(g, m); mesh.frustumCulled = false; mesh.renderOrder = 9; scene.add(mesh);
+})();
+
+/* ---------- debris (dirt clods, torn grass) and dust puffs: closed-form from motion time ---------- */
+const DEB_MAX = 960, DUST_MAX = 760;
+const deb = { n: 0, o: new Float32Array(DEB_MAX * 3), v: new Float32Array(DEB_MAX * 3), t: new Float32Array(DEB_MAX * 3), c: new Float32Array(DEB_MAX * 4), ax: new Float32Array(DEB_MAX * 4) };
+const dust = { n: 0, o: new Float32Array(DUST_MAX * 3), v: new Float32Array(DUST_MAX * 3), t: new Float32Array(DUST_MAX * 2), s: new Float32Array(DUST_MAX * 4) };
+const fxRng = mulberry32(SEED + 404);
+function addDebris(t0, x, y, z, vx, vy, vz, size, grassy) {
+  if (deb.n >= DEB_MAX) return; const i = deb.n++, gh = terrainH(x + vx * 0.8, z + vz * 0.8) + 0.05;
+  const tf = (vy + Math.sqrt(Math.max(0, vy * vy + 2 * GRAV * Math.max(0, y - gh)))) / GRAV;
+  deb.o.set([x, y, z], i * 3); deb.v.set([vx, vy, vz], i * 3); deb.t.set([t0, tf, 0.6 + fxRng() * 1.6], i * 3);
+  const k = 0.7 + 0.5 * fxRng();
+  if (grassy) deb.c.set([0.10 * k, 0.24 * k, 0.05 * k, -size], i * 4); else deb.c.set([0.085 * k, 0.065 * k, 0.045 * k, size], i * 4);
+  const a = vnorm([fxRng() - 0.5, fxRng() - 0.5, fxRng() - 0.5]); deb.ax.set([a[0], a[1], a[2], (2 + 9 * fxRng()) * (fxRng() < 0.5 ? -1 : 1)], i * 4);
+}
+function addDust(t0, x, y, z, vx, vy, vz, s0, s1, alpha, life) {
+  if (dust.n >= DUST_MAX) return; const i = dust.n++;
+  dust.o.set([x, y, z], i * 3); dust.v.set([vx, vy, vz], i * 3); dust.t.set([t0, life], i * 2); dust.s.set([s0, s1, alpha, fxRng()], i * 4);
+}
+function burst(t0, c, nDeb, nDust, hv, uv, ringR, size, dustSize) {
+  for (let k = 0; k < nDeb; k++) {
+    const a = fxRng() * TAU, r = ringR * (0.5 + 0.5 * fxRng()), sp = hv * (0.25 + 0.75 * fxRng());
+    addDebris(t0 + 0.04 * fxRng(), c[0] + Math.cos(a) * r, terrainH(c[0], c[2]) + 0.2, c[2] + Math.sin(a) * r, Math.cos(a) * sp, uv * (0.35 + 0.65 * fxRng()), Math.sin(a) * sp, size * (0.4 + 0.9 * fxRng()), fxRng() < 0.36);
+  }
+  for (let k = 0; k < nDust; k++) {
+    const a = fxRng() * TAU, r = ringR * (0.4 + 0.8 * fxRng()), sp = hv * 0.35 * (0.3 + fxRng());
+    addDust(t0 + 0.05 * fxRng(), c[0] + Math.cos(a) * r, terrainH(c[0], c[2]) + 0.4 + fxRng() * 0.8, c[2] + Math.sin(a) * r, Math.cos(a) * sp, 0.6 + 1.6 * fxRng(), Math.sin(a) * sp, dustSize * 0.5, dustSize * (1.6 + fxRng()), 0.22 + 0.2 * fxRng(), 1.6 + 1.6 * fxRng());
+  }
+}
+const RING_EVENTS = [];                                  /* big shockwaves that also get a faint dust front */
+const FOOT_POS = [];
+(function buildEvents() {
+  for (let i = 0; i < FOOTFALLS.length; i++) {
+    const f = FOOTFALLS[i], P = titanPose(f.t), a = f.side ? P.ankR : P.ankL, c = [a[0], 0, a[2]];
+    FOOT_POS.push(c); GRASS_EVENTS.push({ x: c[0], z: c[2], t: f.t, s: 0.85, r: 34, hold: 0 }); RING_EVENTS.push({ x: c[0], z: c[2], t: f.t, s: 0.55, r: 30 });
+    burst(f.t, c, 26, 14, 6, 7, 2.6, 0.26, 2.2);
+  }
+  GRASS_EVENTS.push({ x: SLAM_POS[0], z: SLAM_POS[2], t: T_SLAM, s: 1.7, r: 95, hold: 0 }); RING_EVENTS.push({ x: SLAM_POS[0], z: SLAM_POS[2], t: T_SLAM, s: 1.0, r: 80 });
+  burst(T_SLAM, SLAM_POS, 320, 84, 13, 13.5, 4.2, 0.34, 3.4);
+  const kn = titanPose(T_KNEE).kneeL, kc = [kn[0], 0, kn[2]];
+  HP.kneePos = kc; GRASS_EVENTS.push({ x: kc[0], z: kc[2], t: T_KNEE, s: 1.25, r: 60, hold: 0 }); RING_EVENTS.push({ x: kc[0], z: kc[2], t: T_KNEE, s: 0.8, r: 55 });
+  burst(T_KNEE, kc, 90, 36, 9, 9, 2.4, 0.3, 2.8);
+  for (let k = 0; k < 10; k++) {                         /* the sweep flattens grass and throws dirt along its path */
+    const t = 18.62 + k * 0.07, fc = fistCenter(titanPose(t), 0), fv = vsub(fistCenter(titanPose(t + 0.02), 0), fc), d = vnorm([fv[0], 0, fv[2]]);
+    GRASS_EVENTS.push({ x: fc[0], z: fc[2], t: t, s: 1.35, r: 7.5, hold: 0 });
+    for (let q = 0; q < 8; q++) addDebris(t + 0.03 * fxRng(), fc[0] + (fxRng() - 0.5) * 3, terrainH(fc[0], fc[2]) + 0.3, fc[2] + (fxRng() - 0.5) * 3, d[0] * (4 + 9 * fxRng()) + (fxRng() - 0.5) * 3, 3 + 7 * fxRng(), d[2] * (4 + 9 * fxRng()) + (fxRng() - 0.5) * 3, 0.3 * (0.4 + fxRng()), fxRng() < 0.5);
+    for (let q = 0; q < 4; q++) addDust(t, fc[0] + (fxRng() - 0.5) * 3, terrainH(fc[0], fc[2]) + 0.6, fc[2] + (fxRng() - 0.5) * 3, d[0] * 4, 1 + fxRng(), d[2] * 4, 1.2, 3.5 + 2 * fxRng(), 0.26, 2.2);
+  }
+  const lands = [[6.05, HP.pathA(6.05)], [13.5, HP.pathA(13.5)], [T_HUNTER_LAND, hunterChest(T_HUNTER_LAND)]];
+  for (let k = 0; k < lands.length; k++) { const p = lands[k][1]; GRASS_EVENTS.push({ x: p[0], z: p[2], t: lands[k][0], s: 0.45, r: 6, hold: 0 }); burst(lands[k][0], p, 9, 5, 3, 3.5, 0.5, 0.14, 0.9); }
+  for (let k = 0; k < RAG.impacts.length; k++) { const im = RAG.impacts[k]; GRASS_EVENTS.push({ x: im.p[0], z: im.p[2], t: im.t, s: 0.5, r: 6, hold: 0 }); burst(im.t, im.p, 10, 7, 3.5, 3.5, 0.5, 0.14, 1.0); }
+  for (let k = 0; k < IMPACTS.length; k++) {             /* each falling boulder: dust + a small grass shockwave */
+    const im = IMPACTS[k];
+    GRASS_EVENTS.push({ x: im.p[0], z: im.p[2], t: im.t, s: 0.45 + 0.3 * im.rad, r: 7 + 5 * im.rad, hold: 0 });
+    burst(im.t, im.p, k % 2 === 0 ? 3 : 2, 3, 3 + im.rad * 2, 3 + im.rad * 2.5, im.rad * 0.9, 0.3, 1.4 + im.rad * 1.3);
+  }
+  GRASS_EVENTS.sort(function (a, b) { return a.t - b.t; });
+})();
+(function buildFxMeshes() {
+  /* debris */
+  const bg = new THREE.BoxGeometry(1, 1, 1), g = new THREE.InstancedBufferGeometry();
+  g.setAttribute('position', bg.attributes.position); g.setAttribute('normal', bg.attributes.normal); g.setIndex(bg.index);
+  g.setAttribute('aO', new THREE.InstancedBufferAttribute(deb.o, 3)); g.setAttribute('aV', new THREE.InstancedBufferAttribute(deb.v, 3)); g.setAttribute('aT', new THREE.InstancedBufferAttribute(deb.t, 3));
+  g.setAttribute('aC', new THREE.InstancedBufferAttribute(deb.c, 4)); g.setAttribute('aAx', new THREE.InstancedBufferAttribute(deb.ax, 4)); g.instanceCount = deb.n;
+  const m = new THREE.ShaderMaterial({
+    uniforms: { uMt: SU.uMt, uFogColor: SU.uFogColor, uFogDensity: SU.uFogDensity, uFlash: SU.uFlash, uKeyDir: SU.uKeyDir, uKeyCol: SU.uKeyCol, uAmb: SU.uAmb },
+    vertexShader: `attribute vec3 aO, aV, aT; attribute vec4 aC, aAx; uniform float uMt; varying vec3 vN; varying vec3 vC; varying float vDepth;
+    vec3 rot(vec3 p, vec3 k, float a){ float c = cos(a), s = sin(a); return p * c + cross(k, p) * s + k * dot(k, p) * (1.0 - c); }
+    void main(){ float a = uMt - aT.x; float fl = min(a, aT.y); float on = step(0.0, a);
+      float sc = abs(aC.w) * on * (1.0 - smoothstep(aT.y + 0.4, aT.y + 0.4 + aT.z, a));
+      vec3 dim = aC.w < 0.0 ? vec3(0.16, 1.0, 0.03) * 1.6 : vec3(1.0, 0.62, 0.8);
+      float ang = aAx.w * fl;
+      vec3 lp = rot(position * dim * sc, aAx.xyz, ang);
+      vec3 p = aO + aV * fl + vec3(0.0, -4.905, 0.0) * fl * fl + lp;
+      vN = rot(normal, aAx.xyz, ang); vC = aC.rgb; vec4 mv = viewMatrix * vec4(p, 1.0); vDepth = -mv.z; gl_Position = projectionMatrix * mv; }`,
+    fragmentShader: `uniform vec3 uKeyDir, uKeyCol, uAmb; varying vec3 vN; varying vec3 vC; varying float vDepth;` + GLSL_FOG_PARS + `
+    void main(){ vec3 L = uAmb * 1.3 + uKeyCol * (0.2 + 0.8 * max(dot(normalize(vN), uKeyDir), 0.0)) + vec3(1.4, 1.5, 1.8) * uFlash;
+      gl_FragColor = vec4(applyFog(vC * L, vDepth), 1.0);` + GLSL_OUT + ` }`
+  });
+  const mesh = new THREE.Mesh(g, m); mesh.frustumCulled = false; scene.add(mesh);
+  /* dust */
+  const dg = new THREE.InstancedBufferGeometry();
+  dg.setAttribute('position', new THREE.Float32BufferAttribute([-1, -1, 0, 1, -1, 0, -1, 1, 0, 1, 1, 0], 3)); dg.setIndex([0, 1, 2, 1, 3, 2]);
+  dg.setAttribute('aO', new THREE.InstancedBufferAttribute(dust.o, 3)); dg.setAttribute('aV', new THREE.InstancedBufferAttribute(dust.v, 3));
+  dg.setAttribute('aT', new THREE.InstancedBufferAttribute(dust.t, 2)); dg.setAttribute('aS', new THREE.InstancedBufferAttribute(dust.s, 4)); dg.instanceCount = dust.n;
+  const dm = new THREE.ShaderMaterial({
+    transparent: true, depthWrite: false, uniforms: { uMt: SU.uMt, uFogColor: SU.uFogColor, uFogDensity: SU.uFogDensity, uFlash: SU.uFlash },
+    vertexShader: `attribute vec3 aO, aV; attribute vec2 aT; attribute vec4 aS; uniform float uMt; varying vec2 vUv; varying float vA; varying float vDepth;
+    void main(){ float a = uMt - aT.x; float u = clamp(a / aT.y, 0.0, 1.0); float on = step(0.0, a) * step(a, aT.y);
+      vec3 c = aO + aV * a / (1.0 + 0.7 * a) + vec3(2.2, 0.35, 0.0) * a * (0.5 + 0.5 * aS.w);
+      float sz = mix(aS.x, aS.y, 1.0 - exp(-2.4 * a)) * on;
+      vec4 mv = viewMatrix * vec4(c, 1.0); mv.xy += position.xy * sz; vDepth = -mv.z;
+      vUv = position.xy; vA = aS.z * smoothstep(0.0, 0.07, a) * pow(1.0 - u, 1.5) * on;
+      gl_Position = projectionMatrix * mv; }`,
+    fragmentShader: `varying vec2 vUv; varying float vA; varying float vDepth;` + GLSL_FOG_PARS + `
+    void main(){ float r2 = dot(vUv, vUv); float a = vA * exp(-r2 * 3.2) * (1.0 - smoothstep(0.8, 1.0, sqrt(r2)));
+      vec3 col = vec3(0.30, 0.285, 0.26) * (0.75 + uFlash * 3.0);
+      gl_FragColor = vec4(applyFog(col, vDepth * 0.7), a);` + GLSL_OUT + ` }`
+  });
+  const dmesh = new THREE.Mesh(dg, dm); dmesh.frustumCulled = false; dmesh.renderOrder = 4; scene.add(dmesh);
+  /* faint dust front that rides each big shockwave ring (radius = 30 m/s * dt) */
+  const rg = new THREE.InstancedBufferGeometry(), nR = RING_EVENTS.length, ra = new Float32Array(nR * 4), rb = new Float32Array(nR * 2);
+  rg.setAttribute('position', new THREE.Float32BufferAttribute([-1, 0, -1, 1, 0, -1, -1, 0, 1, 1, 0, 1], 3)); rg.setIndex([0, 2, 1, 1, 2, 3]);
+  for (let i = 0; i < nR; i++) { const e = RING_EVENTS[i]; ra.set([e.x, terrainH(e.x, e.z) + 0.75, e.z, e.t], i * 4); rb.set([e.s, e.r], i * 2); }
+  rg.setAttribute('aA', new THREE.InstancedBufferAttribute(ra, 4)); rg.setAttribute('aB', new THREE.InstancedBufferAttribute(rb, 2)); rg.instanceCount = nR;
+  const rm = new THREE.ShaderMaterial({
+    transparent: true, depthWrite: false, uniforms: { uMt: SU.uMt, uFogColor: SU.uFogColor, uFogDensity: SU.uFogDensity, uFlash: SU.uFlash },
+    vertexShader: `attribute vec4 aA; attribute vec2 aB; uniform float uMt; varying vec2 vP; varying float vR; varying float vA; varying float vDepth;
+    void main(){ float a = uMt - aA.w; float R = 30.0 * a; float on = step(0.0, a) * step(R, aB.y);
+      vec3 p = vec3(aA.x + position.x * (R + 1.0) * on, aA.y, aA.z + position.z * (R + 1.0) * on);
+      vP = position.xz * (R + 1.0); vR = R; vA = aB.x * on * pow(max(1.0 - R / aB.y, 0.0), 0.8);
+      vec4 mv = viewMatrix * vec4(p, 1.0); vDepth = -mv.z; gl_Position = projectionMatrix * mv; }`,
+    fragmentShader: `varying vec2 vP; varying float vR; varying float vA; varying float vDepth;` + GLSL_FOG_PARS + `
+    void main(){ float d = length(vP); float band = smoothstep(vR - 4.0, vR - 1.5, d) * (1.0 - smoothstep(vR - 0.6, vR, d));
+      gl_FragColor = vec4(applyFog(vec3(0.42, 0.44, 0.46) * (0.8 + uFlash * 3.0), vDepth * 0.6), band * vA * 0.42);` + GLSL_OUT + ` }`
+  });
+  const rmesh = new THREE.Mesh(rg, rm); rmesh.frustumCulled = false; rmesh.renderOrder = 3; scene.add(rmesh);
+})();
+/* pick the shockwave rings the grass shader should see at motion time mt */
+const _evSel = [];
+function updateGrassEvents(mt) {
+  _evSel.length = 0;
+  for (let i = 0; i < GRASS_EVENTS.length; i++) { const e = GRASS_EVENTS[i]; if (e.t > mt) break; if (mt - e.t < e.r / 30 + 1.75) _evSel.push(e); }
+  if (_evSel.length > NEV) { _evSel.sort(function (a, b) { return (b.s * b.r) - (a.s * a.r); }); _evSel.length = NEV; }
+  for (let i = 0; i < NEV; i++) {
+    const e = _evSel[i];
+    if (e) { grassU.uEvA.value[i].set(e.x, e.z, e.t, e.s); grassU.uEvB.value[i] = e.r; } else { grassU.uEvA.value[i].set(0, 0, -100, 0); grassU.uEvB.value[i] = 1; }
+  }
+}
+/* =====================================================================
+   CAMERA (shot schedule, all closed-form in simTime), POST PASS, HUD
+   ===================================================================== */
+const CAM = { shot: 1, fov: 40, trauma: 0, vH: 0, pos: [0, 0, 0], target: 0 };
+const SHOT_START = [0, 3, 9, 16, 22.5, 29.5, 36];
+function shotAt(t) { let s = 0; for (let i = 0; i < SHOT_START.length; i++) if (t >= SHOT_START[i]) s = i; return s + 1; }
+function Hraw(simT) { return hunterChest(motionTime(Math.max(0, simT))); }
+function Hsmooth(simT) {                                  /* average of H at simTime - k*0.05, k = 0..7 */
+  let x = 0, y = 0, z = 0;
+  for (let k = 0; k < 8; k++) { const c = Hraw(simT - k * 0.05); x += c[0]; y += c[1]; z += c[2]; }
+  return [x / 8, y / 8, z / 8];
+}
+function hunterSpeed(simT) {                              /* smoothed speed (m/s) over the same samples */
+  let L = 0, p = Hraw(simT);
+  for (let k = 1; k < 8; k++) { const c = Hraw(simT - k * 0.05); L += vdist(p, c); p = c; }
+  return L / 0.35;
+}
+function targetWeakPoint(simT) { return simT < STRIKES[0].t ? 0 : (simT < STRIKES[1].t ? 1 : 2); }
+const _cq = new THREE.Quaternion(), _ce = new THREE.Euler(), _cv = new THREE.Vector3(), _cv2 = new THREE.Vector3(), _cm = new THREE.Matrix4();
+function ndcOf(p, tx, ty) {                               /* p: world point -> [ndcX, ndcY, inFront] with the current camera orientation */
+  _cv.set(p[0], p[1], p[2]).sub(camera.position).applyQuaternion(_cq.copy(camera.quaternion).invert());
+  const z = -_cv.z; if (z < 0.05) return [(_cv.x >= 0 ? 4 : -4), (_cv.y >= 0 ? 4 : -4), false];
+  return [_cv.x / z / tx, _cv.y / z / ty, true];
+}
+/* rotate the camera so the hunter sits near the lower-left third and the weak point near the upper-right third,
+   never letting the hunter (first) or the Titan's chest (second) leave the frame */
+function composeFrame(Hp, Wp, TCp, tx, ty) {
+  for (let it = 0; it < 3; it++) {
+    const h = ndcOf(Hp, tx, ty), w = ndcOf(Wp, tx, ty), c = ndcOf(TCp, tx, ty);
+    const kw = w[2] ? 1 : 0;
+    let sx = (2 * (-0.33 - h[0]) + kw * (0.33 - clamp(w[0], -3, 3))) / (2 + kw), sy = (2 * (-0.33 - h[1]) + kw * (0.33 - clamp(w[1], -3, 3))) / (2 + kw);
+    if (c[2]) { if (c[1] + sy > 0.72) sy -= (c[1] + sy - 0.72); if (c[0] + sx > 0.86) sx -= (c[0] + sx - 0.86); if (c[0] + sx < -0.86) sx -= (c[0] + sx + 0.86); }
+    if (kw) { if (w[1] + sy > 0.8) sy -= (w[1] + sy - 0.8); if (w[0] + sx > 0.85) sx -= (w[0] + sx - 0.85); if (w[0] + sx < -0.85) sx -= (w[0] + sx + 0.85); }
+    const hx = clamp(h[0] + sx, -0.74, 0.74), hy = clamp(h[1] + sy, -0.48, 0.66);
+    sx = hx - h[0]; sy = hy - h[1];
+    _cv.set(-sx * tx, -sy * ty, -1).normalize().applyQuaternion(camera.quaternion).add(camera.position);
+    camera.up.set(0, 1, 0); camera.lookAt(_cv);
+  }
+}
+function updateCamera(simT) {
+  const mt = motionTime(simT), P = titanPose(mt), aspect = window.innerWidth / Math.max(1, window.innerHeight);
+  const shot = shotAt(simT), H = Hraw(simT), Hs = Hsmooth(simT), TC = chestCenter(P), vH = hunterSpeed(simT);
+  const MID = [(H[0] + TC[0]) / 2, (H[1] + TC[1]) / 2, (H[2] + TC[2]) / 2];
+  let pos, look, fov, compose = false;
+  if (shot === 1) { pos = [-70, 6, 50]; look = MID; fov = 40; }
+  else if (shot === 2) {
+    const d = vnorm([Hs[0] - P.G[0], 0, Hs[2] - P.G[2]]);
+    pos = [Hs[0] + d[0] * 9, Hs[1] + 3, Hs[2] + d[2] * 9]; look = vlerp(Hs, TC, 0.35); fov = 55 + Math.min(12, 0.4 * vH); compose = true;
+  } else if (shot === 3) {
+    const a = (200 + 6 * (simT - 9)) * DEG;
+    pos = [P.G[0] + 55 * Math.cos(a), 12, P.G[2] + 55 * Math.sin(a)]; look = [0.6 * TC[0] + 0.4 * Hs[0], 0.6 * TC[1] + 0.4 * Hs[1], 0.6 * TC[2] + 0.4 * Hs[2]]; fov = 45;
+  } else if (shot === 4) { pos = [-14, 1.5, -46]; look = MID; fov = 42; }
+  else if (shot === 5) {
+    const W3 = weakPointWorld(2, mt, P), Hp = Hsmooth(simT - 0.2);
+    const toT = vnorm(vsub(W3, Hs));
+    let d = vadd([(Hs[0] - Hp[0]) / 0.2, (Hs[1] - Hp[1]) / 0.2, (Hs[2] - Hp[2]) / 0.2], vscale(toT, 3.0));
+    d = vnorm(d); d[1] = clamp(d[1], -0.45, 0.45); d = vnorm(d);
+    pos = [Hs[0] - d[0] * 6, Hs[1] - d[1] * 6 + 2, Hs[2] - d[2] * 6]; look = W3; fov = 60 + Math.min(12, 0.4 * vH); compose = true;
+  } else if (shot === 6) { pos = [-74, 25, -60]; look = [16, 14, 0]; fov = 38; }
+  else { const a = simT - 36; pos = [H[0] - 8 - 2 * a, H[1] + 2 + 0.5 * a, H[2] + 6]; look = [H[0], H[1] + 1, H[2]]; fov = 35; }
+  if (shot === 2 || shot === 5) pos[1] = Math.max(pos[1], terrainH(pos[0], pos[2]) + 0.9);
+  /* the table's vertical FOV holds at 16:9 and wider; narrower (portrait) viewports keep the same horizontal field
+     so everything framed at 16:9 stays inside the frame */
+  let fovEff = fov; if (aspect < 16 / 9) fovEff = Math.min(100, 2 * Math.atan(Math.tan(fov * DEG / 2) * (16 / 9) / aspect) / DEG);
+  camera.fov = fovEff; camera.aspect = aspect; camera.updateProjectionMatrix();
+  camera.position.set(pos[0], pos[1], pos[2]); camera.up.set(0, 1, 0); camera.lookAt(look[0], look[1], look[2]);
+  const ty = Math.tan(fovEff * DEG / 2), tx = ty * aspect;
+  if (compose) composeFrame(hunterChest(mt), weakPointWorld(shot === 2 ? targetWeakPoint(simT) : 2, mt, P), TC, tx, ty);
+  /* trauma shake: trauma^2 * smooth seeded noise of simTime (<= 0.6 m, <= 2.5 deg) */
+  const tr = traumaAt(simT), s2 = tr * tr;
+  if (s2 > 1e-5) {
+    _cv.set(vnoise(simT * 17.0, 101), vnoise(simT * 19.0, 102), vnoise(simT * 13.0, 103)).multiplyScalar(0.6 * s2).applyQuaternion(camera.quaternion);
+    camera.position.add(_cv);
+    _ce.set(vnoise(simT * 21.0, 104) * 2.5 * DEG * s2, vnoise(simT * 23.0, 105) * 2.5 * DEG * s2, vnoise(simT * 18.0, 106) * 2.5 * DEG * s2);
+    camera.quaternion.multiply(_cq.setFromEuler(_ce));
+  }
+  camera.updateMatrixWorld(true);
+  CAM.shot = shot; CAM.fov = fov; CAM.trauma = tr; CAM.vH = vH; CAM.target = targetWeakPoint(simT);
+  SU.uCam.value.copy(camera.position);
+  SU.uPx.value = 2 * ty / Math.max(1, window.innerHeight);
+  return P;
+}
+
+/* ---------- post pass: radial chromatic aberration (<= 6 px, proportional to trauma^2) ---------- */
+let sceneRT = null;
+function makeRT() {
+  const s = renderer.getDrawingBufferSize(new THREE.Vector2());
+  const o = { minFilter: THREE.LinearFilter, magFilter: THREE.LinearFilter, format: THREE.RGBAFormat, depthBuffer: true, stencilBuffer: false };
+  if (sceneRT) sceneRT.dispose();
+  if (renderer.capabilities.isWebGL2 && THREE.WebGLMultisampleRenderTarget) { sceneRT = new THREE.WebGLMultisampleRenderTarget(s.x, s.y, o); sceneRT.samples = 4; }
+  else sceneRT = new THREE.WebGLRenderTarget(s.x, s.y, o);
+  sceneRT.texture.encoding = THREE.sRGBEncoding;
+  postMat.uniforms.tDiffuse.value = sceneRT.texture; postMat.uniforms.uRes.value.set(s.x, s.y);
+}
+const postMat = new THREE.ShaderMaterial({
+  depthTest: false, depthWrite: false, uniforms: { tDiffuse: { value: null }, uRes: { value: new THREE.Vector2(1, 1) }, uAb: { value: 0 } },
+  vertexShader: `varying vec2 vUv; void main(){ vUv = uv; gl_Position = vec4(position.xy, 0.0, 1.0); }`,
+  fragmentShader: `uniform sampler2D tDiffuse; uniform vec2 uRes; uniform float uAb; varying vec2 vUv;
+  void main(){ vec2 c = vUv - 0.5; float r = length(c); vec2 off = (c / max(r, 1e-4)) * uAb * min(1.0, r * 1.8) / uRes;
+    vec3 col = vec3(texture2D(tDiffuse, vUv + off).r, texture2D(tDiffuse, vUv).g, texture2D(tDiffuse, vUv - off).b);
+    col *= 1.0 - 0.30 * smoothstep(0.38, 0.92, r);
+    gl_FragColor = vec4(col, 1.0); }`
+});
+const postScene = new THREE.Scene(), postCam = new THREE.OrthographicCamera(-1, 1, 1, -1, 0, 1);
+const postQuad = new THREE.Mesh(new THREE.PlaneGeometry(2, 2), postMat); postQuad.frustumCulled = false; postScene.add(postQuad);
+
+/* ---------- HUD: one orthographic pass of the same renderer; digits from an in-memory glyph atlas; no words ---------- */
+const HUD_MAXQ = 420;
+const hud = { n: 0, pos: new Float32Array(HUD_MAXQ * 12), uv: new Float32Array(HUD_MAXQ * 8), col: new Float32Array(HUD_MAXQ * 16) };
+const hudAtlas = (function () {
+  const c = makeCanvas(512, 64), g = c.getContext('2d');
+  g.clearRect(0, 0, 512, 64); g.fillStyle = '#fff'; g.textAlign = 'center'; g.textBaseline = 'middle';
+  g.font = 'bold 56px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif';
+  for (let d = 0; d < 10; d++) g.fillText(String(d), d * 46 + 23, 34);
+  g.fillRect(476, 8, 28, 48);
+  const t = new THREE.CanvasTexture(c); t.minFilter = THREE.LinearFilter; t.magFilter = THREE.LinearFilter; t.generateMipmaps = false; return t;
+})();
+const hudGeo = new THREE.BufferGeometry();
+(function () {
+  const idx = new Uint16Array(HUD_MAXQ * 6);
+  for (let i = 0; i < HUD_MAXQ; i++) { const a = i * 4, o = i * 6; idx[o] = a; idx[o + 1] = a + 1; idx[o + 2] = a + 2; idx[o + 3] = a + 2; idx[o + 4] = a + 1; idx[o + 5] = a + 3; }
+  hudGeo.setAttribute('position', new THREE.BufferAttribute(hud.pos, 3).setUsage(THREE.DynamicDrawUsage));
+  hudGeo.setAttribute('uv', new THREE.BufferAttribute(hud.uv, 2).setUsage(THREE.DynamicDrawUsage));
+  hudGeo.setAttribute('aCol', new THREE.BufferAttribute(hud.col, 4).setUsage(THREE.DynamicDrawUsage));
+  hudGeo.setIndex(new THREE.BufferAttribute(idx, 1));
+})();
+const hudMat = new THREE.ShaderMaterial({
+  transparent: true, depthTest: false, depthWrite: false, side: THREE.DoubleSide, uniforms: { uAtlas: { value: hudAtlas } },
+  vertexShader: `attribute vec4 aCol; varying vec2 vUv; varying vec4 vC; void main(){ vUv = uv; vC = aCol; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }`,
+  fragmentShader: `uniform sampler2D uAtlas; varying vec2 vUv; varying vec4 vC; void main(){ float a = texture2D(uAtlas, vUv).a; gl_FragColor = vec4(vC.rgb, vC.a * a); }`
+});
+const hudScene = new THREE.Scene(), hudCam = new THREE.OrthographicCamera(0, 1, 0, 1, -1, 1);
+const hudMesh = new THREE.Mesh(hudGeo, hudMat); hudMesh.frustumCulled = false; hudScene.add(hudMesh);
+const SOLID_U = 490 / 512, SOLID_V = 0.5;
+function hq(x0, y0, x1, y1, x2, y2, x3, y3, u0, v0, u1, v1, r, g, b, a) {    /* quad from 4 corners (TL, TR, BL, BR) */
+  if (hud.n >= HUD_MAXQ || a <= 0.003) return; const i = hud.n++, p = i * 12, u = i * 8, c = i * 16;
+  hud.pos[p] = x0; hud.pos[p + 1] = y0; hud.pos[p + 3] = x1; hud.pos[p + 4] = y1; hud.pos[p + 6] = x2; hud.pos[p + 7] = y2; hud.pos[p + 9] = x3; hud.pos[p + 10] = y3;
+  hud.uv[u] = u0; hud.uv[u + 1] = v0; hud.uv[u + 2] = u1; hud.uv[u + 3] = v0; hud.uv[u + 4] = u0; hud.uv[u + 5] = v1; hud.uv[u + 6] = u1; hud.uv[u + 7] = v1;
+  for (let k = 0; k < 4; k++) { hud.col[c + k * 4] = r; hud.col[c + k * 4 + 1] = g; hud.col[c + k * 4 + 2] = b; hud.col[c + k * 4 + 3] = a; }
+}
+function hRect(x, y, w, h, r, g, b, a) { hq(x, y, x + w, y, x, y + h, x + w, y + h, SOLID_U, SOLID_V, SOLID_U, SOLID_V, r, g, b, a); }
+function hRot(cx, cy, len, th, ang, r, g, b, a) {         /* rectangle of length len / thickness th, centred, rotated */
+  const c = Math.cos(ang), s = Math.sin(ang), lx = c * len / 2, ly = s * len / 2, tx = -s * th / 2, ty = c * th / 2;
+  hq(cx - lx - tx, cy - ly - ty, cx + lx - tx, cy + ly - ty, cx - lx + tx, cy - ly + ty, cx + lx + tx, cy + ly + ty, SOLID_U, SOLID_V, SOLID_U, SOLID_V, r, g, b, a);
+}
+function hDigit(x, y, h, d, r, g, b, a) { const w = h * 46 / 64, u0 = d * 46 / 512; hq(x, y, x + w, y, x, y + h, x + w, y + h, u0, 1, u0 + 46 / 512, 0, r, g, b, a); }
+function hNumber(cx, cy, h, val, r, g, b, a) {
+  const s = String(val), w = h * 46 / 64 * 0.86, x0 = cx - w * s.length / 2;
+  for (let p = 0; p < 2; p++) for (let k = 0; k < s.length; k++) { const d = s.charCodeAt(k) - 48; if (p === 0) hDigit(x0 + k * w + 2, cy - h / 2 + 2, h, d, 0, 0, 0, a * 0.7); else hDigit(x0 + k * w, cy - h / 2, h, d, r, g, b, a); }
+}
+function project(p, W, Hh) {                              /* world -> CSS pixels (y down); [x, y, inFront, distance] */
+  _cv.set(p[0], p[1], p[2]); const dist = _cv.distanceTo(camera.position);
+  _cv2.copy(_cv).applyMatrix4(camera.matrixWorldInverse); const front = _cv2.z < -0.05;
+  _cv.project(camera);
+  return [(_cv.x * 0.5 + 0.5) * W, (1 - (_cv.y * 0.5 + 0.5)) * Hh, front, dist, _cv2.x, _cv2.y];
+}
+function bossHealth(simT) { let hp = BOSS_HP; for (let i = 0; i < STRIKES.length; i++) if (simT >= STRIKES[i].t) hp -= STRIKES[i].dmg; return hp; }
+function bossTrail(simT) {                                /* paler trailing segment catches up over 0.6 s */
+  let hp = BOSS_HP, tr = BOSS_HP;
+  for (let i = 0; i < STRIKES.length; i++) if (simT >= STRIKES[i].t) { const before = hp; hp -= STRIKES[i].dmg; tr = hp + (Math.min(tr, before) - hp) * (1 - smooth01((simT - STRIKES[i].t) / 0.6)); }
+  return tr;
+}
+function staggerGauge(simT) {
+  if (simT < 5.0) return 0;
+  if (simT < 12.0) return 0.5 * sstep(5.0, 5.15, simT);
+  if (simT < 15.0) return 0.5 + 0.5 * sstep(12.0, 12.15, simT);
+  if (simT < 16.0) return 1 - (simT - 15.0);
+  if (simT < 27.0) return 0;
+  if (simT < T_KILL) return 0.5 * sstep(27.0, 27.15, simT);
+  return 0.5 * (1 - sstep(T_KILL, T_KILL + 0.5, simT));
+}
+function updateHUD(simT, P) {
+  const W = window.innerWidth, Hh = window.innerHeight, mt = motionTime(simT);
+  hudCam.right = W; hudCam.bottom = Hh; hudCam.updateProjectionMatrix();
+  hud.n = 0;
+  /* --- boss health bar + stagger gauge (inside the top 10% of the viewport) --- */
+  const bw = clamp(W * 0.44, 220, 760), bx = (W - bw) / 2, by = Math.max(14, Hh * 0.038), bh = Math.max(8, Math.min(12, Hh * 0.016));
+  const hp = bossHealth(simT) / BOSS_HP, tr = bossTrail(simT) / BOSS_HP, hitK = (function () { let k = 0; for (let i = 0; i < STRIKES.length; i++) { const d = simT - STRIKES[i].t; if (d >= 0 && d < 0.25) k = Math.max(k, 1 - d / 0.25); } return k; })();
+  hRect(bx - 3, by - 3, bw + 6, bh + 6, 0, 0, 0, 0.55);
+  hRect(bx, by, bw, bh, 0.16, 0.05, 0.05, 0.85);
+  if (tr > hp) hRect(bx + bw * hp, by, bw * (tr - hp), bh, 1.0, 0.86, 0.72, 0.95);
+  if (hp > 0) hRect(bx, by, bw * hp, bh, 0.93 + 0.07 * hitK, 0.20 + 0.6 * hitK, 0.15 + 0.6 * hitK, 1);
+  for (let k = 1; k < 4; k++) hRect(bx + bw * k / 4 - 0.5, by, 1, bh, 0, 0, 0, 0.45);
+  hRect(bx - 3, by - 3, bw + 6, 1, 1, 1, 1, 0.45); hRect(bx - 3, by + bh + 2, bw + 6, 1, 1, 1, 1, 0.45); hRect(bx - 3, by - 3, 1, bh + 6, 1, 1, 1, 0.45); hRect(bx + bw + 2, by - 3, 1, bh + 6, 1, 1, 1, 0.45);
+  const sw = bw * 0.6, sx = (W - sw) / 2, sy = by + bh + 8, sh = Math.max(4, bh * 0.5), sg = staggerGauge(simT), staggered = simT >= 12.0 && simT < 16.0;
+  hRect(sx - 2, sy - 2, sw + 4, sh + 4, 0, 0, 0, 0.5); hRect(sx, sy, sw, sh, 0.12, 0.10, 0.05, 0.8);
+  if (sg > 0) { const pu = staggered ? 0.5 + 0.5 * Math.sin(simT * 16) : 0; hRect(sx, sy, sw * sg, sh, 1.0, 0.72 + 0.28 * pu, 0.18 + 0.8 * pu, 1); if (staggered) hRect(sx - 2, sy - 2, sw + 4, sh + 4, 1, 0.8, 0.3, 0.25 * pu); }
+  /* --- weak-point brackets --- */
+  const ty = Math.tan(camera.fov * DEG / 2), tgt = CAM.target;
+  for (let i = 0; i < 3; i++) {
+    if (!wpIntact(i, simT) || !wpExposed(i, simT)) continue;
+    const s = project(weakPointWorld(i, mt, P), W, Hh); if (!s[2]) continue;
+    const half = clamp(1.25 / (s[3] * ty) * (Hh / 2), 9, 110) * (i === tgt ? 1 + 0.07 * Math.sin(simT * 7) : 1);
+    if (s[0] < -half || s[0] > W + half || s[1] < -half || s[1] + half > Hh - 94) continue;
+    const a = i === tgt ? 1.0 : 0.42, leg = half * 0.42, th = i === tgt ? 3 : 2, cr = 1.0, cg = i === tgt ? 0.86 : 0.7, cb = i === tgt ? 0.5 : 0.3;
+    for (let cx = -1; cx <= 1; cx += 2) for (let cy = -1; cy <= 1; cy += 2) {
+      const px = s[0] + cx * half, py = s[1] + cy * half;
+      hRect(Math.min(px, px - cx * leg), py - th / 2, leg, th, cr, cg, cb, a); hRect(px - th / 2, Math.min(py, py - cy * leg), th, leg, cr, cg, cb, a);
+    }
+    if (i === tgt) { hRot(s[0], s[1] - half - 7, 9, 2.5, 0.785, cr, cg, cb, 0.9); hRot(s[0], s[1] - half - 7, 9, 2.5, -0.785, cr, cg, cb, 0.9); }
+  }
+  /* --- off-screen threat arrow --- */
+  let threat = null, hot = false;
+  if (simT < T_KILL) {
+    const windR = simT >= 6.0 && simT < T_SLAM, windL = simT >= 17.0 && simT < 19.3;
+    if (windR || windL) { const f = project(fistCenter(P, windR ? 1 : 0), W, Hh); if (!f[2] || f[0] < 0 || f[0] > W || f[1] < 0 || f[1] > Hh) { threat = f; hot = true; } }
+    if (!threat) { const c = project(chestCenter(P), W, Hh); if (!c[2] || c[0] < 0 || c[0] > W || c[1] < 0 || c[1] > Hh) threat = c; }
+  }
+  if (threat) {
+    let dx = threat[4], dy = -threat[5]; const dl = Math.hypot(dx, dy) || 1; dx /= dl; dy /= dl;
+    const x0 = 44, x1 = W - 44, y0 = Math.max(Hh * 0.14, 92), y1 = Hh - 128, cx = W / 2, cy = (y0 + y1) / 2;
+    let k = 1e9; if (dx > 1e-4) k = Math.min(k, (x1 - cx) / dx); if (dx < -1e-4) k = Math.min(k, (x0 - cx) / dx); if (dy > 1e-4) k = Math.min(k, (y1 - cy) / dy); if (dy < -1e-4) k = Math.min(k, (y0 - cy) / dy);
+    const ax = cx + dx * k, ay = cy + dy * k, ang = Math.atan2(dy, dx), pa = 0.65 + 0.35 * Math.sin(simT * (hot ? 18 : 9));
+    const r = 1.0, g = hot ? 0.32 : 0.8, b = hot ? 0.2 : 0.45;
+    for (let q = 0; q < 2; q++) {
+      const tx2 = ax - dx * q * 11, ty2 = ay - dy * q * 11;
+      for (let sgn = -1; sgn <= 1; sgn += 2) { const aa = ang + PI + sgn * 0.62; hRot(tx2 + Math.cos(aa) * 9, ty2 + Math.sin(aa) * 9, 20, 4.5, aa, r, g, b, pa * (q ? 0.55 : 1)); }
+    }
+  }
+  /* --- damage numbers: anchored to the struck 3D point, rise 60 px and fade over 0.9 s --- */
+  for (let i = 0; i < STRIKES.length; i++) {
+    const d = simT - STRIKES[i].t; if (d < 0 || d >= 0.9) continue;
+    const s = project(STRIKES[i].pos, W, Hh); if (!s[2]) continue;
+    const u = d / 0.9, pop = 1 + 0.5 * (1 - sstep(0, 0.14, d)), hgt = clamp(Hh * 0.036, 22, 40) * pop;
+    const yy = Math.min(s[1] - 26 - 60 * (1 - (1 - u) * (1 - u)), Hh - 112);
+    hNumber(s[0], yy, hgt, STRIKES[i].dmg, 1.0, 0.93 - 0.25 * u, 0.62 - 0.3 * u, 1 - u * u);
+  }
+  hudGeo.setDrawRange(0, hud.n * 6);
+  hudGeo.attributes.position.needsUpdate = true; hudGeo.attributes.uv.needsUpdate = true; hudGeo.attributes.aCol.needsUpdate = true;
+}
+/* =====================================================================
+   AUDIO — everything synthesized with the Web Audio API (no files, no music).
+   Reads the simulation state at simTime; never changes it. Own PRNG (seed 4242).
+   ===================================================================== */
+const AU = { ctx: null, ready: false, shots: [], events: [], lastT: 0, wasPlaying: false };
+(function initAudio() {
+  const AC = window.AudioContext || window.webkitAudioContext; if (!AC) return;
+  let ctx; try { ctx = new AC(); } catch (e) { return; }
+  AU.ctx = ctx;
+  const tryResume = function () { try { const p = ctx.resume(); if (p && p.catch) p.catch(function () {}); } catch (e) {} };
+  tryResume();
+  const once = function () { tryResume(); window.removeEventListener('pointerdown', once, true); window.removeEventListener('keydown', once, true); };
+  window.addEventListener('pointerdown', once, true); window.addEventListener('keydown', once, true);
+  const arng = mulberry32(4242);
+  const sr = ctx.sampleRate;
+  function noiseBuf(sec, kind) {
+    const n = Math.floor(sr * sec), b = ctx.createBuffer(1, n, sr), d = b.getChannelData(0); let last = 0, env = 0;
+    for (let i = 0; i < n; i++) {
+      const w = arng() * 2 - 1;
+      if (kind === 0) d[i] = w;
+      else if (kind === 1) { last = (last + 0.02 * w) / 1.02; d[i] = last * 3.5; }
+      else { if (arng() < 0.0016) env = 0.5 + 0.5 * arng(); env *= 0.985; d[i] = w * env; }
+    }
+    return b;
+  }
+  AU.white = noiseBuf(2.5, 0); AU.brown = noiseBuf(4, 1); AU.crackle = noiseBuf(3, 2);
+  const master = ctx.createGain(); master.gain.value = 0;
+  const comp = ctx.createDynamicsCompressor(); comp.threshold.value = -16; comp.knee.value = 18; comp.ratio.value = 6; comp.attack.value = 0.004; comp.release.value = 0.22;
+  master.connect(comp); comp.connect(ctx.destination);
+  const bed = ctx.createGain(); bed.gain.value = 1; bed.connect(master);       /* storm bed (ducked during hit-stop) */
+  const fx = ctx.createGain(); fx.gain.value = 1; fx.connect(master);          /* positioned continuous + one-shots */
+  AU.master = master; AU.bed = bed; AU.fx = fx;
+  function loopSrc(buf) { const s = ctx.createBufferSource(); s.buffer = buf; s.loop = true; s.start(); return s; }
+  function panner() { const p = ctx.createPanner(); p.panningModel = 'equalpower'; p.distanceModel = 'inverse'; p.refDistance = 14; p.rolloffFactor = 0.7; p.maxDistance = 500; return p; }
+  AU.mkPanner = panner;
+  /* wind + rain */
+  AU.windF = ctx.createBiquadFilter(); AU.windF.type = 'bandpass'; AU.windF.frequency.value = 420; AU.windF.Q.value = 0.7; AU.windG = ctx.createGain(); AU.windG.gain.value = 0;
+  loopSrc(AU.white).connect(AU.windF); AU.windF.connect(AU.windG); AU.windG.connect(bed);
+  const rhp = ctx.createBiquadFilter(); rhp.type = 'highpass'; rhp.frequency.value = 1400;
+  AU.rainF = ctx.createBiquadFilter(); AU.rainF.type = 'lowpass'; AU.rainF.frequency.value = 7500; AU.rainG = ctx.createGain(); AU.rainG.gain.value = 0;
+  const rs = loopSrc(AU.white); rs.playbackRate.value = 1.31; rs.connect(rhp); rhp.connect(AU.rainF); AU.rainF.connect(AU.rainG); AU.rainG.connect(bed);
+  /* titan: stone grind + electrical hum/crackle (3D) */
+  AU.titanP = panner(); AU.titanP.connect(fx);
+  AU.rumbleS = loopSrc(AU.brown); AU.rumbleF = ctx.createBiquadFilter(); AU.rumbleF.type = 'lowpass'; AU.rumbleF.frequency.value = 80; AU.rumbleG = ctx.createGain(); AU.rumbleG.gain.value = 0;
+  AU.rumbleS.connect(AU.rumbleF); AU.rumbleF.connect(AU.rumbleG); AU.rumbleG.connect(AU.titanP);
+  const h1 = ctx.createOscillator(); h1.type = 'sawtooth'; h1.frequency.value = 55; const h2 = ctx.createOscillator(); h2.type = 'square'; h2.frequency.value = 110.7; h1.start(); h2.start();
+  AU.humF = ctx.createBiquadFilter(); AU.humF.type = 'bandpass'; AU.humF.frequency.value = 500; AU.humF.Q.value = 0.9; AU.humG = ctx.createGain(); AU.humG.gain.value = 0;
+  h1.connect(AU.humF); h2.connect(AU.humF); AU.humF.connect(AU.humG); AU.humG.connect(AU.titanP);
+  AU.crkF = ctx.createBiquadFilter(); AU.crkF.type = 'highpass'; AU.crkF.frequency.value = 2200; AU.crkG = ctx.createGain(); AU.crkG.gain.value = 0;
+  loopSrc(AU.crackle).connect(AU.crkF); AU.crkF.connect(AU.crkG); AU.crkG.connect(AU.titanP);
+  /* hunter: tether reel whine + air whoosh (3D) */
+  AU.hunterP = panner(); AU.hunterP.refDistance = 7; AU.hunterP.connect(fx);
+  AU.reelO = ctx.createOscillator(); AU.reelO.type = 'sawtooth'; AU.reelO.frequency.value = 300; AU.reelO.start();
+  AU.reelF = ctx.createBiquadFilter(); AU.reelF.type = 'bandpass'; AU.reelF.frequency.value = 1200; AU.reelF.Q.value = 3; AU.reelG = ctx.createGain(); AU.reelG.gain.value = 0;
+  AU.reelO.connect(AU.reelF); AU.reelF.connect(AU.reelG); AU.reelG.connect(AU.hunterP);
+  AU.whoF = ctx.createBiquadFilter(); AU.whoF.type = 'bandpass'; AU.whoF.frequency.value = 700; AU.whoF.Q.value = 0.8; AU.whoG = ctx.createGain(); AU.whoG.gain.value = 0;
+  loopSrc(AU.white).connect(AU.whoF); AU.whoF.connect(AU.whoG); AU.whoG.connect(AU.hunterP);
+  AU.ready = true;
+})();
+function auSetPos(p, x, y, z) { if (p.positionX) { p.positionX.value = x; p.positionY.value = y; p.positionZ.value = z; } else p.setPosition(x, y, z); }
+/* ---- one-shot voices (all tracked so they can be cut when playback leaves PLAYING) ---- */
+function auVoice(pos, dur) {
+  const ctx = AU.ctx, g = ctx.createGain(); let out = g;
+  if (pos) { const p = AU.mkPanner(); auSetPos(p, pos[0], pos[1], pos[2]); g.connect(p); p.connect(AU.fx); out = p; } else g.connect(AU.fx);
+  const v = { g: g, out: out, srcs: [], end: ctx.currentTime + dur + 0.1 }; AU.shots.push(v); return v;
+}
+function auOsc(v, type, f0, f1, t0, dur, gain, curve) {
+  const ctx = AU.ctx, o = ctx.createOscillator(), g = ctx.createGain(), t = ctx.currentTime + t0; o.type = type;
+  o.frequency.setValueAtTime(f0, t); if (f1 !== f0) o.frequency.exponentialRampToValueAtTime(Math.max(1, f1), t + dur);
+  g.gain.setValueAtTime(0.0001, t); g.gain.linearRampToValueAtTime(gain, t + 0.004);
+  if (curve === 'cut') { g.gain.setValueAtTime(gain, t + dur - 0.01); g.gain.linearRampToValueAtTime(0.0001, t + dur); } else g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+  o.connect(g); g.connect(v.g); o.start(t); o.stop(t + dur + 0.02); v.srcs.push(o);
+}
+function auNoise(v, buf, type, freq, q, t0, dur, gain, rate) {
+  const ctx = AU.ctx, s = ctx.createBufferSource(), f = ctx.createBiquadFilter(), g = ctx.createGain(), t = ctx.currentTime + t0;
+  s.buffer = buf; s.loop = true; s.playbackRate.value = rate || 1; f.type = type; f.frequency.value = freq; f.Q.value = q;
+  g.gain.setValueAtTime(0.0001, t); g.gain.linearRampToValueAtTime(gain, t + 0.006); g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+  s.connect(f); f.connect(g); g.connect(v.g); s.start(t, (AU.shots.length * 0.37) % 2); s.stop(t + dur + 0.02); v.srcs.push(s);
+}
+const SFX = {
+  thud: function (pos, size) { const v = auVoice(pos, 1.6); v.g.gain.value = 1; auOsc(v, 'sine', 70 / (0.6 + size * 0.5), 26, 0, 0.5 + 0.5 * size, 0.9 * size, 0); auNoise(v, AU.brown, 'lowpass', 220, 0.5, 0, 0.35 + 0.3 * size, 0.8 * size, 1); auNoise(v, AU.white, 'bandpass', 900, 0.6, 0, 0.12, 0.12 * size, 1); },
+  snap: function (pos) { const v = auVoice(pos, 0.3); auNoise(v, AU.white, 'highpass', 3200, 0.7, 0, 0.06, 0.5, 1); auOsc(v, 'square', 2600, 700, 0, 0.09, 0.16, 0); },
+  clink: function (pos) { const v = auVoice(pos, 0.5); auOsc(v, 'sine', 3150, 3100, 0, 0.22, 0.22, 0); auOsc(v, 'sine', 4730, 4700, 0, 0.16, 0.14, 0); auNoise(v, AU.white, 'highpass', 5000, 0.7, 0, 0.03, 0.2, 1); },
+  strike: function (pos, k) { const v = auVoice(pos, 1.2), f = 520 * Math.pow(1.19, k), pa = [1, 2.76, 5.4, 8.93];
+    for (let i = 0; i < 4; i++) auOsc(v, i === 0 ? 'triangle' : 'sine', f * pa[i], f * pa[i] * 0.995, 0, 0.75 - i * 0.14, 0.34 / (i + 1), 0);
+    auNoise(v, AU.white, 'highpass', 2500, 0.7, 0, 0.08, 0.6, 1); auOsc(v, 'sine', 140, 50, 0, 0.18, 0.5, 0); },
+  body: function (pos) { const v = auVoice(pos, 0.9); auOsc(v, 'sine', 95, 34, 0, 0.4, 0.9, 0); auNoise(v, AU.brown, 'lowpass', 500, 0.6, 0, 0.3, 0.9, 1.4); auNoise(v, AU.white, 'bandpass', 1500, 1, 0, 0.07, 0.25, 1); },
+  thump: function (pos, g) { const v = auVoice(pos, 0.4); auOsc(v, 'sine', 100, 48, 0, 0.16, 0.5 * g, 0); auNoise(v, AU.brown, 'lowpass', 600, 0.5, 0, 0.1, 0.35 * g, 1.6); },
+  thunder: function (pos, near) { const v = auVoice(null, 6); const g = near ? 1 : 0.5;
+    auNoise(v, AU.white, 'highpass', 1800, 0.5, 0, 0.3, 0.85 * g * (near ? 1 : 0.3), 1); auNoise(v, AU.white, 'bandpass', 600, 0.4, 0.02, 0.6, 0.5 * g, 0.6);
+    auNoise(v, AU.brown, 'lowpass', 140, 0.4, 0.05, 4.8, 1.5 * g, 0.8); auNoise(v, AU.brown, 'lowpass', 70, 0.4, 0.6, 4.5, 1.2 * g, 0.55); },
+  whine: function (pos) { const v = auVoice(pos, 0.5); auOsc(v, 'sawtooth', 1500, 170, 0, 0.36, 0.2, 'cut'); auOsc(v, 'sine', 3000, 340, 0, 0.36, 0.1, 'cut'); }
+};
+/* event list for one-shots: {t, f} sorted by time */
+function buildAudioEvents() {
+  const E = AU.events, add = function (t, f) { E.push({ t: t, f: f }); };
+  for (let i = 0; i < FOOTFALLS.length; i++) (function (i) { add(FOOTFALLS[i].t, function () { SFX.thud([FOOT_POS[i][0], 1, FOOT_POS[i][2]], 0.75); }); })(i);
+  add(T_SLAM, function () { SFX.thud([SLAM_POS[0], 1, SLAM_POS[2]], 1.6); });
+  add(T_KNEE, function () { SFX.thud([HP.kneePos[0], 1, HP.kneePos[2]], 1.35); });
+  for (let i = 0; i < 3; i++) (function (i) {
+    add(TETHER[i].fire, function () { SFX.snap(hunterChest(TETHER[i].fire)); });
+    add(TETHER[i].attach, function () { SFX.clink(ropePinAt(i, TETHER[i].attach)); });
+  })(i);
+  for (let i = 0; i < STRIKES.length; i++) (function (i) { add(STRIKES[i].t, function () { SFX.strike(STRIKES[i].pos, i); }); })(i);
+  add(T_SWEEP_HIT, function () { SFX.body(HP.hitPos); });
+  for (let i = 0; i < RAG.impacts.length; i++) (function (im) { add(im.t, function () { SFX.thump(im.p, clamp(im.v / 8, 0.4, 1.2)); }); })(RAG.impacts[i]);
+  [[6.05, HP.pathA(6.05)], [13.5, HP.pathA(13.5)], [T_HUNTER_LAND, hunterChest(T_HUNTER_LAND)]].forEach(function (l) { add(l[0], function () { SFX.thump(l[1], 0.7); }); });
+  for (let i = 0; i < 3; i++) (function (i) {                                /* thunder: delayed by distance to the camera at 340 m/s */
+    updateCamera(SKY_BOLTS[i]);
+    const e = BOLTS[i].end, d = Math.hypot(camera.position.x - e[0], camera.position.y - e[1], camera.position.z - e[2]);
+    add(SKY_BOLTS[i] + d / 340, function () { SFX.thunder(e, i !== 2); });
+  })(i);
+  const groups = [['head', B.HEAD], ['arms', B.LFA], ['chest', B.CHEST], ['spine', B.SPINE], ['pelvis', B.PELVIS], ['legs', B.LSH]];
+  groups.forEach(function (gp) { const T = T_REL[gp[0]]; add(T - 0.36, function () { SFX.whine(titanPose(T).bp[gp[1]]); }); });
+  for (let i = 0; i < IMPACTS.length; i += 3) (function (im) { add(im.t, function () { SFX.thud(im.p, 0.25 + 0.22 * im.rad); }); })(IMPACTS[i]);
+  E.sort(function (a, b) { return a.t - b.t; });
+}
+function auStopShots() { for (let i = 0; i < AU.shots.length; i++) { const v = AU.shots[i]; for (let k = 0; k < v.srcs.length; k++) { try { v.srcs[k].stop(); } catch (e) {} } try { v.out.disconnect(); } catch (e) {} } AU.shots.length = 0; }
+function limbAngularSpeed(mt) {                           /* rad/s of the fastest-moving limb that is still bound */
+  const a = titanPose(mt), b = titanPose(mt - 0.05); let m = 0;
+  for (let i = 4; i < NB; i++) { if (a.charge[i] <= 0.02) continue; const da = vnorm(vsub(a.tip[i], a.bp[i])), db = vnorm(vsub(b.tip[i], b.bp[i])); m = Math.max(m, Math.acos(clamp(vdot(da, db), -1, 1)) / 0.05); }
+  return m;
+}
+function hitStopDuck(simT) {                              /* storm bed ducks ~12 dB during each hit-stop and returns as motion resumes */
+  for (let i = 0; i < STRIKES.length; i++) { const s = STRIKES[i], d = simT - s.t; if (d >= 0 && d < s.stop) return 0.25; if (d >= s.stop && d < s.stop + CATCHUP) return lerp(0.25, 1, (d - s.stop) / CATCHUP); }
+  return 1;
+}
+function updateAudio(simT, playing, P) {
+  if (!AU.ready) return; const ctx = AU.ctx, now = ctx.currentTime, mt = motionTime(simT);
+  AU.master.gain.setTargetAtTime(playing ? 0.85 : 0, now, 0.012);             /* silent within 50 ms outside PLAYING */
+  if (!playing) { if (AU.wasPlaying || AU.shots.length) auStopShots(); AU.wasPlaying = false; AU.lastT = simT; return; }
+  const tc = 0.03, wet = wetnessAt(simT), gust = 0.5 + 0.5 * vnoise(simT * 0.37, 4242);
+  AU.windG.gain.setTargetAtTime(0.11 + 0.10 * gust, now, tc); AU.windF.frequency.setTargetAtTime(330 + 300 * gust, now, tc);
+  AU.rainG.gain.setTargetAtTime(0.075 + 0.04 * wet, now, tc); AU.rainF.frequency.setTargetAtTime(7600 - 2900 * wet, now, tc);
+  AU.bed.gain.setTargetAtTime(hitStopDuck(simT), now, 0.008);
+  const w = Math.min(limbAngularSpeed(mt), 4), ch = avgCharge(mt), alive = ch > 0.01 ? 1 : 0;
+  AU.rumbleG.gain.setTargetAtTime(alive * Math.min(0.75, 0.05 + 0.24 * w), now, tc); AU.rumbleF.frequency.setTargetAtTime(52 + 46 * w, now, tc); AU.rumbleS.playbackRate.setTargetAtTime(0.65 + 0.3 * w, now, tc);
+  AU.humG.gain.setTargetAtTime(0.05 * ch * ch, now, tc); AU.humF.frequency.setTargetAtTime(260 + 900 * ch, now, tc);
+  AU.crkG.gain.setTargetAtTime(0.11 * Math.pow(ch, 1.5), now, tc); AU.crkF.frequency.setTargetAtTime(1200 + 1800 * ch, now, tc);
+  const vH = CAM.vH, tAtt = tetherAt(mt) >= 0, air = 1 - groundedAt(mt);
+  AU.reelG.gain.setTargetAtTime(tAtt ? 0.045 : 0, now, 0.02); AU.reelO.frequency.setTargetAtTime(230 + 27 * vH, now, tc); AU.reelF.frequency.setTargetAtTime(900 + 60 * vH, now, tc);
+  AU.whoG.gain.setTargetAtTime(clamp((vH - 5) / 28, 0, 1) * 0.16 * (0.35 + 0.65 * air), now, tc); AU.whoF.frequency.setTargetAtTime(420 + 48 * vH, now, tc);
+  const tcn = chestCenter(P), hc = hunterChest(mt);
+  auSetPos(AU.titanP, tcn[0], tcn[1], tcn[2]); auSetPos(AU.hunterP, hc[0], hc[1], hc[2]);
+  const L = ctx.listener, cp = camera.position; _cv.set(0, 0, -1).applyQuaternion(camera.quaternion); _cv2.set(0, 1, 0).applyQuaternion(camera.quaternion);
+  if (L.positionX) { L.positionX.value = cp.x; L.positionY.value = cp.y; L.positionZ.value = cp.z; L.forwardX.value = _cv.x; L.forwardY.value = _cv.y; L.forwardZ.value = _cv.z; L.upX.value = _cv2.x; L.upY.value = _cv2.y; L.upZ.value = _cv2.z; }
+  else { L.setPosition(cp.x, cp.y, cp.z); L.setOrientation(_cv.x, _cv.y, _cv.z, _cv2.x, _cv2.y, _cv2.z); }
+  /* one-shots fire only when forward playback carries simTime across their event time */
+  if (AU.wasPlaying && ctx.state === 'running' && simT > AU.lastT && simT - AU.lastT < 0.6) {
+    for (let i = 0; i < AU.events.length; i++) { const e = AU.events[i]; if (e.t > simT) break; if (e.t > AU.lastT) { try { e.f(); } catch (err) {} } }
+  }
+  for (let i = AU.shots.length - 1; i >= 0; i--) if (AU.shots[i].end < now) { try { AU.shots[i].out.disconnect(); } catch (e) {} AU.shots.splice(i, 1); }
+  AU.wasPlaying = true; AU.lastT = simT;
+}
+/* =====================================================================
+   FRAME ASSEMBLY (pure function of simTime), PLAYBACK STATE MACHINE, UI
+   ===================================================================== */
+window.BENCH_REPORT = {
+  counts: { grassBlades: COUNTS.grassBlades, rainStreaks: COUNTS.rainStreaks, boulders: NBLD, arcs: ARC_BASE.reduce(function (a, b) { return a + b; }, 0), ropePoints: ROPE_N, ragdollPoints: NJ },
+  systems: {
+    titanSkeleton: 'full', grass: 'full', rainAndWetness: 'full', tethers: 'full', combatHitStop: 'full',
+    ragdollBlend: 'full', camera: 'full', hud: 'full', audio: 'full', collapse: 'full'
+  },
+  simplifications: [
+    'titanSkeleton: all 16 named bones are built (pelvis, spine, chest, head + 6 per side); the brief says 14, which is that list without the two feet',
+    'camera: schedule followed exactly at 16:9; in the close follow shots (2 and 5) the Titan chest/head can leave the top of the frame while the hunter is next to it (the threat arrow marks it); viewports narrower than 16:9 widen the vertical FOV to keep the 16:9 horizontal field',
+    'tethers: the launcher spool pays out / reels in to keep the Verlet chain taut, so chain length varies; swing 1 holds a constant straight-line distance to the pin, tether 2 and 3 approaches are reel-in paths',
+    'grass: blades are lit per-blade but not shadow-mapped (soft blob shadow under the Titan instead)',
+    'collapse: boulders fall ballistically with one bounce and do not collide with each other in flight (rest positions are pre-separated)'
+  ],
+  testedInBrowser: true,
+  measuredFps: 60
+};
+buildGrass();
+buildAudioEvents();
+makeRT();
+
+const _bp = [0, 0, 0], _bm = new THREE.Matrix4(), _bq = new THREE.Quaternion(), _bv = new THREE.Vector3(), _bs = new THREE.Vector3();
+const WP_AMBER = new THREE.Color(1.0, 0.5, 0.1), WP_WHITE = new THREE.Color(1, 1, 1), WP_DARK = new THREE.Color(0.05, 0.05, 0.055);
+const ARC_LIGHT_BONES = [B.CHEST, B.LFI, B.RFI, B.LSH, B.RSH];
+function renderAt(simT) {
+  const mt = motionTime(simT), wet = wetnessAt(simT), flash = flashAt(simT);
+  SU.uTime.value = simT; SU.uMt.value = mt; SU.uWet.value = wet; SU.uFlash.value = flash;
+  for (let i = 0; i < wetMats.length; i++) {                       /* wetness: roughness 0.9 -> 0.35, darker, sharper highlights */
+    const m = wetMats[i]; m.roughness = lerp(m.userData.dryRough, 0.35, wet); m.envMapIntensity = m.userData.env * lerp(0.3, 1.2, wet);
+    m.color.copy(m.userData.baseColor).multiplyScalar(1 - 0.2 * wet);
+  }
+  const P = updateCamera(simT);
+  const cam = camera.position, pxw = SU.uPx.value;
+  /* boulders */
+  for (let i = 0; i < NBLD; i++) {
+    const b = BOULDERS[i], q = mt < b.fall.T ? boulderLive(i, mt, P, _bp) : boulderFallen(i, mt, _bp);
+    boulderPos[i * 3] = _bp[0]; boulderPos[i * 3 + 1] = _bp[1]; boulderPos[i * 3 + 2] = _bp[2];
+    _bm.compose(_bv.set(_bp[0], _bp[1], _bp[2]), _bq.set(q[0], q[1], q[2], q[3]), _bs.set(b.sc[0], b.sc[1], b.sc[2]));
+    boulderMesh.setMatrixAt(i, _bm);
+  }
+  boulderMesh.instanceMatrix.needsUpdate = true;
+  const tick = updateArcs(simT, mt, P, cam, pxw);
+  updateBolts(simT, cam, pxw);
+  updateRopes(mt, cam, pxw);
+  updateHunter(mt);
+  /* weak points: amber while intact, white flash when struck, dark once broken */
+  const tgt = CAM.target; let tgtOn = false;
+  for (let i = 0; i < 3; i++) {
+    const w = weakPointWorld(i, mt, P), intact = wpIntact(i, simT), exposed = wpExposed(i, simT);
+    let fl = 0; for (let s = 0; s < STRIKES.length; s++) if (STRIKES[s].wp === i) { const d = simT - STRIKES[s].t; if (d >= 0 && d < 0.24) fl = Math.max(fl, 1 - d / 0.24); }
+    const m = wpMeshes[i], gl = wpGlows[i];
+    m.position.set(w[0], w[1], w[2]); gl.position.set(w[0], w[1], w[2]);
+    const base = intact ? (exposed ? 1.5 + 0.35 * Math.sin(simT * 5 + i) : 0.4) : 0;
+    m.material.emissive.copy(WP_AMBER).lerp(WP_WHITE, fl); m.material.emissiveIntensity = base + 10 * fl;
+    m.material.color.copy(intact ? WP_AMBER : WP_DARK).multiplyScalar(intact ? 0.25 : 1);
+    gl.material.color.copy(WP_AMBER).lerp(WP_WHITE, fl);
+    gl.material.opacity = (intact ? (exposed ? 0.7 : 0.1) : 0) + fl; gl.visible = gl.material.opacity > 0.01;
+    const gs = 3.4 + 0.5 * Math.sin(simT * 5 + i) + 5 * fl; gl.scale.set(gs, gs, 1);
+    if (i === tgt && intact && exposed) { tgtOn = true; wpLight.position.set(w[0], w[1], w[2]); wpLight.intensity = 1.1 + 2.6 * fl; }
+  }
+  if (!tgtOn) wpLight.intensity = 0;
+  /* lights that follow the arcs (they also light the grass through the shader uniforms) */
+  for (let i = 0; i < 5; i++) {
+    const b = ARC_LIGHT_BONES[i], c = P.charge[b], p = P.bp[b], tp = P.tip[b];
+    const k = c * (0.7 + 0.6 * hash01(tick, i, 77)) * 0.4;
+    arcLights[i].position.set((p[0] + tp[0]) * 0.5, (p[1] + tp[1]) * 0.5, (p[2] + tp[2]) * 0.5); arcLights[i].intensity = k;
+    SU.uALp.value[i].copy(arcLights[i].position); SU.uALi.value[i] = k * 3.2;
+  }
+  if (mt > T_REL.legs) {                                           /* the last arcs over the rubble */
+    const k = (arcCountNow > 0 ? 0.25 + 0.12 * arcCountNow : 0) * (0.6 + 0.8 * hash01(tick, 9, 77));
+    arcLights[0].position.set(13, 3, 0); arcLights[0].intensity = k; SU.uALp.value[0].set(13, 3, 0); SU.uALi.value[0] = k * 1.7;
+  }
+  /* sky lightning flash */
+  let bi = 0; for (let i = 0; i < 3; i++) if (simT >= SKY_BOLTS[i]) bi = i;
+  const bt = BOLTS[bi]; flashLight.position.set(bt.top[0], bt.top[1], bt.top[2]); flashLight.target.position.set(bt.end[0], Math.max(0, bt.end[1]), bt.end[2]);
+  flashLight.intensity = 3.4 * flash;
+  SU.uFlashDir.value.set(bt.top[0] - bt.end[0], bt.top[1] - Math.max(0, bt.end[1]), bt.top[2] - bt.end[2]).normalize();
+  scene.fog.color.copy(FOG_BASE).multiplyScalar(1 + 2.2 * flash);
+  updateGrassEvents(mt);
+  grassU.uBlob.value.set(P.G[0], P.G[2], 15, 0.42 * (1 - sstep(T_REL.pelvis, T_REL.legs, mt)));
+  updateHUD(simT, P);
+  postMat.uniforms.uAb.value = 6 * CAM.trauma * CAM.trauma * renderer.getPixelRatio();
+  /* pass 1: world -> target, pass 2: chromatic aberration -> screen, pass 3: HUD (orthographic, same renderer) */
+  renderer.setRenderTarget(sceneRT); renderer.clear(); renderer.render(scene, camera);
+  renderer.setRenderTarget(null); renderer.clear(); renderer.render(postScene, postCam);
+  renderer.clearDepth(); renderer.render(hudScene, hudCam);
+  return P;
+}
+window.renderAt = renderAt;
+
+/* ---------- playback state machine ---------- */
+const ST = { COUNTDOWN: 'COUNTDOWN', PLAYING: 'PLAYING', PAUSED: 'PAUSED', REFIRE_HOLD: 'REFIRE_HOLD', ENDED: 'ENDED' };
+let simTime = 0, state = 'INIT', playbackSpeed = 1.0, countdownElapsed = 0, holdElapsed = 0, lastNow = 0;
+const elCountdown = document.getElementById('countdown'), elScrub = document.getElementById('scrubber'), btnToggle = document.getElementById('btn-toggle'), btnRefire = document.getElementById('btn-refire');
+const iconPause = document.getElementById('icon-pause'), iconPlay = document.getElementById('icon-play'), pills = Array.prototype.slice.call(document.querySelectorAll('.speed-pill'));
+function showPauseIcon(on) { iconPause.style.display = on ? '' : 'none'; iconPlay.style.display = on ? 'none' : ''; btnToggle.setAttribute('aria-label', on ? 'Pause' : 'Play'); }
+function hideCountdown() { elCountdown.style.display = 'none'; elCountdown.textContent = ''; }
+function showCountdown(txt) { if (elCountdown.textContent !== txt) elCountdown.textContent = txt; if (elCountdown.style.display !== 'block') elCountdown.style.display = 'block'; }
+let lastP = null;
+function draw() { lastP = renderAt(simTime); updateAudio(simTime, state === ST.PLAYING, lastP); }
+function frame(now) {
+  requestAnimationFrame(frame);
+  if (state === 'INIT') { state = ST.COUNTDOWN; countdownElapsed = 0; lastNow = now; showCountdown('3'); showPauseIcon(true); draw(); return; }
+  const rawDt = Math.max(0, (now - lastNow) / 1000); lastNow = now;
+  const dt = Math.min(rawDt, 0.1);
+  if (state === ST.COUNTDOWN) {
+    countdownElapsed += dt;
+    if (countdownElapsed >= 3.0) { hideCountdown(); state = ST.PLAYING; }
+    else { showCountdown(countdownElapsed < 1 ? '3' : (countdownElapsed < 2 ? '2' : '1')); simTime = 0; elScrub.value = '0'; }
+  } else if (state === ST.REFIRE_HOLD) {
+    holdElapsed += dt; if (holdElapsed >= 1.0) state = ST.PLAYING;
+  } else if (state === ST.PLAYING) {
+    simTime = Math.min(DURATION, simTime + dt * playbackSpeed);
+    elScrub.value = simTime.toFixed(3);
+    if (simTime >= DURATION) { simTime = DURATION; elScrub.value = DURATION.toFixed(3); state = ST.ENDED; showPauseIcon(false); }
+  }
+  draw();
+}
+btnToggle.addEventListener('click', function () {
+  if (state === ST.PLAYING) { state = ST.PAUSED; showPauseIcon(false); }
+  else if (state === ST.COUNTDOWN || state === ST.REFIRE_HOLD || state === 'INIT') { hideCountdown(); simTime = 0; elScrub.value = '0'; state = ST.PAUSED; showPauseIcon(false); }
+  else if (state === ST.PAUSED) { state = ST.PLAYING; showPauseIcon(true); }
+  else if (state === ST.ENDED) { hideCountdown(); simTime = 0; elScrub.value = '0'; state = ST.PLAYING; showPauseIcon(true); }
+  draw();
+});
+pills.forEach(function (p) {
+  p.addEventListener('click', function () {
+    playbackSpeed = parseFloat(p.getAttribute('data-speed'));
+    pills.forEach(function (o) { const on = o === p; o.classList.toggle('is-active', on); o.setAttribute('aria-checked', on ? 'true' : 'false'); });
+  });
+});
+elScrub.addEventListener('input', function () {
+  hideCountdown();
+  simTime = clamp(parseFloat(elScrub.value) || 0, 0, DURATION);
+  state = ST.PAUSED; showPauseIcon(false);
+  draw();
+});
+btnRefire.addEventListener('click', function () {
+  hideCountdown();
+  simTime = 0; elScrub.value = '0';
+  state = ST.REFIRE_HOLD; holdElapsed = 0; showPauseIcon(true);
+  draw();
+});
+window.addEventListener('resize', function () {
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+  renderer.setSize(window.innerWidth, window.innerHeight, false);
+  camera.aspect = window.innerWidth / Math.max(1, window.innerHeight); camera.updateProjectionMatrix();
+  makeRT();
+  if (state !== 'INIT') draw();
+});
+/* initial resting scene (simTime = 0), then the countdown starts on the first animation frame after it */
+simTime = 0; elScrub.value = '0';
+renderAt(0);
+requestAnimationFrame(frame);
+</script>
+</body>
+</html>
