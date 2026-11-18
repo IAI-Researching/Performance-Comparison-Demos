@@ -4,8 +4,8 @@
   "display_name": "Kimi Code K3.1 Pro (Max)",
   "protocol_version": "v1.1",
   "attempt": {
-    "number": 2,
-    "notes": "PROTOCOL.md table; attempt 1 cut off when the orchestrating session ended"
+    "number": 1,
+    "notes": "PROTOCOL.md table; one earlier launch not counted (cut off when the orchestrating session ended)"
   },
   "requested_config": {
     "harness": "kimi",
