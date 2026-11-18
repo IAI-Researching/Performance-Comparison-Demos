@@ -5,7 +5,7 @@ This file records which version of the execution protocol produced each set of r
 | Version | Name | Status | Applies to |
 | :--- | :--- | :--- | :--- |
 | **v1.0** | Shared-Host Seatbelt | Retired | [`ballistics/water-balloon`](ballistics/water-balloon/), [`materials/prince-ruperts-drop`](materials/prince-ruperts-drop/): runs started before 2026-11-14 06:31 UTC (11 and 10 published rows) |
-| **v1.1** | Shared-Host Seatbelt, all harnesses enforced | Current | [`vehicle-dynamics/f1-night-duel`](vehicle-dynamics/f1-night-duel/) (introduced in stages during the first round; see below), plus every water-balloon and prince-ruperts-drop run started on or after 2026-11-14 06:31 UTC (7 and 5 rows) |
+| **v1.1** | Shared-Host Seatbelt, all harnesses enforced | Current | [`vehicle-dynamics/f1-night-duel`](vehicle-dynamics/f1-night-duel/) (introduced in stages during the first round; see below), plus every water-balloon and prince-ruperts-drop run started on or after 2026-11-14 06:31 UTC (7 and 6 rows) |
 | **v2.0** | Isolated, one run per environment | Planned | Future benchmarks |
 
 **Mixed tables.** Water Balloon and Prince Rupert's Drop therefore contain both v1.0 and v1.1 rows. Each row's `protocol_version` is recorded in `telemetry.json` (backfilled 2026-11-17 from `started_at`; the v1.0/v1.1 boundary is the start of the first F1 run). Compare only rows with the same `protocol_version`, and read wall-clock across versions as approximate. The v1.0 rows have not been re-run under v1.1.
@@ -97,6 +97,7 @@ v1.1 was introduced during the first F1 Night Duel round on 2026-11-14. Its chan
 | Water Balloon, Codex GPT 6.1 Sol (re-run on Codex CLI 0.169.0) | 1 | Replaces the Codex CLI 0.167.1 run, archived in `_archive/`. |
 | Water Balloon, Codex GPT 6.2 Astra | 3 | Attempts 1 and 2 failed the countdown check (17/18: the "3" was never shown). Cause is in the deliverable: its lead-in timer uses an unclamped wall clock, which the prompt forbids, so a slow cold start skips "3". Failed attempts are not published. |
 | Prince Rupert's Drop, Codex GPT 6.2 Sol | 1 | |
+| Prince Rupert's Drop, Codex GPT 6.2 Astra | 1 | |
 | Prince Rupert's Drop, Codex GPT 6.1 Sol (re-run on Codex CLI 0.169.0) | 1 | Replaces the Codex CLI 0.167.1 run, archived in `_archive/`. |
 
 Still shared with v1.0: one machine and one user account. Agents can still list and stop other processes on the machine. That is addressed in v2.0.

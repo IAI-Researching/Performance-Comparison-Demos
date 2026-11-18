@@ -1,0 +1,1371 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Prince Rupert’s Drop</title>
+<style>
+*, *::before, *::after {
+  box-sizing: border-box;
+}
+html, body {
+  margin: 0;
+  padding: 0;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  background: radial-gradient(circle at center, #161922 0%, #090a0f 100%);
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -webkit-user-select: none;
+  user-select: none;
+}
+#stage {
+  display: block;
+  width: 100vw;
+  height: 100vh;
+}
+
+#countdown {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 50;
+  pointer-events: none;
+  font-size: 96px;
+  font-weight: 700;
+  line-height: 1;
+  color: rgba(255, 255, 255, 0.35);
+  font-variant-numeric: tabular-nums;
+}
+
+#dock {
+  position: fixed;
+  bottom: 24px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 100;
+  width: 536px;
+  height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 0 14px;
+  background: rgba(15, 17, 23, 0.78);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 9999px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.35);
+}
+
+#dock button {
+  font-family: inherit;
+  line-height: 1;
+  margin: 0;
+  flex-shrink: 0;
+  white-space: nowrap;
+  appearance: none;
+  -webkit-appearance: none;
+}
+
+.dock-sep {
+  width: 1px;
+  height: 18px;
+  flex-shrink: 0;
+  background: rgba(255, 255, 255, 0.12);
+}
+
+#btn-refire {
+  width: 78px;
+  height: 28px;
+  padding: 0 10px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 9999px;
+  color: #ffffff;
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+}
+#btn-refire:hover {
+  background: rgba(255, 255, 255, 0.16);
+}
+
+#btn-toggle {
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 9999px;
+  color: #ffffff;
+  cursor: pointer;
+}
+#btn-toggle:hover {
+  background: rgba(255, 255, 255, 0.16);
+}
+
+#speed-group {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  flex-shrink: 0;
+}
+.speed-pill {
+  width: 42px;
+  height: 24px;
+  padding: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 9999px;
+  color: rgba(255, 255, 255, 0.6);
+  font-size: 11px;
+  font-weight: 500;
+  font-variant-numeric: tabular-nums;
+  cursor: pointer;
+}
+.speed-pill:hover {
+  color: #ffffff;
+  background: rgba(255, 255, 255, 0.06);
+}
+.speed-pill.is-active {
+  color: #ffffff;
+  background: rgba(255, 255, 255, 0.18);
+  border-color: rgba(255, 255, 255, 0.2);
+}
+
+#scrubber {
+  width: 157px;
+  height: 4px;
+  margin: 0;
+  padding: 0;
+  flex-shrink: 0;
+  appearance: none;
+  -webkit-appearance: none;
+  background: rgba(255, 255, 255, 0.22);
+  border-radius: 9999px;
+  outline: none;
+  cursor: pointer;
+}
+#scrubber::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: #ffffff;
+  border: none;
+  cursor: pointer;
+}
+#scrubber::-moz-range-thumb {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: #ffffff;
+  border: none;
+  cursor: pointer;
+}
+</style>
+</head>
+<body>
+<canvas id="stage"></canvas>
+<div id="countdown" aria-hidden="true">3</div>
+
+<div id="dock" role="toolbar" aria-label="Simulation Controls">
+  <button id="btn-refire" type="button" aria-label="Re-fire" title="Re-fire">
+    <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+      <path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.19"/>
+    </svg>
+    <span>Re-fire</span>
+  </button>
+  <span class="dock-sep" aria-hidden="true"></span>
+  <button id="btn-toggle" type="button" aria-label="Pause" title="Play / Pause">
+    <svg id="icon-pause" viewBox="0 0 24 24" width="14" height="14" fill="currentColor" aria-hidden="true">
+      <rect x="6" y="4" width="4" height="16" rx="1"/>
+      <rect x="14" y="4" width="4" height="16" rx="1"/>
+    </svg>
+    <svg id="icon-play" viewBox="0 0 24 24" width="14" height="14" fill="currentColor" aria-hidden="true" style="display:none;">
+      <path d="M8 5v14l11-7z"/>
+    </svg>
+  </button>
+  <span class="dock-sep" aria-hidden="true"></span>
+  <div id="speed-group" role="radiogroup" aria-label="Playback Speed">
+    <button class="speed-pill" type="button" role="radio" aria-checked="false" data-speed="0.25">0.25×</button>
+    <button class="speed-pill" type="button" role="radio" aria-checked="false" data-speed="0.5">0.5×</button>
+    <button class="speed-pill is-active" type="button" role="radio" aria-checked="true" data-speed="1.0">1.0×</button>
+    <button class="speed-pill" type="button" role="radio" aria-checked="false" data-speed="2.0">2.0×</button>
+  </div>
+  <span class="dock-sep" aria-hidden="true"></span>
+  <input id="scrubber" type="range" min="0" max="8" step="0.001" value="0" aria-label="Timeline Scrubber">
+</div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+(() => {
+  'use strict';
+
+  const DURATION = 8;
+  const IMPACT = 1.2, SNIP = 3.8, FRACTURE = 4.4, BREAKUP = 5.8;
+  const CUT = 0.978;
+  const FRACTURE_SPEED = 1600;       // metres per second
+  const CAPTURE_FPS = 2_000_000;    // half-frame exposure for the moving fracture edge
+  const METRES_PER_UNIT = 0.01;
+  const TAU = Math.PI * 2;
+  const V3 = (x = 0, y = 0, z = 0) => new THREE.Vector3(x, y, z);
+  const clamp = (x, lo = 0, hi = 1) => Math.max(lo, Math.min(hi, x));
+  const mix = (a, b, f) => a + (b - a) * f;
+  function smooth(a, b, x) {
+    const f = clamp((x - a) / (b - a));
+    return f * f * (3 - 2 * f);
+  }
+  function mulberry32(seed) {
+    return () => {
+      let n = seed = (seed + 0x6d2b79f5) | 0;
+      n = Math.imul(n ^ (n >>> 15), n | 1);
+      n ^= n + Math.imul(n ^ (n >>> 7), n | 61);
+      return ((n ^ (n >>> 14)) >>> 0) / 4294967296;
+    };
+  }
+  const random = mulberry32(42);
+  const between = (a, b) => mix(a, b, random());
+  const renderer = new THREE.WebGLRenderer({ canvas: document.getElementById('stage'), antialias: true, alpha: true });
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+  renderer.setSize(window.innerWidth, window.innerHeight, false);
+  renderer.setClearColor(0x000000, 0);
+  renderer.outputEncoding = THREE.sRGBEncoding;
+  renderer.toneMapping = THREE.ACESFilmicToneMapping;
+  renderer.toneMappingExposure = 1.0;
+  const scene = new THREE.Scene();
+  const camera = new THREE.PerspectiveCamera(35, 1, 0.1, 80);
+  const time = { value: 0 };
+  const front = { value: 1 };
+  const pixelScale = { value: 1 };
+  let rightEdge = 8;
+
+  // This little photographic studio is visible only in reflection and refraction.
+  function makeStudio() {
+    const room = new THREE.Scene();
+    room.background = new THREE.Color(0x000000);
+    const walls = new THREE.Mesh(new THREE.SphereGeometry(14, 24, 12), new THREE.ShaderMaterial({
+      side: THREE.BackSide,
+      vertexShader: `varying vec3 direction;
+        void main(){direction=position;gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.0);}`,
+      fragmentShader: `varying vec3 direction;
+        void main(){
+          vec3 d=normalize(direction);
+          float sweep=exp(-14.0*abs(d.y+0.27+0.14*d.x));
+          vec3 cloth=vec3(0.0028,0.0044,0.0067)+vec3(0.011,0.014,0.018)*sweep;
+          gl_FragColor=vec4(cloth,1.0);
+          #include <encodings_fragment>
+        }`
+    }));
+    room.add(walls);
+    const plane = new THREE.PlaneGeometry(1, 1);
+    function softbox(x, y, z, width, height, roll, rgb, power) {
+      const material = new THREE.ShaderMaterial({
+        uniforms: { lightColor: { value: new THREE.Color(...rgb).multiplyScalar(power) } },
+        vertexShader: `
+          varying vec2 panelUV;
+          void main() {
+            panelUV = uv;
+            gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+          }`,
+        fragmentShader: `
+          uniform vec3 lightColor;
+          varying vec2 panelUV;
+          void main() {
+            vec2 q = abs(panelUV * 2.0 - 1.0);
+            float edge = max(q.x, q.y);
+            float diffuser = (1.0 - smoothstep(0.82, 1.0, edge)) * (1.0 - 0.18 * q.y * q.y);
+            gl_FragColor = vec4(lightColor * diffuser, 1.0);
+            #include <encodings_fragment>
+          }`
+      });
+      const panel = new THREE.Mesh(plane, material);
+      panel.position.set(x, y, z);
+      panel.lookAt(0, 0, 0);
+      panel.rotateZ(roll);
+      panel.scale.set(width, height, 1);
+      room.add(panel);
+    }
+    softbox(-3.8, 2.9, 3.3, 1.25, 6.4, -0.27, [0.88, 0.95, 1.0], 5.8);
+    softbox(-4.6, 1.9, 2.1, 0.21, 5.3, -0.25, [0.85, 0.96, 1.0], 4.6);
+    softbox(4.3, 0.4, 1.4, 0.85, 5.5, 0.26, [0.57, 0.85, 1.0], 4.0);
+    softbox(3.7, 2.3, -2.8, 0.9, 4.4, -0.34, [1.0, 0.76, 0.52], 3.3);
+    softbox(-4.3, -0.7, -2.0, 0.46, 5.8, -0.19, [0.5, 0.82, 1.0], 3.6);
+    softbox(0.3, 5.2, -0.7, 3.4, 1.8, -0.13, [0.94, 0.97, 1.0], 4.4);
+    softbox(1.2, -2.9, -4.1, 0.38, 4.8, 0.62, [0.86, 0.58, 0.78], 0.61);
+    softbox(-1.6, -3.0, -3.8, 2.7, 0.12, -0.33, [1.0, 0.86, 0.63], 3.8);
+    softbox(3.8, -1.8, -3.6, 0.12, 4.1, 1.05, [0.73, 0.93, 1.0], 3.1);
+    softbox(-0.6, -4.8, -1.2, 3.5, 1.5, 0.31, [0.64, 0.82, 1.0], 2.0);
+    softbox(-0.2, -0.8, 5.1, 3.6, 1.7, -0.38, [0.8, 0.88, 1.0], 0.18);
+    const generator = new THREE.PMREMGenerator(renderer);
+    const target = generator.fromScene(room, 0.0, 0.1, 25);
+    generator.dispose();
+    room.children.forEach(panel => panel.material.dispose());
+    walls.geometry.dispose();
+    plane.dispose();
+    return target.texture;
+  }
+  const studioMap = makeStudio();
+  scene.environment = studioMap;
+  function keyLight(color, power, x, y, z) {
+    const light = new THREE.DirectionalLight(color, power);
+    light.position.set(x, y, z);
+    scene.add(light);
+  }
+  keyLight(0xf2f7ff, 2.0, -3, 5, 5);
+  keyLight(0x9fe5ff, 1.05, 4, 1, -2);
+  keyLight(0xdfabce, 0.54, -2, -1, -3);
+  scene.add(new THREE.HemisphereLight(0xd9e7ff, 0x384152, 0.37));
+
+  const spine = new THREE.CatmullRomCurve3([
+    [-0.85,-2.83,0.05], [-0.84,-2.44,0.065], [-0.75,-1.97,0.085],
+    [-0.53,-1.38,0.11], [-0.22,-0.77,0.10], [0.22,-0.10,0.06],
+    [0.67,0.53,-0.02], [0.88,1.04,-0.13], [0.82,1.46,-0.20],
+    [0.49,1.82,-0.15], [0.13,2.09,0.02], [-0.02,2.39,0.22],
+    [0.12,2.65,0.35], [0.43,2.73,0.36], [0.70,2.57,0.24],
+    [0.72,2.34,0.02], [0.56,2.26,-0.13], [0.48,2.39,-0.23],
+    [0.62,2.62,-0.24], [0.91,2.84,-0.16], [1.30,2.95,-0.05]
+  ].map(p => V3(...p)), false, 'centripetal');
+  spine.arcLengthDivisions = 1800;
+  const spineMetres = spine.getLength() * METRES_PER_UNIT;
+  const transitSeconds = CUT * spineMetres / FRACTURE_SPEED;
+  const dilation = (BREAKUP - FRACTURE) / transitSeconds;
+  const exposureArc = 0.5 * FRACTURE_SPEED / (CAPTURE_FPS * spineMetres);
+  const arrival = s => FRACTURE + Math.max(0, CUT - s) * spineMetres / FRACTURE_SPEED * dilation;
+  function wavefront(t) {
+    if (t < SNIP) return 1;
+    const physicalElapsed = Math.max(0, t - FRACTURE) / dilation;
+    return clamp(CUT - FRACTURE_SPEED * physicalElapsed / spineMetres, 0, CUT);
+  }
+
+  // Monotone cubic interpolation of cross-sectional area gives the bulb a round pole.
+  const profile = [
+    [0,0], [0.018,0.49], [0.048,0.77], [0.091,0.98], [0.137,1.055],
+    [0.18,1.015], [0.247,0.838], [0.32,0.59], [0.40,0.353],
+    [0.48,0.205], [0.57,0.119], [0.66,0.079], [0.76,0.056],
+    [0.85,0.041], [0.94,0.027], [0.987,0.018], [1,0]
+  ].map(([s, r]) => [s, r * r]);
+  const slopes = profile.slice(1).map(([s, a], i) => (a - profile[i][1]) / (s - profile[i][0]));
+  const tangents = profile.map((p, i) => {
+    if (!i) return slopes[0];
+    if (i === slopes.length) return slopes[i - 1];
+    const left = slopes[i - 1], right = slopes[i];
+    return left * right <= 0 ? 0 : 2 * left * right / (left + right);
+  });
+  function radiusAt(s) {
+    let i = 0;
+    while (i < slopes.length - 1 && s > profile[i + 1][0]) i++;
+    const length = profile[i + 1][0] - profile[i][0];
+    const u = clamp((s - profile[i][0]) / length);
+    const w = u * u * (3 - 2 * u);
+    const area = mix(profile[i][1], profile[i + 1][1], w)
+      + length * u * (1 - u) * ((1 - u) * tangents[i] - u * tangents[i + 1]);
+    return Math.sqrt(Math.max(0, area));
+  }
+  function frameAt(s) {
+    const center = spine.getPointAt(s);
+    const tangent = spine.getTangentAt(s);
+    const right = V3(tangent.y, -tangent.x, 0).normalize();
+    return { center, tangent, right, depth: V3().crossVectors(right, tangent), radius: radiusAt(s), s };
+  }
+  function inSection(frame, angle, rho = 1) {
+    const { center, right, depth, radius, s } = frame;
+    const r = rho * radius * (1 + 0.011 * Math.cos(3 * angle + 4 * s) + 0.008 * Math.sin(2 * angle - 3 * s));
+    return center.clone().addScaledVector(right, r * Math.cos(angle)).addScaledVector(depth, 0.92 * r * Math.sin(angle));
+  }
+  const cutPoint = spine.getPointAt(CUT);
+  const impactPoint = inSection(frameAt(0.143), 0.11);
+
+  function dropGeometry(start, end, slices, sides) {
+    const positions = [], crossSections = [], indices = [];
+    for (let i = 0; i <= slices; i++) {
+      const s = mix(start, end, 0.5 - 0.5 * Math.cos(Math.PI * i / slices));
+      const frame = frameAt(s);
+      for (let j = 0; j < sides; j++) {
+        const angle = TAU * j / sides;
+        inSection(frame, angle).toArray(positions, positions.length);
+        crossSections.push(s, frame.radius, Math.cos(angle), Math.sin(angle));
+        if (i < slices) {
+          const a = i * sides + j, d = i * sides + (j + 1) % sides;
+          indices.push(a, a + sides, d + sides, a, d + sides, d);
+        }
+      }
+    }
+    const g = new THREE.BufferGeometry();
+    g.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
+    g.setAttribute('section', new THREE.Float32BufferAttribute(crossSections, 4));
+    g.setIndex(indices);
+    g.computeVertexNormals();
+    for (const [row, s, sign] of [[0, start, -1], [slices, end, 1]]) {
+      if (s !== 0 && s !== 1) continue;
+      const n = spine.getTangentAt(s).multiplyScalar(sign);
+      for (let j = 0; j < sides; j++) g.attributes.normal.setXYZ(row * sides + j, n.x, n.y, n.z);
+    }
+    return g;
+  }
+
+  // A cylindrical, tileable map of branching fissures. Only the advancing front exposes it.
+  function makeCrackTexture() {
+    const canvas = document.createElement('canvas');
+    canvas.width = 768;
+    canvas.height = 1500;
+    const ctx = canvas.getContext('2d');
+    ctx.fillStyle = 'black';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    ctx.lineCap = 'round';
+    function branch(x, y, length, lean, width, generation) {
+      const points = [[x, y]];
+      const segments = Math.ceil(length / 3);
+      for (let j = 0; j < segments; j++) {
+        x += lean + between(-2.1, 2.1);
+        y += length / segments;
+        points.push([x, y]);
+        if (generation && j > 1 && random() < 0.10) {
+          branch(x, y, length * between(0.24, 0.54), lean + between(-3.4, 3.4), width * 0.57, generation - 1);
+        }
+      }
+      ctx.lineWidth = width;
+      ctx.strokeStyle = 'rgb(239,245,255)';
+      for (const shift of [-768, 0, 768]) {
+        ctx.beginPath();
+        ctx.moveTo(points[0][0] + shift, points[0][1]);
+        for (let k = 1; k < points.length; k++) ctx.lineTo(points[k][0] + shift, points[k][1]);
+        ctx.stroke();
+      }
+    }
+    for (let i = 0; i < 520; i++) {
+      branch(random() * 768, between(-90, 1500), between(27, 94), between(-2.6, 2.6), between(0.7, 2.2), 2);
+    }
+    const texture = new THREE.CanvasTexture(canvas);
+    texture.wrapS = THREE.RepeatWrapping;
+    return texture;
+  }
+  const studioGLSL = `
+    uniform sampler2D studio;
+    #define ENVMAP_TYPE_CUBE_UV
+    #define envMapTexelToLinear RGBEToLinear
+    #include <cube_uv_reflection_fragment>
+    vec3 lightbox(vec3 direction, float mipLevel) {
+      return bilinearCubeUV(studio, normalize(direction), mipLevel);
+    }`;
+  const bubbles = [];
+  for (let i = 0; i < 18; i++) {
+    const s = between(0.042, 0.48);
+    const p = inSection(frameAt(s), between(0, TAU), between(0.22, 0.78));
+    bubbles.push(new THREE.Vector4(p.x, p.y, p.z, between(0.005, i%7===0?0.043:0.024) * (1 - s)));
+  }
+  const glassVertex = `
+    attribute vec4 section;
+    uniform float clockTime;
+    uniform vec3 contact;
+    varying vec3 vWorld, vNormal;
+    varying vec4 vSection;
+    void main() {
+      vSection = section;
+      float age = max(0.0, clockTime - 1.2);
+      float distanceToHit = length(position - contact);
+      float localAge = max(0.0, age - distanceToHit * 0.052);
+      float ring = sin(localAge * 36.0) * exp(-8.0 * localAge - 0.72 * distanceToHit);
+      vec3 p = position - normal * 0.038 * ring;
+      vWorld = (modelMatrix * vec4(p, 1.0)).xyz;
+      vNormal = normalize(mat3(modelMatrix) * normal);
+      gl_Position = projectionMatrix * viewMatrix * vec4(vWorld, 1.0);
+    }`;
+  const glassFragment = `
+    ${studioGLSL}
+    uniform float clockTime, wave, freeTip, shutterArc;
+    uniform sampler2D fissures;
+    uniform vec3 contact;
+    uniform vec4 inclusions[18];
+    varying vec4 vSection;
+    varying vec3 vWorld, vNormal;
+    const float PI = 3.14159265;
+    void main() {
+      float s = vSection.x, radius = vSection.y;
+      float theta = atan(vSection.w, vSection.z);
+      float activeWave = step(4.4, clockTime) * (1.0 - freeTip);
+      float jag = (sin(theta * 7.0 + s * 87.0) + 0.44 * sin(theta * 19.0 - s * 121.0))
+        * (0.001 + 0.006 * radius) * activeWave * smoothstep(0.0, 0.016, 0.978 - wave);
+      float ahead = wave - s + jag;
+      if (freeTip < 0.5 && ahead < 0.0) discard;
+      vec3 V = normalize(cameraPosition - vWorld);
+      vec3 N = normalize(vNormal);
+      float c = clamp(dot(N, V), 0.001, 1.0);
+      vec3 incident = -V;
+      vec3 R = reflect(incident, N);
+      vec3 T = refract(incident, N, 1.0 / 1.518);
+      // The second intersection of a refracted ray with the local osculating sphere.
+      vec3 exitN = normalize(N - 2.0 * dot(N, T) * T);
+      exitN = normalize(exitN + vec3(0.038 * sin(9.0 * s + theta), 0.085 * radius, 0.0));
+      vec3 through = refract(T, -exitN, 1.518);
+      vec3 bounce = reflect(T, exitN);
+      through = dot(through, through) > 0.01 ? through : bounce;
+      float fresnel = 0.043 + 0.957 * pow(1.0 - c, 4.8);
+      float chord = 1.84 * radius * c;
+      vec3 transmission = exp(-vec3(0.22, 0.095, 0.048) * chord);
+      vec3 reflection = lightbox(R, 7.0);
+      vec3 dispersion = vec3(N.xy, 0.0) * (0.012 + 0.022 * (1.0 - c));
+      vec3 rear = vec3(lightbox(through + dispersion, 7.0).r,
+        lightbox(through, 7.0).g, lightbox(through - dispersion, 7.0).b);
+      vec3 inner = lightbox(bounce, 6.0);
+      vec3 col = (vec3(0.0035, 0.006, 0.011) + 0.48 * rear + 0.15 * inner) * transmission;
+      col += reflection * (0.15 + 0.88 * fresnel);
+      col += (1.0 - transmission) * vec3(0.06, 0.14, 0.17);
+
+      // Crossed polarizers: transmitted intensity is sin²(2φ) sin²(πΔ/λ).
+      float axis = atan(N.x + 0.34 * sin(9.0 * s), N.y + 0.63);
+      float polarizer = 0.22 + 0.78 * pow(abs(sin(2.0 * axis + 0.48)), 2.0);
+      float d = length(vWorld - contact);
+      float hitAge = clockTime - 1.2;
+      float shock = step(0.0, hitAge) * exp(-pow(abs(d - 4.4 * hitAge) / 0.21, 2.0));
+      float pulse = smoothstep(2.6, 2.85, clockTime) * (1.0 - smoothstep(3.5, 3.8, clockTime));
+      float delay = radius * (0.17 + 2.46 * pow(c, 0.75)) + 0.23 * sin(theta * 2.0 + 11.0 * s) * radius;
+      delay += (0.08 * pulse * sin(14.0 * s - 8.5 * clockTime) + shock * 0.16) * radius;
+      vec3 band = sin(PI * delay / vec3(0.642, 0.537, 0.456));
+      band *= band;
+      band = mix(vec3(dot(band, vec3(0.27,0.56,0.17))), band, 0.77);
+      float stressLight = (0.095 + 0.13 * pulse + 0.20 * shock) * polarizer * smoothstep(0.015, 0.48, radius);
+      col += band * vec3(0.90, 0.87, 1.03) * stressLight;
+      // Fine, doubled caustics where the rear surface focuses the strip lights.
+      float fold = 1.72*delay + 0.35*sin(11.5*s - 2.9*N.x) + 0.14*sin(17.0*s + 4.1*N.y);
+      float seam = abs(fract(fold+0.5)-0.5);
+      float ribbon = exp(-28.0*seam) + 0.29*exp(-70.0*abs(seam-0.086));
+      float focus = (0.25 + 0.75*abs(sin(axis+0.65))) * smoothstep(0.06,0.50,radius);
+      vec3 silk = mix(vec3(0.26,0.65,0.85),vec3(0.98,0.69,0.31),0.5+0.5*sin(2.9*delay-theta));
+      col += ribbon * focus * (0.092 + 0.11 * fresnel) * silk;
+      float edge = pow(1.0 - c, 3.6);
+      col += edge * mix(vec3(0.24,0.56,0.70), vec3(0.66,0.67,0.78), 0.5 + 0.5 * N.y);
+      col += (1.0-smoothstep(0.05,0.32,radius))*vec3(0.016,0.036,0.049)*(0.35+0.65*c);
+      col += vec3(0.16,0.39,0.57) * shock * (0.25 + polarizer);
+      if (clockTime >= 3.8 && clockTime < 4.4 && freeTip < 0.5) {
+        float nucleus = 1.0-smoothstep(0.0005,0.0035,0.978-s);
+        col = mix(col,vec3(0.75,1.19,1.43),nucleus);
+      }
+      if (s < 0.52 && freeTip < 0.5) {
+        for (int i = 0; i < 18; i++) {
+          vec3 B = inclusions[i].xyz - vWorld;
+          float depth = dot(B, T);
+          vec3 line = B - T * depth;
+          float br = inclusions[i].w;
+          float q = dot(line, line) / (br * br);
+          if (q < 1.0 && depth > 0.0 && depth < chord + 0.14) {
+            float rim = smoothstep(0.36, 1.0, q);
+            float glint = pow(max(0.0, dot(normalize(-line + V * br * sqrt(1.0-q)), normalize(vec3(-0.55,0.72,0.41)))), 12.0);
+            col = col * (0.81 - 0.52 * rim) + vec3(0.71,0.88,1.0) * (0.075 * rim + glint);
+          }
+        }
+      }
+      if (activeWave > 0.5 && ahead < 0.085) {
+        float fingers = texture2D(fissures, vec2(theta / (2.0*PI), s)).r;
+        float reach = 1.0 - smoothstep(0.004, 0.08, ahead);
+        float whiteEdge = 1.0 - smoothstep(0.0005, shutterArc + 0.004, ahead);
+        col = mix(col, vec3(1.8,2.55,2.95), clamp(fingers * reach + whiteEdge, 0.0, 1.0));
+      }
+      gl_FragColor = vec4(col, 1.0);
+      #include <tonemapping_fragment>
+      #include <encodings_fragment>
+    }`;
+  const glassUniforms = {
+    clockTime: time, wave: front, studio: { value: studioMap }, freeTip: { value: 0 },
+    fissures: { value: makeCrackTexture() }, shutterArc: { value: exposureArc },
+    contact: { value: impactPoint }, inclusions: { value: bubbles }
+  };
+  function glassMaterial(detached) {
+    return new THREE.ShaderMaterial({
+      uniforms: { ...glassUniforms, freeTip: { value: detached ? 1 : 0 } },
+      vertexShader: glassVertex, fragmentShader: glassFragment
+    });
+  }
+  const glass = new THREE.Mesh(dropGeometry(0, 1, 264, 88), glassMaterial(false));
+  scene.add(glass);
+  const freeTip = new THREE.Group();
+  const tipGlass = new THREE.Mesh(dropGeometry(CUT, 1, 16, 28), glassMaterial(true));
+  tipGlass.position.copy(cutPoint).multiplyScalar(-1);
+  freeTip.add(tipGlass);
+  scene.add(freeTip);
+  // Directional grinding marks shared by the steel faces and their bevels.
+  function brushedFinish() {
+    const w = 256, h = 128, data = new Uint8Array(w * h * 4);
+    for (let y = 0; y < h; y++) {
+      const line = between(-29, 29), phase = between(0, TAU);
+      for (let x = 0; x < w; x++) {
+        const value = 186 + line + 10 * Math.sin(TAU * x / w + phase) + between(-8, 8);
+        const i = 4 * (y * w + x);
+        data[i] = data[i + 1] = data[i + 2] = value;
+        data[i + 3] = 255;
+      }
+    }
+    const texture = new THREE.DataTexture(data, w, h, THREE.RGBAFormat);
+    texture.wrapS = texture.wrapT = THREE.RepeatWrapping;
+    texture.minFilter = THREE.LinearMipMapLinearFilter;
+    texture.magFilter = THREE.LinearFilter;
+    texture.generateMipmaps = true;
+    texture.needsUpdate = true;
+    return texture;
+  }
+  const grain = brushedFinish();
+  function metal(color, roughness, metalness = 1, brushed = false) {
+    const material = new THREE.MeshStandardMaterial({ color, roughness, metalness, envMapIntensity: 1.05 });
+    material.color.convertSRGBToLinear();
+    if (brushed) {
+      material.roughnessMap = grain;
+      material.bumpMap = grain;
+      material.bumpScale = 0.003;
+    }
+    return material;
+  }
+  const toolSteel = metal(0x9ba6ae, 0.38, 0.96, true);
+  const honedSteel = metal(0xe0e5e7, 0.22, 0.98, true);
+  const blackOxide = metal(0x41505c, 0.45, 0.92, true);
+  const graphite = metal(0x161b22, 0.51, 0.41, true);
+  const darkSteel = metal(0x272c32, 0.36, 0.87);
+  const bronze = metal(0x93704b, 0.32, 0.92, true);
+  function addMesh(parent, geometry, material) {
+    const mesh = new THREE.Mesh(geometry, material);
+    parent.add(mesh);
+    return mesh;
+  }
+  function tube(parent, points, radius, material, steps = 36) {
+    return addMesh(parent, new THREE.TubeGeometry(new THREE.CatmullRomCurve3(points), steps, radius, 8, false), material);
+  }
+  function rod(parent, a, b, r1, r2, material, sides = 24) {
+    const delta = V3().subVectors(b, a);
+    const mesh = addMesh(parent, new THREE.CylinderGeometry(r2, r1, delta.length(), sides), material);
+    mesh.position.copy(a).lerp(b, 0.5);
+    mesh.quaternion.setFromUnitVectors(V3(0, 1, 0), delta.normalize());
+    return mesh;
+  }
+
+  // A fine suspension loop and its compression ferrule.
+  const suspension = new THREE.Group();
+  scene.add(suspension);
+  const loop = [];
+  for (let i = 0; i <= 80; i++) {
+    const f = i / 80;
+    loop.push(inSection(frameAt(0.467 + 0.0026 * f), Math.PI + f * TAU * 1.04, 1.037));
+  }
+  tube(suspension, loop, 0.008, blackOxide, 90);
+  const anchor = loop[0];
+  const wireDirection = V3(-0.29, 1, -0.055).normalize();
+  const crimpStart = anchor.clone().addScaledVector(wireDirection, 0.15);
+  const crimpEnd = anchor.clone().addScaledVector(wireDirection, 0.32);
+  rod(suspension, anchor, anchor.clone().addScaledVector(wireDirection, 9), 0.006, 0.006, blackOxide, 10);
+  tube(suspension, [loop[80], anchor.clone().add(V3(-0.047,0.048,0.006)), crimpStart, crimpEnd], 0.007, toolSteel, 16);
+  rod(suspension, crimpStart, crimpEnd, 0.025, 0.023, blackOxide);
+  for (const u of [0.075, 0.88]) {
+    const p = crimpStart.clone().lerp(crimpEnd, u);
+    rod(suspension, p, p.clone().addScaledVector(wireDirection, 0.009), 0.025, 0.025, toolSteel);
+  }
+
+  // Two complete opposing members rotate about the same hardened pivot.
+  const nippers = new THREE.Group();
+  const jawReach = 0.92, toolAngle = 0.16;
+  nippers.rotation.order = 'ZXY';
+  nippers.rotation.x = -0.49;
+  nippers.rotation.z = toolAngle;
+  const pivot = cutPoint.clone().add(V3(jawReach * Math.cos(toolAngle), jawReach * Math.sin(toolAngle), 0));
+  scene.add(nippers);
+  function bevelPart(parent, shape, thickness, bevel, material, z) {
+    const geo = new THREE.ExtrudeGeometry(shape, {
+      depth: thickness, bevelEnabled: true, bevelSegments: 3, steps: 1,
+      bevelSize: bevel, bevelThickness: bevel, curveSegments: 16
+    });
+    const mesh = addMesh(parent, geo, material);
+    mesh.position.z = z;
+    return mesh;
+  }
+  function makeArm(sign) {
+    const joint = new THREE.Group(), plate = new THREE.Group();
+    nippers.add(joint);
+    joint.add(plate);
+    plate.scale.y = sign;
+    plate.position.z = sign > 0 ? -0.039 : 0.033;
+    const body = new THREE.Shape();
+    body.moveTo(-jawReach,0.009);
+    body.quadraticCurveTo(-0.88,0.079,-0.71,0.151);
+    body.bezierCurveTo(-0.53,0.24,-0.38,0.27,-0.21,0.223);
+    body.quadraticCurveTo(-0.07,0.194,0.066,0.151);
+    body.bezierCurveTo(0.24,0.083,0.34,-0.033,0.51,-0.095);
+    body.lineTo(1.93,-0.335);
+    body.quadraticCurveTo(2.05,-0.372,2.01,-0.45);
+    body.lineTo(1.95,-0.486);
+    body.lineTo(0.47,-0.256);
+    body.bezierCurveTo(0.23,-0.209,0.087,-0.177,-0.063,-0.151);
+    body.quadraticCurveTo(-0.20,-0.124,-0.30,0.02);
+    body.bezierCurveTo(-0.49,0.029,-0.72,0.015,-jawReach,0.009);
+    bevelPart(plate, body, 0.083, 0.014, toolSteel, -0.034);
+
+    // A ground wedge with a distinct cutting land, back bevel and polished edge.
+    const stations = [[-0.916,0.011,0.025],[-0.74,0.016,0.123],[-0.52,0.023,0.177],[-0.316,0.028,0.147]];
+    const face = [], uv = [], idx = [];
+    for (let i = 0; i < stations.length; i++) {
+      const [x, low, high] = stations[i];
+      face.push(x,low,0.066, x,low+(high-low)*0.16,0.073, x,high,0.114);
+      uv.push(x,low, x,low+0.01, x,high);
+      if (i < stations.length-1) {
+        const a = 3*i;
+        idx.push(a,a+3,a+1, a+1,a+3,a+4, a+1,a+4,a+2, a+2,a+4,a+5);
+      }
+    }
+    const bevelFace = new THREE.BufferGeometry();
+    bevelFace.setAttribute('position', new THREE.Float32BufferAttribute(face, 3));
+    bevelFace.setAttribute('uv', new THREE.Float32BufferAttribute(uv, 2));
+    bevelFace.setIndex(idx);
+    bevelFace.computeVertexNormals();
+    addMesh(plate, bevelFace, honedSteel);
+
+    const grip = new THREE.Shape();
+    grip.moveTo(0.46,-0.080);
+    grip.bezierCurveTo(0.62,-0.105,0.88,-0.154,1.13,-0.19);
+    grip.bezierCurveTo(1.59,-0.257,1.98,-0.281,2.16,-0.274);
+    grip.quadraticCurveTo(2.38,-0.281,2.405,-0.383);
+    grip.quadraticCurveTo(2.427,-0.47,2.306,-0.496);
+    grip.bezierCurveTo(1.84,-0.551,1.15,-0.421,0.63,-0.306);
+    grip.quadraticCurveTo(0.42,-0.28,0.412,-0.205);
+    grip.quadraticCurveTo(0.394,-0.123,0.46,-0.080);
+    bevelPart(plate, grip, 0.123, 0.042, graphite, -0.062);
+    // A brushed inlay and short recessed flutes follow the handle's curvature.
+    const inlay = new THREE.Shape();
+    inlay.moveTo(0.58,-0.161);
+    inlay.bezierCurveTo(1.08,-0.239,1.49,-0.304,2.15,-0.34);
+    inlay.bezierCurveTo(1.72,-0.346,1.13,-0.279,0.595,-0.189);
+    inlay.quadraticCurveTo(0.56,-0.18,0.58,-0.161);
+    const insert = addMesh(plate, new THREE.ShapeGeometry(inlay), blackOxide);
+    insert.position.z = 0.105;
+    for (let i = 0; i < 13; i++) {
+      const x = 0.73 + 0.098*i, y = -0.231 - 0.13*(x-0.73);
+      tube(plate, [V3(x,y,0.106), V3(x+0.014,y-0.028,0.106), V3(x+0.026,y-0.052,0.101)], 0.004, darkSteel, 3);
+    }
+    return joint;
+  }
+  const jaws = [makeArm(1), makeArm(-1)];
+  function pivotDisc(radius, z0, z1, material) {
+    return rod(nippers, V3(0,0,z0), V3(0,0,z1), radius, radius, material, 64);
+  }
+  pivotDisc(0.174, 0.080, 0.108, blackOxide);
+  pivotDisc(0.144, 0.109, 0.121, bronze);
+  pivotDisc(0.125, 0.120, 0.149, honedSteel);
+  pivotDisc(0.108, 0.148, 0.151, toolSteel);
+  const socket = new THREE.Shape();
+  for (let i = 0; i <= 72; i++) {
+    const a = TAU*i/72 + 0.25, r = 0.047 + 0.009*Math.cos(6*a);
+    const x = r*Math.cos(a), y = r*Math.sin(a);
+    if (i === 0) socket.moveTo(x,y); else socket.lineTo(x,y);
+  }
+  const socketFace = addMesh(nippers, new THREE.ShapeGeometry(socket), darkSteel);
+  socketFace.position.z = 0.152;
+  // Thin leaf springs connect the backs of the two handles.
+  const springs = new THREE.Group();
+  nippers.add(springs);
+  for (const sign of [-1,1]) {
+    tube(springs, [V3(0.34,sign*0.12,-0.085), V3(0.47,sign*0.072,-0.09), V3(0.68,sign*0.025,-0.092), V3(0.76,0,-0.09)], 0.014, toolSteel, 14);
+  }
+
+  function makeProjectile() {
+    const outline = [[0,0],[0.028,0.041],[0.064,0.069],[0.115,0.101],[0.17,0.129],
+      [0.222,0.15],[0.272,0.166],[0.328,0.177],[0.404,0.182],[0.51,0.182],
+      [0.525,0.176],[0.548,0.176],[0.558,0.182],[0.627,0.182],[0.653,0.17],[0.661,0.149],[0.661,0]];
+    const sides = 64, positions = [], mushroom = [], uv = [], indices = [];
+    for (let i = 0; i < outline.length; i++) {
+      const [x, r] = outline[i];
+      for (let j = 0; j <= sides; j++) {
+        const a = TAU * j / sides, c = Math.cos(a), sn = Math.sin(a);
+        positions.push(x, r*c, r*sn);
+        const petal = Math.cos(7*a+0.4) + 0.41*Math.sin(4*a+1.1);
+        const shoulder = Math.exp(-Math.pow((x-0.217)/0.144,2));
+        const folded = r * (1.0 + 1.72*shoulder) * (1.0 + 0.092*shoulder*petal);
+        const upsetX = x*0.345 + shoulder*(0.017+0.032*petal);
+        mushroom.push(upsetX, folded*c, folded*sn);
+        uv.push(x*2, j/sides);
+        if (i < outline.length-1 && j < sides) {
+          const a0 = i*(sides+1)+j, next = a0+sides+1;
+          indices.push(a0,a0+1,next, a0+1,next+1,next);
+        }
+      }
+    }
+    const g = new THREE.BufferGeometry();
+    g.setIndex(indices);
+    g.setAttribute('position', new THREE.Float32BufferAttribute(positions,3));
+    g.setAttribute('uv', new THREE.Float32BufferAttribute(uv,2));
+    g.computeVertexNormals();
+    const deformed = new THREE.BufferGeometry();
+    deformed.setIndex(g.index);
+    deformed.setAttribute('position', new THREE.Float32BufferAttribute(mushroom,3));
+    deformed.computeVertexNormals();
+    g.morphAttributes.position = [deformed.attributes.position];
+    g.morphAttributes.normal = [deformed.attributes.normal];
+    const noseEnd = 4*sides*6;
+    g.addGroup(0,noseEnd,0);
+    g.addGroup(noseEnd,indices.length-noseEnd,1);
+    const mats = [metal(0xaab0b2,0.32,0.97,true), metal(0xb27854,0.34,0.95,true)];
+    for (const material of mats) {
+      material.morphTargets = true;
+      material.morphNormals = true;
+    }
+    const projectile = addMesh(scene,g,mats);
+    return projectile;
+  }
+  const bullet = makeProjectile();
+  // Analytic trajectories with linear drag. The second integral gives gravitational fall.
+  const flightGLSL = `
+    float travel(float age, float drag) { return (1.0 - exp(-drag * age)) / drag; }
+    vec3 displacement(vec3 velocity, float age, float drag, float gravity) {
+      float distanceFactor = travel(age, drag);
+      return velocity * distanceFactor - vec3(0.0, gravity * (age - distanceFactor) / drag, 0.0);
+    }`;
+  const solidVertex = `
+    ${flightGLSL}
+    attribute vec3 barycentric;
+    attribute vec4 launch, tumble, optics;
+    uniform float clockTime, metallic;
+    varying vec3 vPoint, vBary;
+    varying float vSeed, vHeat;
+    varying vec3 vLocal, vGradX, vGradY, vGradZ;
+    vec3 turn(vec3 p, vec3 axis, float cs, float sn) {
+      return p*cs + cross(axis,p)*sn + axis*dot(axis,p)*(1.0-cs);
+    }
+    void main() {
+      float age = clockTime - launch.w;
+      vSeed = optics.x;
+      vBary = barycentric;
+      vPoint = instanceMatrix[3].xyz;
+      vHeat = 0.0;
+      if (age < 0.0) { gl_Position = vec4(2.0,2.0,2.0,1.0); return; }
+      vec3 local = mat3(instanceMatrix) * position;
+      float drag = optics.y;
+      vec3 movement = displacement(launch.xyz, age, drag, optics.z);
+      float bulkAge = max(0.0, clockTime - 5.8);
+      movement += (1.0-metallic) * launch.xyz * 0.17 * (1.0-exp(-2.2*bulkAge));
+      float spin = tumble.w * (0.42 * age + 0.58 * travel(age, drag));
+      vec3 axis = tumble.xyz;
+      float cs = cos(spin), sn = sin(spin);
+      local = turn(local,axis,cs,sn);
+      if (metallic < 0.5) {
+        vec3 x=instanceMatrix[0].xyz, y=instanceMatrix[1].xyz, z=instanceMatrix[2].xyz;
+        float inverseVolume=1.0/dot(x,cross(y,z));
+        vGradX=turn(cross(y,z)*inverseVolume,axis,cs,sn);
+        vGradY=turn(cross(z,x)*inverseVolume,axis,cs,sn);
+        vGradZ=turn(cross(x,y)*inverseVolume,axis,cs,sn);
+        vLocal=position+0.25;
+      } else {
+        mat3 axes=mat3(instanceMatrix);
+        vec3 squaredScale=vec3(dot(axes[0],axes[0]),dot(axes[1],axes[1]),dot(axes[2],axes[2]));
+        vGradX=turn(axes*(normal/squaredScale),axis,cs,sn);
+      }
+      if (metallic > 0.5) local *= 1.0 - smoothstep(optics.w - 0.24, optics.w, age);
+      vPoint += movement + local;
+      vHeat = exp(-age*17.0);
+      gl_Position = projectionMatrix * viewMatrix * vec4(vPoint,1.0);
+    }`;
+  const solidFragment = `
+    ${studioGLSL}
+    uniform float metallic;
+    varying vec3 vPoint, vBary;
+    varying float vSeed, vHeat;
+    varying vec3 vLocal, vGradX, vGradY, vGradZ;
+    void main() {
+      vec3 N = normalize(cross(dFdx(vPoint), dFdy(vPoint)));
+      if (metallic > 0.5) N=normalize(mix(N,normalize(vGradX),0.76));
+      vec3 V = normalize(cameraPosition-vPoint);
+      float c = clamp(dot(N,V),0.0,1.0);
+      vec3 R = reflect(-V,N);
+      vec3 reflection = lightbox(R,6.0);
+      vec3 K = normalize(vec3(-0.67,0.71,0.36));
+      float key = max(0.0,dot(N,K));
+      float glint = pow(max(0.0,dot(R,K)),60.0);
+      vec3 col;
+      float alpha=1.0;
+      if (metallic > 0.5) {
+        vec3 alloy = mix(vec3(0.51,0.57,0.61),vec3(0.85,0.40,0.19),smoothstep(0.49,0.68,vSeed));
+        col = alloy * (0.065 + 0.21*key + reflection) + glint*1.8;
+      } else {
+        vec3 T = refract(-V,N,1.0/1.518);
+        // Trace the transmitted ray to its exact exit face in tetrahedral coordinates.
+        vec4 bary=vec4(1.0-vLocal.x-vLocal.y-vLocal.z,vLocal);
+        vec3 derivative=vec3(dot(vGradX,T),dot(vGradY,T),dot(vGradZ,T));
+        vec4 dh=vec4(-derivative.x-derivative.y-derivative.z,derivative);
+        vec4 path=max(bary,0.0)/max(-dh,vec4(0.00001))+step(vec4(-0.00001),dh)*100000.0;
+        float lengthInside=min(min(path.x,path.y),min(path.z,path.w));
+        vec3 exitNormal=vGradX+vGradY+vGradZ;
+        if (lengthInside==path.y) exitNormal=-vGradX;
+        if (lengthInside==path.z) exitNormal=-vGradY;
+        if (lengthInside==path.w) exitNormal=-vGradZ;
+        exitNormal=normalize(exitNormal);
+        vec3 outside=refract(T,-exitNormal,1.518);
+        float trapped=1.0-step(0.01,dot(outside,outside));
+        vec3 inside=lightbox(mix(outside,reflect(T,exitNormal),trapped),6.0);
+        float fresnel = 0.045+0.90*pow(1.0-c,4.5);
+        vec3 tint = mix(vec3(0.68,0.87,0.95),vec3(0.94,0.90,0.87),vSeed);
+        vec3 radiance=(0.28+0.16*trapped)*inside + reflection*(0.16+0.88*fresnel);
+        col = tint * (0.006+0.016*key+radiance) * exp(-vec3(0.30,0.12,0.065)*lengthInside);
+        vec3 dist = vBary/max(fwidth(vBary),vec3(0.00001));
+        float outline = 1.0-smoothstep(0.08,0.94,min(dist.x,min(dist.y,dist.z)));
+        col += outline * tint * (0.03+0.13*key+0.19*fresnel);
+        col += glint*vec3(2.3,2.5,2.7) + vHeat*vec3(0.51,0.77,0.90);
+        float lit=dot(radiance,vec3(0.2126,0.7152,0.0722))+glint;
+        alpha=clamp(0.037+0.19*fresnel+0.055*trapped+0.50*smoothstep(0.01,0.80,lit)+0.14*outline+0.68*vHeat,0.0,0.98);
+      }
+      gl_FragColor=vec4(col,alpha);
+      #include <tonemapping_fragment>
+      #include <encodings_fragment>
+    }`;
+  function fragmentBatch(geometry, capacity, metallic) {
+    const launch = new THREE.InstancedBufferAttribute(new Float32Array(capacity*4),4);
+    const tumble = new THREE.InstancedBufferAttribute(new Float32Array(capacity*4),4);
+    const optics = new THREE.InstancedBufferAttribute(new Float32Array(capacity*4),4);
+    geometry.setAttribute('launch',launch);
+    geometry.setAttribute('tumble',tumble);
+    geometry.setAttribute('optics',optics);
+    const bary = new Float32Array(geometry.attributes.position.count*3);
+    for (let i=0; i<geometry.attributes.position.count; i++) bary[3*i + i%3]=1;
+    geometry.setAttribute('barycentric',new THREE.BufferAttribute(bary,3));
+    const material = new THREE.ShaderMaterial({
+      uniforms: { clockTime: time, metallic: { value: metallic ? 1 : 0 }, studio: { value: studioMap } },
+      vertexShader: solidVertex, fragmentShader: solidFragment, extensions: { derivatives: true },
+      transparent: !metallic, depthWrite: metallic
+    });
+    const mesh = new THREE.InstancedMesh(geometry,material,capacity);
+    mesh.count = 0;
+    mesh.frustumCulled = false;
+    scene.add(mesh);
+    function add(matrix, velocity, birth, drag, gravity, spin, life = 8) {
+      const i = mesh.count++;
+      mesh.setMatrixAt(i,matrix);
+      launch.setXYZW(i,velocity.x,velocity.y,velocity.z,birth);
+      const z = between(-1,1), a = between(0,TAU), h = Math.sqrt(1-z*z);
+      tumble.setXYZW(i,h*Math.cos(a),h*Math.sin(a),z,spin);
+      optics.setXYZW(i,random(),drag,gravity,life);
+    }
+    return { mesh, add };
+  }
+
+  // A conforming tetrahedral partition. Neighbours share their actual rest vertices.
+  // Each instance matrix maps one reference tetrahedron into its cell in the drop.
+  function makeShards() {
+    const canonical = [V3(0,0,0),V3(1,0,0),V3(0,1,0),V3(0,0,1)];
+    const pos = [];
+    for (const i of [0,2,1, 0,1,3, 0,3,2, 1,2,3]) {
+      const p = canonical[i];
+      pos.push(p.x-0.25,p.y-0.25,p.z-0.25);
+    }
+    const g = new THREE.BufferGeometry();
+    g.setAttribute('position',new THREE.Float32BufferAttribute(pos,3));
+    const slices=99, sectors=72, shells=2;
+    const grid=[], stations=[], sectorSteps=[], innerShells=[];
+    for (let i=0; i<=slices; i++) stations.push(CUT*i/slices);
+    for (let i=0; i<=slices; i++) {
+      const ring=[];
+      const radius=radiusAt(stations[i]);
+      const sectorStep=radius<0.075?12:radius<0.15?6:radius<0.27?4:radius<0.44?3:radius<0.79?2:1;
+      const innerShell=radius<0.23?2:1;
+      sectorSteps.push(sectorStep);
+      innerShells.push(innerShell);
+      for (let k=0; k<=shells; k++) {
+        const row=[];
+        const center = spine.getPointAt(stations[i]);
+        for (let j=0; j<sectors; j++) {
+          if (k<innerShell) {
+            row.push({p:center, s:stations[i]});
+            continue;
+          }
+          if (j%sectorStep!==0) {
+            row.push(row[j-j%sectorStep]);
+            continue;
+          }
+          const interior = i>0 && i<slices;
+          const ds = interior ? 0.15 * (stations[i+1]-stations[i-1]) : 0;
+          const s = clamp(stations[i] + between(-ds,ds),0,CUT);
+          const angle = TAU*(j+sectorStep*(0.36*Math.sin(i*0.63)+0.13*k+between(-0.18,0.18)))/sectors;
+          const rho = (k + (k===shells ? 0 : between(-0.23,0.23)))/shells;
+          row.push({p:inSection(frameAt(s),angle,rho),s});
+        }
+        ring.push(row);
+      }
+      grid.push(ring);
+    }
+    const pattern=[[0,1,3,7],[0,3,2,7],[0,2,6,7],[0,6,4,7],[0,4,5,7],[0,5,1,7]];
+    let capacity=0;
+    for (let i=0;i<slices;i++) {
+      const a=sectorSteps[i],b=sectorSteps[i+1];
+      const activeSectors=a===b?sectors/a:Math.min(sectors,sectors/a+sectors/b);
+      capacity+=6*activeSectors*(shells+1-Math.min(innerShells[i],innerShells[i+1]));
+    }
+    const batch=fragmentBatch(g,capacity,false);
+    const headCenter=spine.getPointAt(0.14);
+    const e1=V3(),e2=V3(),e3=V3(),cross=V3(),center=V3(),velocity=V3(),noise=V3();
+    const basis=new THREE.Matrix4();
+    for (let i=0; i<slices; i++) {
+      const frame=frameAt((stations[i]+stations[i+1])/2);
+      for (let j=0; j<sectors; j++) {
+        const next=(j+1)%sectors;
+        for (let k=0; k<shells; k++) {
+          if (k+1<Math.min(innerShells[i],innerShells[i+1])) continue;
+          if (next%sectorSteps[i]!==0 && next%sectorSteps[i+1]!==0) continue;
+          const cell=[grid[i][k][j],grid[i][k+1][j],grid[i][k][next],grid[i][k+1][next],
+            grid[i+1][k][j],grid[i+1][k+1][j],grid[i+1][k][next],grid[i+1][k+1][next]];
+          for (const indices of pattern) {
+            const [a,b,c,d]=indices.map(idx=>cell[idx]);
+            e1.subVectors(b.p,a.p); e2.subVectors(c.p,a.p); e3.subVectors(d.p,a.p);
+            const volume=cross.crossVectors(e1,e2).dot(e3);
+            if (Math.abs(volume)<1e-10) continue;
+            center.copy(a.p).add(b.p).add(c.p).add(d.p).multiplyScalar(0.25);
+            if (volume>0) basis.makeBasis(e1,e2,e3); else basis.makeBasis(e2,e1,e3);
+            basis.setPosition(center);
+            const s=(a.s+b.s+c.s+d.s)*0.25;
+            velocity.subVectors(center,frame.center).normalize().multiplyScalar(0.74);
+            noise.subVectors(center,headCenter).normalize();
+            velocity.addScaledVector(noise,(1-smooth(0.28,0.62,s))*0.85);
+            noise.set(between(-1,1),between(-1,1),between(-1,1)).normalize();
+            velocity.addScaledVector(noise,between(0.32,0.98)).normalize();
+            const speed=0.32 + 2.4*Math.pow(random(),1.23) + (random()<0.085 ? between(0.6,1.65) : 0);
+            velocity.multiplyScalar(speed*(0.76+0.24*frame.radius));
+            velocity.y+=0.22;
+            batch.add(basis,velocity,arrival(s),between(0.18,0.76),between(0.34,0.55),between(-5.6,5.6));
+          }
+        }
+      }
+    }
+    return batch.mesh;
+  }
+  const shards = makeShards();
+
+  function makeSpall() {
+    const count=264;
+    const batch=fragmentBatch(new THREE.IcosahedronGeometry(1,1),count,true);
+    const pose=new THREE.Object3D();
+    for (let i=0; i<count; i++) {
+      const angle=between(0,TAU), r=between(0.05,0.19);
+      pose.position.copy(impactPoint).add(V3(between(0.02,0.16),r*Math.cos(angle),r*Math.sin(angle)));
+      pose.rotation.set(between(0,TAU),between(0,TAU),between(0,TAU));
+      const size=0.006+0.046*Math.pow(random(),2.8);
+      pose.scale.set(size*between(0.65,1.4),size*between(0.4,0.94),size*between(1.3,3.5));
+      pose.updateMatrix();
+      const v=V3(between(0.08,2.6),Math.cos(angle)*between(0.85,3.5),Math.sin(angle)*between(1.15,3.7));
+      const birth=IMPACT+0.008+0.47*Math.pow(random(),1.9);
+      batch.add(pose.matrix,v,birth,between(0.25,0.9),4.6,between(-12,12),between(0.40,1.13));
+    }
+    return batch.mesh;
+  }
+  const spall=makeSpall();
+
+  // Dust seeds are distributed by volume, with additional fines along the slender tail.
+  const massCDF=[0];
+  for (let i=1; i<=256; i++) {
+    const r=radiusAt(CUT*(i-0.5)/256);
+    massCDF.push(massCDF[i-1]+r*r);
+  }
+  function volumeSample() {
+    const target=random()*massCDF[256];
+    let lo=0,hi=256;
+    while (hi-lo>1) {
+      const mid=(lo+hi)>>1;
+      if (massCDF[mid]<target) lo=mid; else hi=mid;
+    }
+    return CUT*(lo+(target-massCDF[lo])/(massCDF[hi]-massCDF[lo]))/256;
+  }
+  const dustVertex=`
+    ${flightGLSL}
+    uniform float clockTime, pixelScale, mist;
+    attribute vec4 launch, grain;
+    varying float vAlpha, vSeed, vGlint;
+    void main(){
+      float age=clockTime-launch.w;
+      vSeed=grain.x;
+      vAlpha=0.0;
+      if(age<0.0){ gl_PointSize=0.0; gl_Position=vec4(2.0,2.0,2.0,1.0); return; }
+      vec3 p=position+displacement(launch.xyz,age,grain.z,mix(0.33,0.18,mist));
+      float drift=1.0-exp(-age*0.8);
+      p.x+=drift*(0.09+0.12*mist)*sin(grain.x*74.0+age*1.6);
+      p.z+=drift*0.14*cos(grain.x*65.0+age*1.2);
+      vec4 mv=viewMatrix*vec4(p,1.0);
+      float glint=pow(max(0.0,cos(grain.x*97.0+age*(2.1+4.0*grain.x))),32.0);
+      vGlint=glint*(1.0-mist)*smoothstep(0.50,0.93,grain.x);
+      float defocus=min(0.15,abs(p.z-0.08)*0.022);
+      float diameter=grain.y*(1.0 + mist*0.91*age)+vGlint*(0.032+defocus);
+      gl_PointSize=clamp(diameter*pixelScale/max(0.1,-mv.z),1.0,160.0);
+      gl_Position=projectionMatrix*mv;
+      vAlpha=grain.w*exp(-age*mix(0.21,0.72,mist))*(0.86+0.14*cos(grain.x*63.0+age*3.7))+0.72*vGlint;
+    }`;
+  const dustFragment=`
+    uniform float mist;
+    varying float vAlpha,vSeed,vGlint;
+    void main(){
+      vec2 p=gl_PointCoord*2.0-1.0;
+      float q=dot(p,p);
+      if(q>1.0) discard;
+      float density=exp(-q*mix(2.6,4.5,mist))*(1.0-smoothstep(0.6,1.0,q));
+      vec3 tint=mix(vec3(0.61,0.77,0.87),vec3(0.92,0.90,0.89),vSeed);
+      float diffraction=exp(-abs(p.x)*25.0-abs(p.y)*3.0)+exp(-abs(p.y)*25.0-abs(p.x)*3.0);
+      gl_FragColor=vec4(mix(tint,vec3(1.0),vGlint),vAlpha*(density+0.13*vGlint*diffraction));
+    }`;
+  function makeDust(count,mist) {
+    const origin=[],launch=[],grainData=[];
+    for (let i=0;i<count;i++) {
+      const s=random()<0.18 ? random()*CUT : volumeSample();
+      const frame=frameAt(s), a=between(0,TAU);
+      const p=inSection(frame,a,Math.sqrt(random()));
+      p.toArray(origin,origin.length);
+      const v=p.clone().sub(frame.center).normalize();
+      v.x+=between(-1.1,1.1); v.y+=between(-1.25,1.32); v.z+=between(-1,1);
+      v.normalize().multiplyScalar(between(0.19,mist?2.8:4.7));
+      launch.push(v.x,v.y+0.13,v.z,arrival(s)+between(0.0,0.019));
+      const diameter=mist ? between(0.19,0.57) : between(0.006,0.03);
+      grainData.push(random(),diameter,between(0.48,1.6),mist?between(0.022,0.073):between(0.26,0.85));
+    }
+    const geo=new THREE.BufferGeometry();
+    geo.setAttribute('position', new THREE.Float32BufferAttribute(origin,3));
+    geo.setAttribute('launch', new THREE.Float32BufferAttribute(launch,4));
+    geo.setAttribute('grain', new THREE.Float32BufferAttribute(grainData,4));
+    const material=new THREE.ShaderMaterial({
+      uniforms:{clockTime:time,pixelScale, mist:{value:mist?1:0}},
+      vertexShader:dustVertex,fragmentShader:dustFragment,transparent:true,depthWrite:false
+    });
+    const cloud=new THREE.Points(geo,material);
+    cloud.frustumCulled=false;
+    cloud.renderOrder=mist?1:2;
+    scene.add(cloud);
+    return cloud;
+  }
+  const dust=makeDust(11200,false), haze=makeDust(490,true);
+
+  const faceSides=88;
+  const cutFace=new THREE.CircleGeometry(1,faceSides);
+  cutFace.attributes.position.setUsage(THREE.DynamicDrawUsage);
+  const cap=addMesh(scene,cutFace,new THREE.ShaderMaterial({
+    side:THREE.DoubleSide,
+    vertexShader:`varying vec2 vUV;
+      void main(){vUV=uv;gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.0);}`,
+    fragmentShader:`varying vec2 vUV;
+      vec2 hash(vec2 p){return fract(sin(vec2(dot(p,vec2(127.1,311.7)),dot(p,vec2(269.5,183.3)))+42.0)*43758.5453);}
+      void main(){
+        vec2 p=(vUV-0.5)*vec2(25.0,16.0), g=floor(p), f=fract(p);
+        float d=8.0,second=8.0;
+        for(int x=-1;x<=1;x++) for(int y=-1;y<=1;y++){
+          vec2 cell=vec2(float(x),float(y));
+          vec2 v=cell+hash(g+cell)-f;
+          float q=dot(v,v);
+          if(q<d){second=d;d=q;}else{second=min(second,q);}
+        }
+        float crack=1.0-smoothstep(0.012,0.11,second-d);
+        vec3 col=mix(vec3(0.37,0.54,0.62),vec3(2.0,2.6,3.1),crack);
+        gl_FragColor=vec4(col,1.0);
+        #include <tonemapping_fragment>
+        #include <encodings_fragment>
+      }`
+  }));
+  const flashStrength={value:0};
+  const flash=addMesh(scene,new THREE.PlaneGeometry(1,1),new THREE.ShaderMaterial({
+    uniforms:{strength:flashStrength},transparent:true,depthWrite:false,depthTest:false,
+    blending:THREE.AdditiveBlending,
+    vertexShader:`varying vec2 vUV;
+      void main(){vUV=uv;gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.0);}`,
+    fragmentShader:`varying vec2 vUV; uniform float strength;
+      void main(){
+        vec2 p=vUV*2.0-1.0;
+        float r=length(p);
+        float glow=exp(-8.8*r),core=exp(-66.0*r);
+        float diffraction=exp(-abs(p.y+0.18*p.x)*128.0-abs(p.x)*10.0);
+        vec3 color=mix(vec3(0.38,0.69,1.0),vec3(0.97,0.99,1.0),min(1.0,6.0*glow));
+        gl_FragColor=vec4(color,strength*(0.65*glow+core+0.19*diffraction)*(1.0-smoothstep(0.7,1.0,r)));
+      }`
+  }));
+  flash.renderOrder=4;
+  cap.frustumCulled=false;
+  // Match the cut face to the corrugated boundary discarded by the surface shader.
+  function updateCutFace(s) {
+    const frame=frameAt(s), position=cutFace.attributes.position;
+    position.setXYZ(0,frame.center.x,frame.center.y,frame.center.z);
+    const envelope=smooth(0,0.016,CUT-s);
+    for (let i=0;i<=faceSides;i++) {
+      const a=TAU*i/faceSides;
+      let lo=clamp(s-0.012,0,CUT),hi=clamp(s+0.012,0,CUT);
+      for (let k=0;k<8;k++) {
+        const m=(lo+hi)/2;
+        const delta=(Math.sin(a*7+m*87)+0.44*Math.sin(a*19-m*121))*(0.001+0.006*radiusAt(m))*envelope;
+        if (s+delta>m) lo=m; else hi=m;
+      }
+      const p=inSection(frameAt((lo+hi)/2),a,1.001);
+      position.setXYZ(i+1,p.x,p.y,p.z);
+    }
+    position.needsUpdate=true;
+    return frame;
+  }
+  function renderAt(simulationSeconds) {
+    // Equivalent sums of display intervals can straddle an event by a few floating-point ulps.
+    const t = Math.round(simulationSeconds * 1e9) / 1e9;
+    time.value=t;
+    front.value=wavefront(t);
+    glass.visible=t<BREAKUP;
+    freeTip.visible=t>=SNIP && t<6.6;
+    const tipAge=Math.max(0,t-SNIP);
+    freeTip.position.copy(cutPoint);
+    freeTip.position.x+=0.31*tipAge;
+    freeTip.position.y+=0.12*tipAge-1.39*tipAge*tipAge;
+    freeTip.position.z+=0.14*tipAge;
+    freeTip.rotation.set(0.73*tipAge,0.32*tipAge,-1.84*tipAge);
+
+    const hitAge=Math.max(0,t-IMPACT), rebound=Math.max(0,hitAge-0.36);
+    bullet.visible=t<2.68;
+    bullet.morphTargetInfluences[0]=smooth(0,0.29,hitAge);
+    bullet.position.copy(impactPoint);
+    bullet.position.x+=(rightEdge-impactPoint.x)*(1-clamp(t/IMPACT))+1.63*rebound;
+    bullet.position.y-=0.61*rebound+3.65*rebound*rebound;
+    bullet.position.z+=0.39*rebound;
+    bullet.rotation.set(0.63*Math.min(t,IMPACT)+rebound,0.22*rebound,-3.18*rebound);
+    bullet.scale.setScalar(1-0.44*smooth(0.17,0.75,hitAge));
+    spall.visible=t>=IMPACT && t<2.8;
+
+    const withdraw=smooth(4.06,4.94,t), retract=smooth(5.35,6.8,t);
+    const opening=0.192*(1-smooth(2.6,SNIP,t))-0.006*smooth(3.77,3.82,t)+0.122*withdraw;
+    jaws[0].rotation.z=-opening;
+    jaws[1].rotation.z=opening;
+    springs.scale.y=1+2.3*opening;
+    nippers.position.copy(pivot);
+    nippers.position.x+=0.38*withdraw+0.90*retract;
+    nippers.position.y+=0.16*withdraw+0.42*retract;
+    nippers.rotation.z=toolAngle+0.045*withdraw;
+
+    shards.visible=dust.visible=haze.visible=t>=FRACTURE;
+    cap.visible=t>=FRACTURE && t<BREAKUP;
+    flash.visible=t>=SNIP && t<BREAKUP;
+    if (cap.visible) {
+      const f=updateCutFace(front.value);
+      flash.position.copy(f.center).addScaledVector(f.depth,f.radius*0.8);
+      flash.scale.setScalar(0.26+0.76*f.radius);
+      flashStrength.value=0.29+0.10*f.radius;
+    } else if (flash.visible) {
+      flash.position.copy(cutPoint);
+      flash.position.z+=0.13;
+      flash.scale.setScalar(1.30);
+      flashStrength.value=1.9*Math.exp(-10.8*tipAge)+0.23*Math.exp(-3.8*tipAge);
+    }
+    renderer.render(scene,camera);
+  }
+
+  const COUNTDOWN='COUNTDOWN', PLAYING='PLAYING', PAUSED='PAUSED', REFIRE_HOLD='REFIRE_HOLD', ENDED='ENDED';
+  let state=COUNTDOWN, simTime=0, playbackSpeed=1;
+  let countdownElapsed=0, holdElapsed=0, previousFrame=null;
+  const countdown=document.getElementById('countdown');
+  const scrubber=document.getElementById('scrubber');
+  const toggle=document.getElementById('btn-toggle');
+  const pauseIcon=document.getElementById('icon-pause'), playIcon=document.getElementById('icon-play');
+  const pills=Array.from(document.querySelectorAll('.speed-pill'));
+  function setState(next) {
+    state=next;
+    const running=state===COUNTDOWN || state===REFIRE_HOLD || state===PLAYING;
+    pauseIcon.style.display=running?'block':'none';
+    playIcon.style.display=running?'none':'block';
+    toggle.setAttribute('aria-label',running?'Pause':'Play');
+    countdown.style.display=state===COUNTDOWN?'block':'none';
+    countdown.textContent=state===COUNTDOWN?'3':'';
+  }
+  function advance(seconds) {
+    simTime=Math.min(DURATION,simTime+seconds*playbackSpeed);
+    if (DURATION-simTime<1e-10) simTime=DURATION;
+    scrubber.value=simTime.toFixed(3);
+    renderAt(simTime);
+    if (simTime===DURATION) setState(ENDED);
+  }
+  function tick(stamp) {
+    const rawDt=previousFrame===null?0:Math.max(0,(stamp-previousFrame)/1000);
+    const dt=Math.min(rawDt,0.1);
+    previousFrame=stamp;
+    if (state===COUNTDOWN) {
+      countdownElapsed+=dt;
+      if (countdownElapsed>=3-1e-10) {
+        setState(PLAYING);
+        advance(Math.max(0,countdownElapsed-3));
+      } else {
+        const numeral=String(3-Math.floor(countdownElapsed+1e-10));
+        if (countdown.textContent!==numeral) countdown.textContent=numeral;
+      }
+    } else if (state===REFIRE_HOLD) {
+      holdElapsed+=dt;
+      if (holdElapsed>=1-1e-10) {
+        setState(PLAYING);
+        advance(Math.max(0,holdElapsed-1));
+      }
+    } else if (state===PLAYING) {
+      advance(dt);
+    }
+    requestAnimationFrame(tick);
+  }
+  toggle.addEventListener('click',()=>{
+    if (state===PAUSED || state===ENDED) {
+      if (state===ENDED) {
+        simTime=0;
+        scrubber.value='0';
+        renderAt(0);
+      }
+      setState(PLAYING);
+    } else {
+      setState(PAUSED);
+    }
+    previousFrame=performance.now();
+  });
+  document.getElementById('btn-refire').addEventListener('click',()=>{
+    countdownElapsed=holdElapsed=simTime=0;
+    scrubber.value='0';
+    setState(REFIRE_HOLD);
+    renderAt(0);
+    previousFrame=performance.now();
+  });
+  scrubber.addEventListener('input',()=>{
+    setState(PAUSED);
+    simTime=clamp(parseFloat(scrubber.value),0,DURATION);
+    renderAt(simTime);
+    previousFrame=performance.now();
+  });
+  function selectSpeed(pill) {
+    playbackSpeed=Number(pill.dataset.speed);
+    for (const item of pills) {
+      item.classList.toggle('is-active',item===pill);
+      item.setAttribute('aria-checked',String(item===pill));
+    }
+  }
+  pills.forEach((pill,index)=>{
+    pill.addEventListener('click',()=>selectSpeed(pill));
+    pill.addEventListener('keydown',event=>{
+      const direction={ArrowRight:1,ArrowDown:1,ArrowLeft:-1,ArrowUp:-1}[event.key];
+      if (!direction) return;
+      event.preventDefault();
+      const next=pills[(index+direction+pills.length)%pills.length];
+      next.focus();
+      selectSpeed(next);
+    });
+  });
+  function resize() {
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+    renderer.setSize(window.innerWidth, window.innerHeight, false);
+    camera.aspect=window.innerWidth/window.innerHeight;
+    const tanHalfFov=Math.tan(THREE.MathUtils.degToRad(camera.fov/2));
+    camera.position.set(0,0.035,Math.max(13.86,2.65/(tanHalfFov*camera.aspect)));
+    camera.updateProjectionMatrix();
+    rightEdge=(camera.position.z-impactPoint.z)*tanHalfFov*camera.aspect+0.24;
+    pixelScale.value=renderer.domElement.height/(2*tanHalfFov);
+  }
+  window.addEventListener('resize',()=>{resize();renderAt(simTime);});
+  resize();
+  setState(COUNTDOWN);
+  renderer.compile(scene,camera);
+  renderAt(0);
+  // The first callback establishes the wall-clock origin after the resting frame is ready.
+  requestAnimationFrame(tick);
+})();
+</script>
+</body>
+</html>
