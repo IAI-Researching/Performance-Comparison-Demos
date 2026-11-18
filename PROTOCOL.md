@@ -89,6 +89,16 @@ v1.1 was introduced during the first F1 Night Duel round on 2026-11-14. Its chan
 | Codex GPT 6.2 Sol | 23:30 | 1 | Full v1.1. Codex CLI 0.169.0. |
 | Claude Haiku 5.5, Claude Opus 5.5, Claude Sonnet 5.5, ERNIE 5.5 Flash Preview, Qwen 4 Max | 01:56, 04:10, 05:34, 08:53, 20:45 | not recorded | Full v1.1. Published after this table was last updated; attempt counts were not written down at the time and cannot be reconstructed from the repository. |
 
+**Attempts for v1.1 rows of Water Balloon and Prince Rupert's Drop added 2026-11-17** (earlier v1.1 rows in these two benchmarks have no recorded count):
+
+| Run | Attempts | Notes |
+| :--- | :---: | :--- |
+| Water Balloon, Codex GPT 6.2 Sol | 1 | |
+| Water Balloon, Codex GPT 6.1 Sol (re-run on Codex CLI 0.169.0) | 1 | Replaces the Codex CLI 0.167.1 run, archived in `_archive/`. |
+| Water Balloon, Codex GPT 6.2 Astra | 3 | Attempts 1 and 2 failed the countdown check (17/18: the "3" was never shown). Cause is in the deliverable: its lead-in timer uses an unclamped wall clock, which the prompt forbids, so a slow cold start skips "3". Failed attempts are not published. |
+| Prince Rupert's Drop, Codex GPT 6.2 Sol | 1 | |
+| Prince Rupert's Drop, Codex GPT 6.1 Sol (re-run on Codex CLI 0.169.0) | 1 | Replaces the Codex CLI 0.167.1 run, archived in `_archive/`. |
+
 Still shared with v1.0: one machine and one user account. Agents can still list and stop other processes on the machine. That is addressed in v2.0.
 
 ---
