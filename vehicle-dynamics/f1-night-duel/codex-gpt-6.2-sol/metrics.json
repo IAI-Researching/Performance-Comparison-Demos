@@ -1,0 +1,146 @@
+{
+  "benchmark": "vehicle-dynamics/f1-night-duel",
+  "model_key": "codex-gpt-6.2-sol",
+  "display_name": "Codex GPT 6.2 Sol (Max)",
+  "requested_config": {
+    "harness": "codex",
+    "harness_name": "Codex CLI",
+    "harness_version": "0.169.0",
+    "harness_label": "Codex CLI 0.169.0",
+    "model_id": "gpt-6.2-sol",
+    "effort": "max"
+  },
+  "provenance": {
+    "prompt_sha256": "a4dfb6dc5ea31e1f4ca337674901159dd09284ecf59965b5d6dab9226e667d91",
+    "evaluator_sha256": "8548ec2a423793ff8c3df9ad9e8911ed262f753b375e376ca617209697619174",
+    "runtime_verifier_sha256": "86c1e7ee0f776ec36e0b435021de164e3c12b35216d452607b417411835df9c7",
+    "sandbox_profile_sha256": "1ee72f1f6ddac91cc042bdde6a60c7c314e74ba81601c8bc80f211aa3ff79d67",
+    "raw_output_sha256": "8861b333896fa2d63812c18d98e4703c8f4302aec1be3cbb07d48c26ddf6064e",
+    "raw_output_redacted": false,
+    "extra_workdir_files": []
+  },
+  "execution": {
+    "started_at": "2026-11-17T23:30:27.480224+00:00",
+    "completed_at": "2026-11-18T00:05:55.492064+00:00",
+    "wall_clock_seconds": 2128.0,
+    "exit_code": 0,
+    "timed_out": false,
+    "outcome": "PASS"
+  },
+  "deliverable": {
+    "file": "index.html",
+    "bytes": 109578,
+    "lines_of_code": 2469,
+    "sha256": "8d425b02fb338a5a7a22752628e3d4e74a0afe45516b6d2188ceadde4ab35091"
+  },
+  "usage": {
+    "available": true,
+    "agent_turns": 65,
+    "tool_calls": 59,
+    "input_tokens": 5176963,
+    "cached_read_tokens": 4837376,
+    "cache_creation_tokens": 0,
+    "thinking_tokens": 38206,
+    "output_tokens": 93466,
+    "total_tokens": 10107805
+  },
+  "evaluation": {
+    "file": "/Volumes/Projects_mUSB/IAI_Researching/Performance-Comparison-Demos/vehicle-dynamics/f1-night-duel/codex-gpt-6.2-sol/index.html",
+    "checks": [
+      {
+        "name": "Valid UTF-8 Non-Empty Deliverable",
+        "passed": true,
+        "detail": "Size: 109,578 bytes, 2469 LOC"
+      },
+      {
+        "name": "Parsed Single-File HTML Structure",
+        "passed": true,
+        "detail": "Valid <!DOCTYPE html> and <html>...</html> document"
+      },
+      {
+        "name": "Non-Empty Inline <style> & <script>",
+        "passed": true,
+        "detail": "style_blocks=1, inline_scripts=1"
+      },
+      {
+        "name": "Pinned Three.js r128 Single Script Tag",
+        "passed": true,
+        "detail": "external_scripts=['https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js'], importmaps=0"
+      },
+      {
+        "name": "Zero External HTML/CSS Asset References",
+        "passed": true,
+        "detail": "Zero forbidden external tags, @import rules, or external CSS url() references"
+      },
+      {
+        "name": "Canonical UI DOM Skeleton & IDs",
+        "passed": true,
+        "detail": "missing=[], duplicates=[], speed_pills=['0.25', '0.5', '1.0', '2.0']"
+      },
+      {
+        "name": "Static Unobstructed Viewport (Zero Stray Body Text)",
+        "passed": true,
+        "detail": "Zero text nodes outside #dock and #countdown"
+      },
+      {
+        "name": "[Runtime] WebGL Stage, Draw Calls & Three.js r128 Verified",
+        "passed": true,
+        "detail": "THREE r128, glStats={'contextsCreated': 1, 'drawCalls': 19027, 'clears': 83}, canvases=1, rect={'x': 0, 'y': 0, 'w': 1920, 'h': 1080}"
+      },
+      {
+        "name": "[Runtime] 3.0s Countdown Sequence (3->2->1->Hidden) Verified",
+        "passed": true,
+        "detail": "observedDigits=['3', '2', '1'], hiddenAfter3s=True, font=96px, centered=True"
+      },
+      {
+        "name": "[Runtime] Pixel-Locked Canonical Dock, Child Controls & Zero Overflow",
+        "passed": true,
+        "detail": "dock={'w': 536, 'h': 44, 'left': 692, 'right': 1228, 'bottomGap': 24, 'centerErr': 0}, overflowX=0, refire=78x28, toggle=28x28, scrub=157, max=40"
+      },
+      {
+        "name": "[Runtime] Unobstructed Viewport (Zero Stray Visible Text)",
+        "passed": true,
+        "detail": "Zero visible text nodes outside #dock and #countdown"
+      },
+      {
+        "name": "[Runtime] WebGL Canvas-Only 3D Frame Progression & Scrubber Advance",
+        "passed": true,
+        "detail": "canvasHashes=(32276fb48bbf -> 7d8a6f26c946), drawCalls=(19729 -> 46491), scrubber=(0.434 -> 1.100)"
+      },
+      {
+        "name": "[Runtime] Pause/Resume Canvas Freeze & 2.0x Playback Rate Verified",
+        "passed": true,
+        "detail": "pausedScrub=(1.184 -> 1.184), pausedCanvasFrozen=True, observedRate2x=1.91x"
+      },
+      {
+        "name": "[Runtime] Cross-Reload Seed-42 Determinism, Backward Seek & Endpoint Hold",
+        "passed": true,
+        "detail": "h(tA)=2fc4edc4a5073255, backward=2fc4edc4a5073255, freshReload=2fc4edc4a5073255, endClamp=40/40, endedCanvasFrozen=True"
+      },
+      {
+        "name": "[Runtime] Silent 1.0s Re-Fire Hold & Auto-Restart Verified",
+        "passed": true,
+        "detail": "reset=0, at0.82s=0, at1.27s=0.267, silent=True"
+      },
+      {
+        "name": "[Runtime] Pre-Dispatch Network Enforcement (Single Pinned Three.js r128 Only)",
+        "passed": true,
+        "detail": "external=['https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js'], blocked_or_unauthorized=[], failed=[]"
+      },
+      {
+        "name": "[Runtime] Full-Lifecycle Zero JS, Worker, Console & WebGL Errors",
+        "passed": true,
+        "detail": "Zero exceptions, console errors, or target instrumentation errors across entire run"
+      },
+      {
+        "name": "Clean Single-File Workdir (No Auxiliary Files)",
+        "passed": true,
+        "detail": "Only ./index.html present in working directory"
+      }
+    ],
+    "passed_checks": 18,
+    "total_checks": 18,
+    "score_pct": 100.0,
+    "verdict": "PASS"
+  }
+}

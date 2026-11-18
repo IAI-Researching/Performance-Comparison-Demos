@@ -12,6 +12,7 @@
     "harness_version": "0.169.0",
     "harness": "Codex CLI 0.169.0",
     "protocol": "Autonomous, first passing attempt (Hardened / Unobstructed Viewport)",
+    "protocol_version": "v1.1",
     "status": "COMPLETED",
     "wall_clock_s": 1700.94,
     "agent_turns": 57,
@@ -30,7 +31,6 @@
     "eval_passed_checks": 18,
     "eval_total_checks": 18,
     "eval_verdict": "PASS",
-    "protocol_version": "v1.1",
     "started_at": "2026-11-14T14:32:40.050390+00:00"
   },
   {
@@ -46,6 +46,7 @@
     "harness_version": "0.169.0",
     "harness": "Codex CLI 0.169.0",
     "protocol": "Autonomous, first passing attempt (Hardened / Unobstructed Viewport)",
+    "protocol_version": "v1.1",
     "status": "COMPLETED",
     "wall_clock_s": 2515.57,
     "agent_turns": 55,
@@ -64,8 +65,41 @@
     "eval_passed_checks": 18,
     "eval_total_checks": 18,
     "eval_verdict": "PASS",
-    "protocol_version": "v1.1",
     "started_at": "2026-11-14T13:50:33.410344+00:00"
+  },
+  {
+    "benchmark": "vehicle-dynamics/f1-night-duel",
+    "category": "vehicle-dynamics",
+    "test": "f1-night-duel",
+    "model_key": "codex-gpt-6.2-sol",
+    "model_name": "Codex GPT 6.2 Sol (Max)",
+    "model_id": "gpt-6.2-sol",
+    "reasoning_effort": "max",
+    "harness_id": "codex",
+    "harness_name": "Codex CLI",
+    "harness_version": "0.169.0",
+    "harness": "Codex CLI 0.169.0",
+    "protocol": "Autonomous, first passing attempt (Hardened / Unobstructed Viewport)",
+    "protocol_version": "v1.1",
+    "status": "COMPLETED",
+    "wall_clock_s": 2128.0,
+    "agent_turns": 65,
+    "tool_calls": 59,
+    "input_tokens": 5176963,
+    "cached_read_tokens": 4837376,
+    "cache_creation_tokens": 0,
+    "thinking_tokens": 38206,
+    "output_tokens": 93466,
+    "total_tokens": 10107805,
+    "completed_at": "2026-11-18T00:05:55.492064+00:00",
+    "file_bytes": 109578,
+    "lines_of_code": 2469,
+    "sha256": "8d425b02fb338a5a7a22752628e3d4e74a0afe45516b6d2188ceadde4ab35091",
+    "eval_score": 100.0,
+    "eval_passed_checks": 18,
+    "eval_total_checks": 18,
+    "eval_verdict": "PASS",
+    "started_at": "2026-11-17T23:30:27.480224+00:00"
   },
   {
     "benchmark": "vehicle-dynamics/f1-night-duel",
@@ -80,6 +114,7 @@
     "harness_version": "0.169.0",
     "harness": "Codex CLI 0.169.0",
     "protocol": "Autonomous, first passing attempt (Hardened / Unobstructed Viewport)",
+    "protocol_version": "v1.1",
     "status": "COMPLETED",
     "wall_clock_s": 1578.27,
     "agent_turns": 63,
@@ -98,7 +133,6 @@
     "eval_passed_checks": 18,
     "eval_total_checks": 18,
     "eval_verdict": "PASS",
-    "protocol_version": "v1.1",
     "started_at": "2026-11-14T06:31:13.648988+00:00"
   },
   {
@@ -114,6 +148,7 @@
     "harness_version": "2.1.325",
     "harness": "Claude Code 2.1.325",
     "protocol": "Autonomous, first passing attempt (Hardened / Unobstructed Viewport)",
+    "protocol_version": "v1.1",
     "status": "COMPLETED",
     "wall_clock_s": 3718.19,
     "agent_turns": 65,
@@ -132,7 +167,6 @@
     "eval_passed_checks": 18,
     "eval_total_checks": 18,
     "eval_verdict": "PASS",
-    "protocol_version": "v1.1",
     "started_at": "2026-11-14T18:07:05.207096+00:00"
   },
   {
@@ -148,6 +182,7 @@
     "harness_version": "2.1.325",
     "harness": "Claude Code 2.1.325",
     "protocol": "Autonomous, first passing attempt (Hardened / Unobstructed Viewport)",
+    "protocol_version": "v1.1",
     "status": "COMPLETED",
     "wall_clock_s": 5767.16,
     "agent_turns": 173,
@@ -166,7 +201,6 @@
     "eval_passed_checks": 18,
     "eval_total_checks": 18,
     "eval_verdict": "PASS",
-    "protocol_version": "v1.1",
     "started_at": "2026-11-14T19:09:19.800687+00:00"
   },
   {
@@ -182,6 +216,7 @@
     "harness_version": "2.1.325",
     "harness": "Claude Code 2.1.325",
     "protocol": "Autonomous, first passing attempt (Hardened / Unobstructed Viewport)",
+    "protocol_version": "v1.1",
     "status": "COMPLETED",
     "wall_clock_s": 5030.58,
     "agent_turns": 211,
@@ -200,7 +235,6 @@
     "eval_passed_checks": 18,
     "eval_total_checks": 18,
     "eval_verdict": "PASS",
-    "protocol_version": "v1.1",
     "started_at": "2026-11-15T04:10:07.359832+00:00"
   },
   {
@@ -216,6 +250,7 @@
     "harness_version": "2.1.325",
     "harness": "Claude Code 2.1.325",
     "protocol": "Autonomous, first passing attempt (Hardened / Unobstructed Viewport)",
+    "protocol_version": "v1.1",
     "status": "COMPLETED",
     "wall_clock_s": 4637.88,
     "agent_turns": 252,
@@ -234,7 +269,6 @@
     "eval_passed_checks": 18,
     "eval_total_checks": 18,
     "eval_verdict": "PASS",
-    "protocol_version": "v1.1",
     "started_at": "2026-11-15T05:34:14.994926+00:00"
   },
   {
@@ -250,6 +284,7 @@
     "harness_version": "2.1.325",
     "harness": "Claude Code 2.1.325",
     "protocol": "Autonomous, first passing attempt (Hardened / Unobstructed Viewport)",
+    "protocol_version": "v1.1",
     "status": "COMPLETED",
     "wall_clock_s": 2286.68,
     "agent_turns": 74,
@@ -268,7 +303,6 @@
     "eval_passed_checks": 18,
     "eval_total_checks": 18,
     "eval_verdict": "PASS",
-    "protocol_version": "v1.1",
     "started_at": "2026-11-15T01:56:24.517786+00:00"
   },
   {
@@ -284,6 +318,7 @@
     "harness_version": "0.2.2-rc.3",
     "harness": "DeepSeek CLI 0.2.2-rc.3",
     "protocol": "Autonomous, first passing attempt (Hardened / Unobstructed Viewport)",
+    "protocol_version": "v1.1",
     "status": "COMPLETED",
     "wall_clock_s": 3055.67,
     "agent_turns": 252,
@@ -302,7 +337,6 @@
     "eval_passed_checks": 18,
     "eval_total_checks": 18,
     "eval_verdict": "PASS",
-    "protocol_version": "v1.1",
     "started_at": "2026-11-14T12:52:06.422730+00:00"
   },
   {
@@ -318,6 +352,7 @@
     "harness_version": "1.5.9",
     "harness": "Antigravity CLI 1.5.9",
     "protocol": "Autonomous, first passing attempt (Hardened / Unobstructed Viewport)",
+    "protocol_version": "v1.1",
     "status": "COMPLETED",
     "wall_clock_s": 1483.39,
     "agent_turns": 42,
@@ -336,7 +371,6 @@
     "eval_passed_checks": 18,
     "eval_total_checks": 18,
     "eval_verdict": "PASS",
-    "protocol_version": "v1.1",
     "started_at": "2026-11-14T16:53:55.794669+00:00"
   },
   {
@@ -352,6 +386,7 @@
     "harness_version": "1.5.9",
     "harness": "Antigravity CLI 1.5.9",
     "protocol": "Autonomous, first passing attempt (Hardened / Unobstructed Viewport)",
+    "protocol_version": "v1.1",
     "status": "COMPLETED",
     "wall_clock_s": 2252.62,
     "agent_turns": 45,
@@ -370,7 +405,6 @@
     "eval_passed_checks": 18,
     "eval_total_checks": 18,
     "eval_verdict": "PASS",
-    "protocol_version": "v1.1",
     "started_at": "2026-11-14T17:18:53.315695+00:00"
   },
   {
@@ -386,6 +420,7 @@
     "harness_version": "1.5.9",
     "harness": "Antigravity CLI 1.5.9",
     "protocol": "Autonomous, first passing attempt (Hardened / Unobstructed Viewport)",
+    "protocol_version": "v1.1",
     "status": "COMPLETED",
     "wall_clock_s": 1284.72,
     "agent_turns": 86,
@@ -404,7 +439,6 @@
     "eval_passed_checks": 18,
     "eval_total_checks": 18,
     "eval_verdict": "PASS",
-    "protocol_version": "v1.1",
     "started_at": "2026-11-14T21:55:19.483122+00:00"
   },
   {
@@ -420,6 +454,7 @@
     "harness_version": "1.0.0-preview.1",
     "harness": "Qwen Code 1.0.0-preview.1",
     "protocol": "Autonomous, first passing attempt (Hardened / Unobstructed Viewport)",
+    "protocol_version": "v1.1",
     "status": "COMPLETED",
     "wall_clock_s": 2702.74,
     "agent_turns": 53,
@@ -438,7 +473,6 @@
     "eval_passed_checks": 18,
     "eval_total_checks": 18,
     "eval_verdict": "PASS",
-    "protocol_version": "v1.1",
     "started_at": "2026-11-16T20:45:47.428769+00:00"
   },
   {
@@ -454,6 +488,7 @@
     "harness_version": "2.6.0",
     "harness": "Kimi Code 2.6.0",
     "protocol": "Autonomous, first passing attempt (Hardened / Unobstructed Viewport)",
+    "protocol_version": "v1.1",
     "status": "COMPLETED",
     "wall_clock_s": 3999.35,
     "agent_turns": 2,
@@ -472,7 +507,6 @@
     "eval_passed_checks": 18,
     "eval_total_checks": 18,
     "eval_verdict": "PASS",
-    "protocol_version": "v1.1",
     "started_at": "2026-11-14T15:30:55.997466+00:00"
   },
   {
@@ -488,6 +522,7 @@
     "harness_version": "0.7.7",
     "harness": "MiniMax Code 0.7.7",
     "protocol": "Autonomous, first passing attempt (Hardened / Unobstructed Viewport)",
+    "protocol_version": "v1.1",
     "status": "COMPLETED",
     "wall_clock_s": 4047.71,
     "agent_turns": null,
@@ -506,7 +541,6 @@
     "eval_passed_checks": 18,
     "eval_total_checks": 18,
     "eval_verdict": "PASS",
-    "protocol_version": "v1.1",
     "started_at": "2026-11-14T23:42:16.530956+00:00"
   },
   {
@@ -522,6 +556,7 @@
     "harness_version": "2.3.0",
     "harness": "OpenCode 2.3.0",
     "protocol": "Autonomous, first passing attempt (Hardened / Unobstructed Viewport)",
+    "protocol_version": "v1.1",
     "status": "COMPLETED",
     "wall_clock_s": 1100.69,
     "agent_turns": 57,
@@ -540,7 +575,6 @@
     "eval_passed_checks": 18,
     "eval_total_checks": 18,
     "eval_verdict": "PASS",
-    "protocol_version": "v1.1",
     "started_at": "2026-11-15T08:53:46.089561+00:00"
   }
 ]

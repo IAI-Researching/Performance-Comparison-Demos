@@ -10,6 +10,7 @@
 | :--- | :--- | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :--- |
 | **Codex GPT 6 Astra (Max)** | Codex CLI 0.169.0 | `Max` | **PASS (100.0%)** | 1700.9s | 57 | 47 | 3,611,866 | 3,535,104 | 21,746 | 58,096 | 67,948 B | 982 | `3a6326f67f83...` |
 | **Codex GPT 6.1 Sol (Max)** | Codex CLI 0.169.0 | `Max` | **PASS (100.0%)** | 2515.6s | 55 | 47 | 4,454,013 | 4,379,008 | 41,303 | 90,983 | 67,200 B | 993 | `95682d93e65c...` |
+| **Codex GPT 6.2 Sol (Max)** | Codex CLI 0.169.0 | `Max` | **PASS (100.0%)** | 2128.0s | 65 | 59 | 5,176,963 | 4,837,376 | 38,206 | 93,466 | 109,578 B | 2,469 | `8d425b02fb33...` |
 | **Codex GPT 6.1 Terra (Max)** | Codex CLI 0.169.0 | `Max` | **PASS (100.0%)** | 1578.3s | 63 | 55 | 5,936,135 | 5,874,176 | 37,348 | 77,000 | 57,478 B | 824 | `eed7eee0cf3a...` |
 | **Claude Fable 5.1 (Max)** | Claude Code 2.1.325 | `Max` | **PASS (100.0%)** | 3718.2s | 65 | 64 | 1,026 | 6,861,599 | 163,289 | 263,518 | 114,109 B | 2,050 | `f6b86c6b7a29...` |
 | **Claude Fable 5.2 (Max)** | Claude Code 2.1.325 | `Max` | **PASS (100.0%)** | 5767.2s | 173 | 171 | 198 | 37,161,080 | 365,577 | 506,672 | 137,419 B | 2,109 | `6d68fc6a4d59...` |
@@ -30,5 +31,5 @@
 ## 🔬 Methodology & Enforced Constraints
 
 - **Benchmark ID**: `vehicle-dynamics/f1-night-duel`
-- **Protocol**: Autonomous, first passing attempt (zero human-in-the-loop, sandboxed). Rows are tagged v1.0 or v1.1 in `telemetry.json` (`protocol_version`); v1.0 and v1.1 rows are not strictly comparable, see ../../PROTOCOL.md. Failed attempts are re-run, not published.
+- **Protocol**: Autonomous, first passing attempt, protocol v1.1 (zero human-in-the-loop, sandboxed). See PROTOCOL.md; failed attempts are re-run, not published.
 - **Unobstructed Viewport Constraint**: Strict negative constraint forbidding extraneous headers, mastheads, annotation overlays, and phase description panels. Viewport contains exclusively Three.js canvas, center countdown, and bottom dock.

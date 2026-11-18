@@ -86,6 +86,7 @@ v1.1 was introduced during the first F1 Night Duel round on 2026-11-14. Its chan
 | Claude Fable 5.2 | 19:09 | not recorded | Stage C. Longest run before the timeout was removed (96 min; never triggered). |
 | Gemini 4 Hydrogen | 21:55 | 2 | Stage C. Attempt 1 (16:38, Stage B) failed verification: a page error stopped playback. Attempt 2 published. |
 | MiniMax M3.1 Flash | 23:42 | not recorded | Stage C. |
+| Codex GPT 6.2 Sol | 23:30 | 1 | Full v1.1. Codex CLI 0.169.0. |
 | Claude Haiku 5.5, Claude Opus 5.5, Claude Sonnet 5.5, ERNIE 5.5 Flash Preview, Qwen 4 Max | 01:56, 04:10, 05:34, 08:53, 20:45 | not recorded | Full v1.1. Published after this table was last updated; attempt counts were not written down at the time and cannot be reconstructed from the repository. |
 
 Still shared with v1.0: one machine and one user account. Agents can still list and stop other processes on the machine. That is addressed in v2.0.
