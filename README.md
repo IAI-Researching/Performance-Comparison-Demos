@@ -67,8 +67,8 @@ Each benchmark test directory (e.g. [`ballistics/water-balloon/`](ballistics/wat
 
 | Model | Developer Harness | Verification | Wall-Clock | Deliverable |
 | :--- | :--- | :---: | :---: | :---: |
+| **Gemini 4 Neon (XHigh)** | Antigravity CLI | **PASS (100%)** | 1936.1s | [`articulated-dynamics/storm-titan/gemini-4-neon/`](articulated-dynamics/storm-titan/gemini-4-neon/) |
 | **Gemini 4 Hydrogen (XHigh)** | Antigravity CLI | **PASS (100%)** | 1255.7s | [`articulated-dynamics/storm-titan/gemini-4-hydrogen/`](articulated-dynamics/storm-titan/gemini-4-hydrogen/) |
 | **Codex GPT 6.2 Astra (Max)** | Codex CLI | **PASS (100%)** | 3130.5s | [`articulated-dynamics/storm-titan/codex-gpt-6.2-astra/`](articulated-dynamics/storm-titan/codex-gpt-6.2-astra/) |
-| **Claude Fable 5.2 (Max)** | Claude Code | **PASS (100%)** | 7666.2s | [`articulated-dynamics/storm-titan/claude-fable-5.2/`](articulated-dynamics/storm-titan/claude-fable-5.2/) |
 
 *Showing the 3 most recent benchmark deliverables. See [`TELEMETRY.md`](articulated-dynamics/storm-titan/TELEMETRY.md) for the complete multi-model leaderboard, full token metrics, cache ratios, and runtime verification logs.*

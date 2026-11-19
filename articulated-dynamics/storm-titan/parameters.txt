@@ -52,6 +52,7 @@ agy \
 
 Models:
 - gemini-4-hydrogen-xhigh (Gemini 4 Hydrogen, XHigh; protocol v1.1)
+- gemini-4-neon-xhigh (Gemini 4 Neon, XHigh; protocol v1.1)
 
 ---
 
