@@ -1,0 +1,4419 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Storm Titan</title>
+<style>
+*, *::before, *::after {
+  box-sizing: border-box;
+}
+html, body {
+  margin: 0;
+  padding: 0;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  background: radial-gradient(circle at center, #161922 0%, #090a0f 100%);
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -webkit-user-select: none;
+  user-select: none;
+}
+#stage {
+  display: block;
+  width: 100vw;
+  height: 100vh;
+}
+
+#countdown {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 50;
+  pointer-events: none;
+  font-size: 96px;
+  font-weight: 700;
+  line-height: 1;
+  color: rgba(255, 255, 255, 0.35);
+  font-variant-numeric: tabular-nums;
+}
+
+#dock {
+  position: fixed;
+  bottom: 24px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 100;
+  width: 536px;
+  height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 0 14px;
+  background: rgba(15, 17, 23, 0.78);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 9999px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.35);
+}
+
+#dock button {
+  font-family: inherit;
+  line-height: 1;
+  margin: 0;
+  flex-shrink: 0;
+  white-space: nowrap;
+  appearance: none;
+  -webkit-appearance: none;
+}
+
+.dock-sep {
+  width: 1px;
+  height: 18px;
+  flex-shrink: 0;
+  background: rgba(255, 255, 255, 0.12);
+}
+
+#btn-refire {
+  width: 78px;
+  height: 28px;
+  padding: 0 10px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 9999px;
+  color: #ffffff;
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+}
+#btn-refire:hover {
+  background: rgba(255, 255, 255, 0.16);
+}
+
+#btn-toggle {
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 9999px;
+  color: #ffffff;
+  cursor: pointer;
+}
+#btn-toggle:hover {
+  background: rgba(255, 255, 255, 0.16);
+}
+
+#speed-group {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  flex-shrink: 0;
+}
+.speed-pill {
+  width: 42px;
+  height: 24px;
+  padding: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 9999px;
+  color: rgba(255, 255, 255, 0.6);
+  font-size: 11px;
+  font-weight: 500;
+  font-variant-numeric: tabular-nums;
+  cursor: pointer;
+}
+.speed-pill:hover {
+  color: #ffffff;
+  background: rgba(255, 255, 255, 0.06);
+}
+.speed-pill.is-active {
+  color: #ffffff;
+  background: rgba(255, 255, 255, 0.18);
+  border-color: rgba(255, 255, 255, 0.2);
+}
+
+#scrubber {
+  width: 157px;
+  height: 4px;
+  margin: 0;
+  padding: 0;
+  flex-shrink: 0;
+  appearance: none;
+  -webkit-appearance: none;
+  background: rgba(255, 255, 255, 0.22);
+  border-radius: 9999px;
+  outline: none;
+  cursor: pointer;
+}
+#scrubber::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: #ffffff;
+  border: none;
+  cursor: pointer;
+}
+#scrubber::-moz-range-thumb {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: #ffffff;
+  border: none;
+  cursor: pointer;
+}
+</style>
+</head>
+<body>
+<canvas id="stage"></canvas>
+<div id="countdown" aria-hidden="true">3</div>
+
+<div id="dock" role="toolbar" aria-label="Simulation Controls">
+  <button id="btn-refire" type="button" aria-label="Re-fire" title="Re-fire">
+    <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+      <path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.19"/>
+    </svg>
+    <span>Re-fire</span>
+  </button>
+  <span class="dock-sep" aria-hidden="true"></span>
+  <button id="btn-toggle" type="button" aria-label="Pause" title="Play / Pause">
+    <svg id="icon-pause" viewBox="0 0 24 24" width="14" height="14" fill="currentColor" aria-hidden="true">
+      <rect x="6" y="4" width="4" height="16" rx="1"/>
+      <rect x="14" y="4" width="4" height="16" rx="1"/>
+    </svg>
+    <svg id="icon-play" viewBox="0 0 24 24" width="14" height="14" fill="currentColor" aria-hidden="true" style="display:none;">
+      <path d="M8 5v14l11-7z"/>
+    </svg>
+  </button>
+  <span class="dock-sep" aria-hidden="true"></span>
+  <div id="speed-group" role="radiogroup" aria-label="Playback Speed">
+    <button class="speed-pill" type="button" role="radio" aria-checked="false" data-speed="0.25">0.25×</button>
+    <button class="speed-pill" type="button" role="radio" aria-checked="false" data-speed="0.5">0.5×</button>
+    <button class="speed-pill is-active" type="button" role="radio" aria-checked="true" data-speed="1.0">1.0×</button>
+    <button class="speed-pill" type="button" role="radio" aria-checked="false" data-speed="2.0">2.0×</button>
+  </div>
+  <span class="dock-sep" aria-hidden="true"></span>
+  <input id="scrubber" type="range" min="0" max="40" step="0.001" value="0" aria-label="Timeline Scrubber">
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+(() => {
+  'use strict';
+
+  const DURATION = 40;
+  const FIXED_DT = 1 / 240;
+  const SIM_SEED = 42;
+  const AUDIO_SEED = 4242;
+
+  const COUNTS = {
+    grassBlades: 100000,
+    rainStreaks: 20000,
+    boulders: 144,
+    arcs: 56,
+    ropePoints: 32,
+    ragdollPoints: 13
+  };
+
+  window.BENCH_REPORT = {
+    counts: {
+      grassBlades: COUNTS.grassBlades,
+      rainStreaks: COUNTS.rainStreaks,
+      boulders: COUNTS.boulders,
+      arcs: COUNTS.arcs,
+      ropePoints: COUNTS.ropePoints,
+      ragdollPoints: COUNTS.ragdollPoints
+    },
+    systems: {
+      titanSkeleton: 'full',
+      grass: 'full',
+      rainAndWetness: 'full',
+      tethers: 'full',
+      combatHitStop: 'full',
+      ragdollBlend: 'full',
+      camera: 'full',
+      hud: 'full',
+      audio: 'full',
+      collapse: 'full'
+    },
+    simplifications: [],
+    testedInBrowser: false,
+    measuredFps: null
+  };
+
+  // =========================================================================
+  // 1. DETERMINISTIC PRNG & MATH HELPERS (SEEDED ONLY)
+  // =========================================================================
+  function mulberry32(seed) {
+    let a = seed >>> 0;
+    return function () {
+      a |= 0;
+      a = (a + 0x6D2B79F5) | 0;
+      let t = Math.imul(a ^ (a >>> 15), 1 | a);
+      t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+      return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+    };
+  }
+
+  function hashInt(n) {
+    let x = (n | 0) ^ 0x9e3779b9;
+    x = Math.imul(x ^ (x >>> 16), 0x85ebca6b);
+    x = Math.imul(x ^ (x >>> 13), 0xc2b2ae35);
+    return ((x ^ (x >>> 16)) >>> 0) / 4294967296;
+  }
+
+  function hash2(x, y) {
+    return hashInt((x * 374761393 + y * 668265263) | 0);
+  }
+
+  function smoothNoise1D(x, seed) {
+    const i = Math.floor(x);
+    const f = x - i;
+    const u = f * f * (3 - 2 * f);
+    const a = hash2(i, seed) * 2 - 1;
+    const b = hash2(i + 1, seed) * 2 - 1;
+    return a + (b - a) * u;
+  }
+
+  function clamp(v, lo, hi) {
+    return v < lo ? lo : v > hi ? hi : v;
+  }
+
+  function lerp(a, b, t) {
+    return a + (b - a) * t;
+  }
+
+  function smoothstep(a, b, x) {
+    const t = clamp((x - a) / (b - a), 0, 1);
+    return t * t * (3 - 2 * t);
+  }
+
+  function easeOutCubic(t) {
+    const u = 1 - clamp(t, 0, 1);
+    return 1 - u * u * u;
+  }
+
+  function easeInOutCubic(t) {
+    const x = clamp(t, 0, 1);
+    return x < 0.5 ? 4 * x * x * x : 1 - Math.pow(-2 * x + 2, 3) / 2;
+  }
+
+  const rng = mulberry32(SIM_SEED);
+
+  // =========================================================================
+  // 2. EVENT TABLE, MOTION TIME, TRAUMA, WETNESS & SKY LIGHTNING
+  // =========================================================================
+  const BOSS_MAX_HP = 2000;
+
+  const STRIKES = [
+    { t: 5.000, hitStop: 0.100, dmg: 400, wp: 0, stagAfter: 50, breaks: true },
+    { t: 12.000, hitStop: 0.100, dmg: 600, wp: 1, stagAfter: 100, breaks: true },
+    { t: 27.000, hitStop: 0.100, dmg: 500, wp: 2, stagAfter: 50, breaks: false },
+    { t: 29.500, hitStop: 0.200, dmg: 500, wp: 2, stagAfter: 0, breaks: true }
+  ];
+
+  const TRAUMA_EVENTS = [
+    { t: 1.000, val: 0.25 },
+    { t: 2.500, val: 0.25 },
+    { t: 4.000, val: 0.25 },
+    { t: 5.000, val: 0.45 },
+    { t: 5.500, val: 0.25 },
+    { t: 7.500, val: 0.90 },
+    { t: 8.200, val: 0.30 },
+    { t: 12.000, val: 0.55 },
+    { t: 13.000, val: 0.70 },
+    { t: 19.000, val: 0.80 },
+    { t: 25.000, val: 0.50 },
+    { t: 27.000, val: 0.60 },
+    { t: 29.500, val: 1.00 },
+    { t: 31.500, val: 0.20 },
+    { t: 33.000, val: 0.30 }
+  ];
+
+  const SKY_STRIKES = [
+    { t: 8.200, pos: new THREE.Vector3(64, 0, -54), isTitanHead: false, intensity: 1.0 },
+    { t: 25.000, pos: new THREE.Vector3(16, 38.5, 0), isTitanHead: true, intensity: 1.55 },
+    { t: 33.000, pos: new THREE.Vector3(110, 0, 72), isTitanHead: false, intensity: 0.85 }
+  ];
+
+  const COLLAPSE_GROUPS = {
+    head: 29.700,
+    arms: 30.200,
+    chest: 30.800,
+    spine: 31.400,
+    pelvis: 32.000,
+    legs: 32.600
+  };
+
+  function getMotionTime(simTime) {
+    const t = clamp(simTime, 0, DURATION);
+    for (let i = 0; i < STRIKES.length; i++) {
+      const s = STRIKES[i];
+      const catchEnd = s.t + s.hitStop + 0.300;
+      if (t >= s.t && t < s.t + s.hitStop) {
+        return s.t;
+      }
+      if (t >= s.t + s.hitStop && t < catchEnd) {
+        const u = (t - (s.t + s.hitStop)) / 0.300;
+        return s.t + u * (s.hitStop + 0.300);
+      }
+    }
+    return t;
+  }
+
+  function getTrauma(simTime) {
+    let tr = 0;
+    let lastT = 0;
+    for (let i = 0; i < TRAUMA_EVENTS.length; i++) {
+      const ev = TRAUMA_EVENTS[i];
+      if (simTime < ev.t) break;
+      tr = Math.max(0, tr - 0.8 * (ev.t - lastT));
+      tr = Math.min(1, tr + ev.val);
+      lastT = ev.t;
+    }
+    tr = Math.max(0, tr - 0.8 * Math.max(0, simTime - lastT));
+    return clamp(tr, 0, 1);
+  }
+
+  function getWetness(simTime) {
+    return clamp(simTime / 30.0, 0, 1);
+  }
+
+  function getSkyFlash(simTime) {
+    let flash = 0;
+    for (let i = 0; i < SKY_STRIKES.length; i++) {
+      const s = SKY_STRIKES[i];
+      const dt = simTime - s.t;
+      if (dt >= 0 && dt < 0.400) {
+        const pulse = dt < 0.08
+          ? 1.0
+          : (dt < 0.14 ? 0.55 : (dt < 0.20 ? 0.85 : Math.pow(Math.max(0, 1 - (dt - 0.20) / 0.20), 1.6)));
+        flash = Math.max(flash, pulse * s.intensity);
+      }
+    }
+    return flash;
+  }
+
+  // =========================================================================
+  // 3. TERRAIN HEIGHT & DETACHED PROCEDURAL TEXTURES
+  // =========================================================================
+  function terrainHeight(x, z) {
+    const r = Math.hypot(x, z);
+    const edge = smoothstep(88, 92, r);
+    const hills =
+      0.24 * Math.sin(x * 0.055 + 0.4) * Math.cos(z * 0.052 - 0.2) +
+      0.16 * Math.sin((x + z) * 0.095 + 1.1) +
+      0.11 * Math.cos((x - z) * 0.14 - 0.7);
+    const h = clamp(hills, -0.55, 0.55);
+    if (r <= 90) return h * (1 - 0.5 * edge);
+    const cliff = Math.min(48, (r - 90) * 1.45 + 0.08 * (r - 90) * (r - 90));
+    return h * 0.5 - cliff;
+  }
+
+  const SLAM_TARGET = new THREE.Vector3(-4.0, terrainHeight(-4.0, -5.0), -5.0);
+
+  function createPlateauTexture() {
+    const canvas = document.createElement('canvas');
+    canvas.width = 512;
+    canvas.height = 512;
+    const ctx = canvas.getContext('2d');
+    const img = ctx.createImageData(512, 512);
+    const d = img.data;
+    const tRng = mulberry32(101);
+    for (let y = 0; y < 512; y++) {
+      for (let x = 0; x < 512; x++) {
+        const idx = (y * 512 + x) * 4;
+        const n1 = Math.sin(x * 0.049) * Math.cos(y * 0.049);
+        const n2 = Math.sin((x + y) * 0.147) * 0.5;
+        const grain = (tRng() - 0.5) * 24;
+        const moss = smoothstep(-0.3, 0.6, n1 + n2);
+        d[idx] = clamp(Math.round(30 + moss * 14 + grain * 0.4), 10, 80);
+        d[idx + 1] = clamp(Math.round(37 + moss * 24 + grain * 0.5), 14, 95);
+        d[idx + 2] = clamp(Math.round(28 + moss * 10 + grain * 0.35), 10, 75);
+        d[idx + 3] = 255;
+      }
+    }
+    ctx.putImageData(img, 0, 0);
+    const tex = new THREE.CanvasTexture(canvas);
+    tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
+    tex.repeat.set(20, 20);
+    tex.encoding = THREE.sRGBEncoding;
+    return tex;
+  }
+
+  function createBoulderTextures() {
+    const albedoCanvas = document.createElement('canvas');
+    albedoCanvas.width = 256;
+    albedoCanvas.height = 256;
+    const actx = albedoCanvas.getContext('2d');
+
+    const oreCanvas = document.createElement('canvas');
+    oreCanvas.width = 256;
+    oreCanvas.height = 256;
+    const octx = oreCanvas.getContext('2d');
+
+    actx.fillStyle = '#20242c';
+    actx.fillRect(0, 0, 256, 256);
+    octx.fillStyle = '#000000';
+    octx.fillRect(0, 0, 256, 256);
+
+    const bRng = mulberry32(777);
+    for (let i = 0; i < 650; i++) {
+      const px = bRng() * 256;
+      const py = bRng() * 256;
+      const rad = 2 + bRng() * 14;
+      const v = Math.floor(24 + bRng() * 26);
+      actx.fillStyle = `rgba(${v},${v + 3},${v + 8},0.22)`;
+      actx.beginPath();
+      actx.arc(px, py, rad, 0, Math.PI * 2);
+      actx.fill();
+    }
+
+    for (let c = 0; c < 34; c++) {
+      let cx = bRng() * 256;
+      let cy = bRng() * 256;
+      let ang = bRng() * Math.PI * 2;
+      const isOre = c < 18;
+      actx.strokeStyle = '#0d1016';
+      actx.lineWidth = 1.2 + bRng() * 2.0;
+      octx.strokeStyle = isOre ? 'rgba(65, 170, 255, 0.90)' : 'rgba(20, 75, 140, 0.25)';
+      octx.lineWidth = isOre ? 1.5 + bRng() * 1.4 : 0.8;
+      actx.beginPath();
+      octx.beginPath();
+      actx.moveTo(cx, cy);
+      octx.moveTo(cx, cy);
+      const steps = 6 + Math.floor(bRng() * 7);
+      for (let s = 0; s < steps; s++) {
+        ang += (bRng() - 0.5) * 1.1;
+        const len = 8 + bRng() * 16;
+        cx += Math.cos(ang) * len;
+        cy += Math.sin(ang) * len;
+        actx.lineTo(cx, cy);
+        octx.lineTo(cx, cy);
+      }
+      actx.stroke();
+      octx.stroke();
+    }
+
+    const map = new THREE.CanvasTexture(albedoCanvas);
+    map.wrapS = map.wrapT = THREE.RepeatWrapping;
+    map.encoding = THREE.sRGBEncoding;
+
+    const emissiveMap = new THREE.CanvasTexture(oreCanvas);
+    emissiveMap.wrapS = emissiveMap.wrapT = THREE.RepeatWrapping;
+    emissiveMap.encoding = THREE.sRGBEncoding;
+    return { map, emissiveMap };
+  }
+
+  function createGlyphAtlas() {
+    const canvas = document.createElement('canvas');
+    canvas.width = 512;
+    canvas.height = 64;
+    const ctx = canvas.getContext('2d');
+    ctx.clearRect(0, 0, 512, 64);
+    ctx.font = '800 46px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    const cellW = 51.2;
+    for (let i = 0; i < 10; i++) {
+      const cx = (i + 0.5) * cellW;
+      const cy = 34;
+      ctx.lineWidth = 6;
+      ctx.strokeStyle = 'rgba(0, 0, 0, 0.85)';
+      ctx.strokeText(String(i), cx, cy);
+      ctx.fillStyle = '#fff3d1';
+      ctx.fillText(String(i), cx, cy);
+    }
+    const tex = new THREE.CanvasTexture(canvas);
+    tex.encoding = THREE.sRGBEncoding;
+    tex.minFilter = THREE.LinearFilter;
+    tex.magFilter = THREE.LinearFilter;
+    return tex;
+  }
+
+  function createSoftParticleTexture() {
+    const canvas = document.createElement('canvas');
+    canvas.width = 64;
+    canvas.height = 64;
+    const ctx = canvas.getContext('2d');
+    const g = ctx.createRadialGradient(32, 32, 2, 32, 32, 30);
+    g.addColorStop(0, 'rgba(255,255,255,1)');
+    g.addColorStop(0.4, 'rgba(220,230,245,0.55)');
+    g.addColorStop(1, 'rgba(180,200,220,0)');
+    ctx.fillStyle = g;
+    ctx.fillRect(0, 0, 64, 64);
+    const tex = new THREE.CanvasTexture(canvas);
+    tex.encoding = THREE.sRGBEncoding;
+    return tex;
+  }
+
+  // =========================================================================
+  // 4. RENDERER, SCENES, POST-PROCESSING, ENVIRONMENT MAP & LIGHTING
+  // =========================================================================
+  const canvasEl = document.getElementById('stage');
+  const renderer = new THREE.WebGLRenderer({ canvas: canvasEl, antialias: true, alpha: true });
+  renderer.outputEncoding = THREE.sRGBEncoding;
+  renderer.toneMapping = THREE.ACESFilmicToneMapping;
+  renderer.toneMappingExposure = 1.05;
+  renderer.shadowMap.enabled = true;
+  renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+  renderer.setSize(window.innerWidth, window.innerHeight, false);
+
+  const scene = new THREE.Scene();
+  const baseFogColor = new THREE.Color(0x131a26);
+  const flashFogColor = new THREE.Color(0x526b8c);
+  scene.fog = new THREE.FogExp2(0x131a26, 0.0044);
+
+  const camera = new THREE.PerspectiveCamera(40, window.innerWidth / window.innerHeight, 0.1, 2000);
+
+  const gl = renderer.getContext();
+  const isWebGL2 = renderer.capabilities.isWebGL2;
+  const supportsHalfFloatRT = isWebGL2
+    ? !!(gl.getExtension('EXT_color_buffer_float') || gl.getExtension('EXT_color_buffer_half_float'))
+    : !!(gl.getExtension('OES_texture_half_float') && gl.getExtension('OES_texture_half_float_linear') && gl.getExtension('EXT_color_buffer_half_float'));
+
+  function makeRenderTarget(w, h) {
+    return new THREE.WebGLRenderTarget(w, h, {
+      minFilter: THREE.LinearFilter,
+      magFilter: THREE.LinearFilter,
+      format: THREE.RGBAFormat,
+      type: supportsHalfFloatRT ? THREE.HalfFloatType : THREE.UnsignedByteType,
+      depthBuffer: true,
+      stencilBuffer: false
+    });
+  }
+
+  let rtWidth = Math.max(1, Math.floor(window.innerWidth * renderer.getPixelRatio()));
+  let rtHeight = Math.max(1, Math.floor(window.innerHeight * renderer.getPixelRatio()));
+  let renderTarget = makeRenderTarget(rtWidth, rtHeight);
+
+  const postScene = new THREE.Scene();
+  const postCamera = new THREE.OrthographicCamera(-1, 1, 1, -1, 0, 1);
+  const postMaterial = new THREE.ShaderMaterial({
+    toneMapped: false,
+    depthTest: false,
+    depthWrite: false,
+    uniforms: {
+      tDiffuse: { value: renderTarget.texture },
+      uResolution: { value: new THREE.Vector2(rtWidth, rtHeight) },
+      uTraumaSq: { value: 0.0 },
+      uExposure: { value: 1.05 },
+      uIsHDR: { value: supportsHalfFloatRT ? 1.0 : 0.0 }
+    },
+    vertexShader: `
+      varying vec2 vUv;
+      void main() {
+        vUv = uv;
+        gl_Position = vec4(position.xy, 0.0, 1.0);
+      }
+    `,
+    fragmentShader: `
+      uniform sampler2D tDiffuse;
+      uniform vec2 uResolution;
+      uniform float uTraumaSq;
+      uniform float uExposure;
+      uniform float uIsHDR;
+      varying vec2 vUv;
+
+      vec3 ACESFilmic(vec3 x) {
+        x *= 0.6;
+        float a = 2.51;
+        float b = 0.03;
+        float c = 2.43;
+        float d = 0.59;
+        float e = 0.14;
+        return clamp((x * (a * x + b)) / (x * (c * x + d) + e), 0.0, 1.0);
+      }
+
+      vec3 linearToSRGB(vec3 c) {
+        vec3 lo = c * 12.92;
+        vec3 hi = 1.055 * pow(max(c, vec3(1e-5)), vec3(1.0 / 2.4)) - 0.055;
+        return mix(lo, hi, step(vec3(0.0031308), c));
+      }
+
+      void main() {
+        vec2 centered = vUv - 0.5;
+        float dist = length(centered) * 2.0;
+        vec2 dir = dist > 1e-4 ? centered / (dist * 0.5) : vec2(0.0);
+        float shiftPx = 6.0 * uTraumaSq * clamp(dist, 0.0, 1.4);
+        vec2 offset = (dir * shiftPx) / uResolution;
+
+        float r = texture2D(tDiffuse, clamp(vUv + offset, 0.001, 0.999)).r;
+        float g = texture2D(tDiffuse, vUv).g;
+        float b = texture2D(tDiffuse, clamp(vUv - offset, 0.001, 0.999)).b;
+        vec3 col = vec3(r, g, b);
+
+        col = ACESFilmic(col * (uIsHDR > 0.5 ? uExposure : uExposure * 1.15));
+        col = linearToSRGB(col);
+        gl_FragColor = vec4(col, 1.0);
+      }
+    `
+  });
+  postScene.add(new THREE.Mesh(new THREE.PlaneGeometry(2, 2), postMaterial));
+
+  (function buildStormEnv() {
+    const envScene = new THREE.Scene();
+    const domeGeo = new THREE.SphereGeometry(40, 32, 20);
+    const domeMat = new THREE.ShaderMaterial({
+      side: THREE.BackSide,
+      toneMapped: false,
+      vertexShader: `
+        varying vec3 vDir;
+        void main() {
+          vDir = normalize(position);
+          gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+        }
+      `,
+      fragmentShader: `
+        varying vec3 vDir;
+        void main() {
+          float y = vDir.y;
+          vec3 zenith = vec3(0.03, 0.05, 0.10);
+          vec3 horizon = vec3(0.32, 0.44, 0.62);
+          vec3 ground = vec3(0.02, 0.03, 0.04);
+          float hBand = exp(-abs(y - 0.08) * 6.5);
+          vec3 col = y >= 0.0 ? mix(horizon * 0.45, zenith, smoothstep(0.0, 0.7, y)) : ground;
+          col += horizon * hBand * 1.25;
+          gl_FragColor = vec4(col, 1.0);
+        }
+      `
+    });
+    const dome = new THREE.Mesh(domeGeo, domeMat);
+    envScene.add(dome);
+    const pmrem = new THREE.PMREMGenerator(renderer);
+    pmrem.compileCubemapShader();
+    const envRT = pmrem.fromScene(envScene, 0.04, 0.1, 200);
+    scene.environment = envRT.texture;
+    pmrem.dispose();
+    domeGeo.dispose();
+    domeMat.dispose();
+  })();
+
+  const skyUniforms = {
+    uTime: { value: 0 },
+    uFlash: { value: 0 },
+    uWetness: { value: 0 }
+  };
+  const skyGeo = new THREE.SphereGeometry(1200, 36, 24);
+  const skyMat = new THREE.ShaderMaterial({
+    side: THREE.BackSide,
+    depthWrite: false,
+    fog: false,
+    toneMapped: false,
+    uniforms: skyUniforms,
+    vertexShader: `
+      varying vec3 vWorldDir;
+      void main() {
+        vWorldDir = normalize(position);
+        gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+      }
+    `,
+    fragmentShader: `
+      uniform float uTime;
+      uniform float uFlash;
+      uniform float uWetness;
+      varying vec3 vWorldDir;
+
+      float hash(vec2 p) {
+        return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453123);
+      }
+      float noise(vec2 p) {
+        vec2 i = floor(p);
+        vec2 f = fract(p);
+        vec2 u = f * f * (3.0 - 2.0 * f);
+        return mix(
+          mix(hash(i + vec2(0.0, 0.0)), hash(i + vec2(1.0, 0.0)), u.x),
+          mix(hash(i + vec2(0.0, 1.0)), hash(i + vec2(1.0, 1.0)), u.x),
+          u.y
+        );
+      }
+      float fbm(vec2 p) {
+        float v = 0.0;
+        float a = 0.5;
+        for (int i = 0; i < 4; i++) {
+          v += a * noise(p);
+          p = p * 2.04 + vec2(17.1, 9.2);
+          a *= 0.5;
+        }
+        return v;
+      }
+
+      void main() {
+        vec3 d = normalize(vWorldDir);
+        float elev = max(d.y, 0.015);
+        vec2 cloudUv = d.xz / (elev + 0.28) * 1.45 - vec2(uTime * 0.055, uTime * 0.012);
+        float c1 = fbm(cloudUv);
+        float c2 = fbm(cloudUv * 2.1 - vec2(uTime * 0.09, 0.0));
+        float cloud = smoothstep(0.28, 0.85, c1 * 0.65 + c2 * 0.35);
+
+        vec3 baseDark = vec3(0.018, 0.025, 0.042);
+        vec3 cloudCol = vec3(0.065, 0.095, 0.155);
+        vec3 horizonGlow = vec3(0.11, 0.155, 0.235) * exp(-abs(d.y) * 5.2);
+
+        vec3 col = mix(baseDark, cloudCol, cloud) + horizonGlow;
+        col = mix(vec3(0.012, 0.016, 0.026), col, smoothstep(-0.22, 0.05, d.y));
+        col += vec3(0.45, 0.65, 1.0) * uFlash * (0.25 + 0.85 * (1.0 - cloud * 0.6)) * smoothstep(-0.1, 0.45, d.y);
+        gl_FragColor = vec4(col, 1.0);
+      }
+    `
+  });
+  const skyMesh = new THREE.Mesh(skyGeo, skyMat);
+  skyMesh.frustumCulled = false;
+  skyMesh.renderOrder = -10;
+  scene.add(skyMesh);
+
+  const hemiLight = new THREE.HemisphereLight(0x526b92, 0x151822, 0.23);
+  scene.add(hemiLight);
+
+  const keyLight = new THREE.DirectionalLight(0xa6c4ef, 1.45);
+  keyLight.position.set(-48, 72, 42);
+  keyLight.target.position.set(12, 10, 0);
+  scene.add(keyLight.target);
+  keyLight.castShadow = true;
+  keyLight.shadow.mapSize.set(2048, 2048);
+  keyLight.shadow.camera.near = 15;
+  keyLight.shadow.camera.far = 210;
+  keyLight.shadow.camera.left = -68;
+  keyLight.shadow.camera.right = 68;
+  keyLight.shadow.camera.top = 56;
+  keyLight.shadow.camera.bottom = -56;
+  keyLight.shadow.bias = -0.0005;
+  scene.add(keyLight);
+
+  const skyFlashLight = new THREE.DirectionalLight(0x8cbdff, 0);
+  skyFlashLight.position.set(30, 90, -25);
+  scene.add(skyFlashLight);
+
+  const arcLightPositions = [
+    new THREE.Vector3(16, 28, 0),
+    new THREE.Vector3(16, 20, 8),
+    new THREE.Vector3(16, 20, -8),
+    new THREE.Vector3(16, 9, 0)
+  ];
+  const arcPointLights = arcLightPositions.map((p) => {
+    const pl = new THREE.PointLight(0x4ba8ff, 0, 34, 1.6);
+    pl.position.copy(p);
+    scene.add(pl);
+    return pl;
+  });
+
+  // =========================================================================
+  // 5. PLATEAU MESH, GRASS (100,000 BLADES), RAIN (20,000 STREAKS + SPLASHES)
+  // =========================================================================
+  const plateauTex = createPlateauTexture();
+  const plateauGeo = new THREE.RingGeometry(0.001, 128, 128, 48);
+  plateauGeo.rotateX(-Math.PI / 2);
+  {
+    const pos = plateauGeo.attributes.position;
+    for (let i = 0; i < pos.count; i++) {
+      const x = pos.getX(i);
+      const z = pos.getZ(i);
+      pos.setY(i, terrainHeight(x, z));
+    }
+    plateauGeo.computeVertexNormals();
+  }
+  const plateauMat = new THREE.MeshStandardMaterial({
+    map: plateauTex,
+    color: 0xffffff,
+    roughness: 0.9,
+    metalness: 0.04,
+    envMapIntensity: 0.25
+  });
+  const plateauMesh = new THREE.Mesh(plateauGeo, plateauMat);
+  plateauMesh.receiveShadow = true;
+  scene.add(plateauMesh);
+
+  const MAX_SHOCKWAVES = 16;
+  const shockWaveUniformArray = Array.from({ length: MAX_SHOCKWAVES }, () => new THREE.Vector4(0, 0, -999, 0));
+  const BOULDER_LAND_SLOTS = 24;
+  const boulderLandUniformArray = Array.from({ length: BOULDER_LAND_SLOTS }, () => new THREE.Vector4(0, 0, 999, 0));
+
+  const grassUniforms = {
+    uMotionTime: { value: 0 },
+    uWetness: { value: 0 },
+    uSkyFlash: { value: 0 },
+    uFogColor: { value: baseFogColor.clone() },
+    uFogDensity: { value: scene.fog.density },
+    uLightDir: { value: keyLight.position.clone().sub(keyLight.target.position).normalize() },
+    uShockwaves: { value: shockWaveUniformArray },
+    uSweepState: { value: new THREE.Vector4(16, 0, 18.5, 1) },
+    uBoulderLands: { value: boulderLandUniformArray },
+    uArcPos: { value: arcLightPositions },
+    uArcStrength: { value: new THREE.Vector4(1, 1, 1, 1) }
+  };
+
+  (function buildGrass() {
+    const segs = 4;
+    const positions = [];
+    const hFracs = [];
+    const normals = [];
+    const indices = [];
+    for (let s = 0; s < segs; s++) {
+      const t = s / segs;
+      const w = 0.068 * (1 - t * 0.85);
+      const y = t;
+      const curveZ = t * t * 0.14;
+      positions.push(-w, y, curveZ, w, y, curveZ);
+      hFracs.push(t, t);
+      normals.push(0, 0.35, 0.94, 0, 0.35, 0.94);
+      if (s < segs - 1) {
+        const b = s * 2;
+        indices.push(b, b + 1, b + 2, b + 1, b + 3, b + 2);
+      }
+    }
+    positions.push(0, 1.0, 0.17);
+    hFracs.push(1.0);
+    normals.push(0, 0.4, 0.92);
+    const bLast = (segs - 1) * 2;
+    indices.push(bLast, bLast + 1, bLast + 2);
+
+    const instGeo = new THREE.InstancedBufferGeometry();
+    instGeo.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
+    instGeo.setAttribute('normal', new THREE.Float32BufferAttribute(normals, 3));
+    instGeo.setAttribute('aFrac', new THREE.Float32BufferAttribute(hFracs, 1));
+    instGeo.setIndex(indices);
+
+    const N = COUNTS.grassBlades;
+    const aOffset = new Float32Array(N * 4);
+    const aProps = new Float32Array(N * 4);
+
+    for (let i = 0; i < N; i++) {
+      let gx, gz;
+      if (i < N * 0.52) {
+        const ang = rng() * Math.PI * 2;
+        const rad = Math.sqrt(rng()) * 88.2;
+        gx = Math.cos(ang) * rad;
+        gz = Math.sin(ang) * rad;
+      } else {
+        gx = lerp(-54, 48, rng());
+        gz = lerp(-34, 34, rng());
+        const r = Math.hypot(gx, gz);
+        if (r > 88.2) {
+          const s = 87.5 / r;
+          gx *= s;
+          gz *= s;
+        }
+      }
+      const gy = terrainHeight(gx, gz);
+      const base = i * 4;
+      aOffset[base] = gx;
+      aOffset[base + 1] = gy;
+      aOffset[base + 2] = gz;
+      aOffset[base + 3] = rng() * Math.PI * 2;
+
+      aProps[base] = lerp(0.40, 0.90, rng());
+      aProps[base + 1] = lerp(0.12, 0.36, rng());
+      aProps[base + 2] = rng() * Math.PI * 2;
+      aProps[base + 3] = rng();
+    }
+
+    instGeo.setAttribute('aOffset', new THREE.InstancedBufferAttribute(aOffset, 4));
+    instGeo.setAttribute('aProps', new THREE.InstancedBufferAttribute(aProps, 4));
+    instGeo.instanceCount = N;
+
+    const grassMat = new THREE.ShaderMaterial({
+      side: THREE.DoubleSide,
+      toneMapped: false,
+      uniforms: grassUniforms,
+      vertexShader: `
+        attribute float aFrac;
+        attribute vec4 aOffset;
+        attribute vec4 aProps;
+
+        uniform float uMotionTime;
+        uniform vec4 uShockwaves[${MAX_SHOCKWAVES}];
+        uniform vec4 uSweepState;
+        uniform vec4 uBoulderLands[${BOULDER_LAND_SLOTS}];
+
+        varying float vFrac;
+        varying float vTint;
+        varying vec3 vWorldPos;
+        varying vec3 vNormalW;
+
+        void main() {
+          float yaw = aOffset.w;
+          float height = aProps.x;
+          float lean = aProps.y;
+          float phase = aProps.z;
+
+          vec3 local = position;
+          local.y *= height;
+          local.z *= height;
+
+          float c = cos(yaw);
+          float s = sin(yaw);
+          vec3 rotated = vec3(local.x * c - local.z * s, local.y, local.x * s + local.z * c);
+          vec3 rotNorm = normalize(vec3(normal.x * c - normal.z * s, normal.y, normal.x * s + normal.z * c));
+
+          vec3 root = aOffset.xyz;
+          float bendW = aFrac * aFrac;
+
+          // Travelling wind sway along +X
+          float gust = sin(root.x * 0.13 - uMotionTime * 3.1 + root.z * 0.07) * 0.55
+                     + sin(root.x * 0.34 - uMotionTime * 5.8 + phase) * 0.30
+                     + 0.45;
+          float windPush = (lean + max(0.0, gust) * 0.42) * height;
+          rotated.x += windPush * bendW;
+          rotated.y -= windPush * 0.22 * bendW;
+
+          // Shockwave radial pushes (30 m/s ring, 4 m front, 1.5 s recovery)
+          vec2 shockPush = vec2(0.0);
+          float flatten = 0.0;
+          for (int i = 0; i < ${MAX_SHOCKWAVES}; i++) {
+            vec4 sw = uShockwaves[i];
+            float age = uMotionTime - sw.z;
+            if (age >= 0.0 && age < 5.0 && sw.w > 0.01) {
+              vec2 dXZ = root.xz - sw.xy;
+              float dist = length(dXZ);
+              float hitTime = dist / 30.0;
+              if (age >= hitTime) {
+                float sinceHit = age - hitTime;
+                float frontEnv = clamp(sinceHit / (4.0 / 30.0), 0.0, 1.0);
+                float recEnv = max(0.0, 1.0 - max(0.0, sinceHit - 0.10) / 1.5);
+                float maxRange = 18.0 + sw.w * 42.0;
+                float distFade = clamp(1.0 - dist / maxRange, 0.0, 1.0);
+                float amt = frontEnv * recEnv * distFade * sw.w;
+                if (amt > 0.001) {
+                  vec2 dir = dist > 0.05 ? dXZ / dist : vec2(1.0, 0.0);
+                  shockPush += dir * amt;
+                  flatten = max(flatten, amt);
+                }
+              }
+            }
+          }
+
+          // Left-arm sweep flattening path (18.500 - 19.300, unwrapped clockwise +1.03 -> +3.93 rad)
+          if (uMotionTime >= 18.5 && uMotionTime <= 21.0) {
+            vec2 swPt = root.xz - uSweepState.xy;
+            float rArm = length(swPt);
+            if (rArm > 4.0 && rArm < 18.5) {
+              float ang = atan(swPt.y, swPt.x);
+              float angUnwrapped = ang < -0.5 ? ang + 6.283185 : ang;
+              float angNorm = (angUnwrapped - 1.0) / 3.0;
+              if (angNorm >= 0.0 && angNorm <= 1.05) {
+                float passTime = 18.5 + angNorm * 0.8;
+                if (uMotionTime >= passTime) {
+                  float sAge = uMotionTime - passTime;
+                  float sRec = max(0.0, 1.0 - sAge / 1.5);
+                  vec2 sDir = normalize(vec2(-swPt.y, swPt.x) + swPt * 0.35);
+                  shockPush += sDir * sRec * 0.92;
+                  flatten = max(flatten, sRec * 0.95);
+                }
+              }
+            }
+          }
+
+          // Fallen collapse boulders keep grass beneath/around them permanently flattened
+          for (int i = 0; i < ${BOULDER_LAND_SLOTS}; i++) {
+            vec4 bl = uBoulderLands[i];
+            if (uMotionTime >= bl.z && bl.w > 0.1) {
+              vec2 dB = root.xz - bl.xy;
+              float distB = length(dB);
+              if (distB < bl.w * 1.45) {
+                float bAmt = smoothstep(bl.w * 1.45, bl.w * 0.4, distB);
+                vec2 bDir = distB > 0.05 ? dB / distB : vec2(1.0, 0.0);
+                shockPush += bDir * bAmt * 0.95;
+                flatten = max(flatten, bAmt * 0.95);
+              }
+            }
+          }
+
+          if (flatten > 0.001) {
+            float pushLen = length(shockPush);
+            vec2 pDir = pushLen > 1e-4 ? shockPush / pushLen : vec2(1.0, 0.0);
+            float fClamped = clamp(flatten, 0.0, 0.95);
+            rotated.xz += pDir * (aFrac * height * 0.92 * fClamped);
+            rotated.y *= (1.0 - 0.86 * fClamped * aFrac);
+          }
+
+          vec3 worldPos = root + rotated;
+          vFrac = aFrac;
+          vTint = aProps.w;
+          vWorldPos = worldPos;
+          vNormalW = normalize(mix(rotNorm, vec3(0.0, 1.0, 0.0), 0.35 + 0.5 * flatten));
+
+          gl_Position = projectionMatrix * viewMatrix * vec4(worldPos, 1.0);
+        }
+      `,
+      fragmentShader: `
+        uniform float uWetness;
+        uniform float uSkyFlash;
+        uniform vec3 uFogColor;
+        uniform float uFogDensity;
+        uniform vec3 uLightDir;
+        uniform vec3 uArcPos[4];
+        uniform vec4 uArcStrength;
+
+        varying float vFrac;
+        varying float vTint;
+        varying vec3 vWorldPos;
+        varying vec3 vNormalW;
+
+        void main() {
+          vec3 rootCol = mix(vec3(0.025, 0.055, 0.028), vec3(0.038, 0.075, 0.032), vTint);
+          vec3 tipCol = mix(vec3(0.085, 0.165, 0.065), vec3(0.125, 0.215, 0.088), vTint);
+          vec3 albedo = mix(rootCol, tipCol, smoothstep(0.15, 0.95, vFrac));
+          albedo *= mix(1.0, 0.68, uWetness);
+
+          vec3 N = normalize(vNormalW);
+          vec3 V = normalize(cameraPosition - vWorldPos);
+          float ndl = max(dot(N, uLightDir), 0.0);
+          float wrap = max(0.0, dot(N, uLightDir) * 0.5 + 0.5);
+
+          vec3 lit = albedo * (vec3(0.04, 0.055, 0.08) + vec3(0.45, 0.60, 0.85) * (0.28 * wrap + 0.65 * ndl));
+          lit += albedo * vec3(0.48, 0.68, 1.0) * uSkyFlash * 0.85;
+
+          for (int i = 0; i < 4; i++) {
+            float st = i == 0 ? uArcStrength.x : (i == 1 ? uArcStrength.y : (i == 2 ? uArcStrength.z : uArcStrength.w));
+            if (st > 0.01) {
+              vec3 dL = uArcPos[i] - vWorldPos;
+              float d2 = dot(dL, dL);
+              float atten = st / (1.0 + d2 * 0.018);
+              lit += albedo * vec3(0.32, 0.72, 1.35) * atten * 1.4;
+              vec3 H = normalize(normalize(dL) + V);
+              float spec = pow(max(dot(N, H), 1e-4), mix(12.0, 48.0, uWetness));
+              lit += vec3(0.35, 0.75, 1.3) * spec * atten * (0.1 + 0.55 * uWetness);
+            }
+          }
+
+          vec3 Hk = normalize(uLightDir + V);
+          float kSpec = pow(max(dot(N, Hk), 1e-4), mix(10.0, 52.0, uWetness));
+          lit += vec3(0.5, 0.65, 0.9) * kSpec * (0.04 + 0.38 * uWetness) * vFrac;
+
+          float dist = length(cameraPosition - vWorldPos);
+          float fogFactor = 1.0 - exp(-uFogDensity * uFogDensity * dist * dist);
+          lit = mix(lit, uFogColor, clamp(fogFactor, 0.0, 1.0));
+
+          gl_FragColor = vec4(lit, 1.0);
+        }
+      `
+    });
+
+    const grassMesh = new THREE.Mesh(instGeo, grassMat);
+    grassMesh.frustumCulled = false;
+    scene.add(grassMesh);
+  })();
+
+  const rainUniforms = {
+    uMotionTime: { value: 0 },
+    uCamPos: { value: new THREE.Vector3() },
+    uSkyFlash: { value: 0 }
+  };
+  (function buildRain() {
+    const N = COUNTS.rainStreaks;
+    const baseGeo = new THREE.PlaneGeometry(0.018, 1.45);
+    const instGeo = new THREE.InstancedBufferGeometry();
+    instGeo.setAttribute('position', baseGeo.attributes.position);
+    instGeo.setAttribute('uv', baseGeo.attributes.uv);
+    instGeo.setIndex(baseGeo.index);
+
+    const aSeed = new Float32Array(N * 4);
+    for (let i = 0; i < N; i++) {
+      aSeed[i * 4] = rng() * 76 - 38;
+      aSeed[i * 4 + 1] = rng() * 42;
+      aSeed[i * 4 + 2] = rng() * 76 - 38;
+      aSeed[i * 4 + 3] = 0.75 + rng() * 0.6;
+    }
+    instGeo.setAttribute('aSeed', new THREE.InstancedBufferAttribute(aSeed, 4));
+    instGeo.instanceCount = N;
+
+    const rainMat = new THREE.ShaderMaterial({
+      transparent: true,
+      depthWrite: false,
+      blending: THREE.AdditiveBlending,
+      toneMapped: false,
+      uniforms: rainUniforms,
+      vertexShader: `
+        attribute vec4 aSeed;
+        uniform float uMotionTime;
+        uniform vec3 uCamPos;
+        varying vec2 vUv;
+        varying float vVis;
+
+        void main() {
+          vUv = uv;
+          vec3 vel = vec3(14.0, -24.25, 0.0);
+          vec3 box = vec3(76.0, 42.0, 76.0);
+          vec3 minB = vec3(uCamPos.x - 38.0, 0.0, uCamPos.z - 38.0);
+          vec3 rel = mod(aSeed.xyz + vel * uMotionTime - minB, box) + minB;
+
+          vec3 dir = normalize(vel);
+          vec3 toCam = normalize(cameraPosition - rel);
+          vec3 side = normalize(cross(dir, toCam));
+          vec3 worldPos = rel + side * position.x * 1.4 - dir * position.y * aSeed.w;
+
+          float dist = length(rel - cameraPosition);
+          vVis = smoothstep(0.6, 2.2, dist) * (1.0 - smoothstep(26.0, 44.0, dist)) * step(-0.2, worldPos.y);
+          gl_Position = projectionMatrix * viewMatrix * vec4(worldPos, 1.0);
+        }
+      `,
+      fragmentShader: `
+        uniform float uSkyFlash;
+        varying vec2 vUv;
+        varying float vVis;
+        void main() {
+          float fadeY = sin(vUv.y * 3.14159);
+          float alpha = fadeY * vVis * (0.20 + 0.25 * uSkyFlash);
+          gl_FragColor = vec4(vec3(0.55, 0.72, 0.95) * alpha, alpha);
+        }
+      `
+    });
+    const rainMesh = new THREE.Mesh(instGeo, rainMat);
+    rainMesh.frustumCulled = false;
+    scene.add(rainMesh);
+
+    const S = 550;
+    const sBase = new THREE.PlaneGeometry(1, 1);
+    sBase.rotateX(-Math.PI / 2);
+    const sGeo = new THREE.InstancedBufferGeometry();
+    sGeo.setAttribute('position', sBase.attributes.position);
+    sGeo.setAttribute('uv', sBase.attributes.uv);
+    sGeo.setIndex(sBase.index);
+    const sSeed = new Float32Array(S * 4);
+    for (let i = 0; i < S; i++) {
+      sSeed[i * 4] = rng() * 34 - 17;
+      sSeed[i * 4 + 1] = rng() * 34 - 17;
+      sSeed[i * 4 + 2] = rng();
+      sSeed[i * 4 + 3] = 2.6 + rng() * 1.6;
+    }
+    sGeo.setAttribute('aSplash', new THREE.InstancedBufferAttribute(sSeed, 4));
+    sGeo.instanceCount = S;
+
+    const sMat = new THREE.ShaderMaterial({
+      transparent: true,
+      depthWrite: false,
+      blending: THREE.AdditiveBlending,
+      toneMapped: false,
+      uniforms: rainUniforms,
+      vertexShader: `
+        attribute vec4 aSplash;
+        uniform float uMotionTime;
+        uniform vec3 uCamPos;
+        varying vec2 vUv;
+        varying float vPhase;
+
+        void main() {
+          vUv = uv;
+          float cyc = fract(uMotionTime * aSplash.w + aSplash.z);
+          float cellIdx = floor(uMotionTime * aSplash.w + aSplash.z);
+          vec2 jitter = vec2(sin(cellIdx * 12.989 + aSplash.x), cos(cellIdx * 78.233 + aSplash.y)) * 1.5;
+          vec2 minXZ = uCamPos.xz - 17.0;
+          vec2 xz = mod(aSplash.xy + jitter - minXZ, 34.0) + minXZ;
+
+          float r = length(xz);
+          float h = 0.24 * sin(xz.x * 0.055 + 0.4) * cos(xz.y * 0.052 - 0.2)
+                  + 0.16 * sin((xz.x + xz.y) * 0.095 + 1.1)
+                  + 0.11 * cos((xz.x - xz.y) * 0.14 - 0.7);
+          h = clamp(h, -0.55, 0.55);
+          float rad = mix(0.05, 0.34, cyc);
+          vec3 wp = vec3(xz.x + position.x * rad, h + 0.04, xz.y + position.z * rad);
+          vPhase = (1.0 - cyc) * step(r, 89.0);
+          gl_Position = projectionMatrix * viewMatrix * vec4(wp, 1.0);
+        }
+      `,
+      fragmentShader: `
+        varying vec2 vUv;
+        varying float vPhase;
+        void main() {
+          float d = length(vUv - 0.5) * 2.0;
+          float ring = smoothstep(0.65, 0.85, d) * (1.0 - smoothstep(0.85, 1.0, d));
+          float a = ring * vPhase * 0.38;
+          gl_FragColor = vec4(vec3(0.6, 0.78, 1.0) * a, a);
+        }
+      `
+    });
+    const splashMesh = new THREE.Mesh(sGeo, sMat);
+    splashMesh.frustumCulled = false;
+    scene.add(splashMesh);
+  })();
+
+  // =========================================================================
+  // 6. TITAN SKELETON (16 NAMED BONES), IK, BOULDERS, WEAK POINTS, LIGHTNING
+  // =========================================================================
+  const BONE_NAMES = [
+    'pelvis', 'spine', 'chest', 'head',
+    'upperArmL', 'forearmL', 'fistL',
+    'upperArmR', 'forearmR', 'fistR',
+    'thighL', 'shinL', 'footL',
+    'thighR', 'shinR', 'footR'
+  ];
+  const BONE_INDEX = {};
+  BONE_NAMES.forEach((n, i) => { BONE_INDEX[n] = i; });
+
+  const BONE_GROUP = {
+    pelvis: 'pelvis',
+    spine: 'spine',
+    chest: 'chest',
+    head: 'head',
+    upperArmL: 'arms', forearmL: 'arms', fistL: 'arms',
+    upperArmR: 'arms', forearmR: 'arms', fistR: 'arms',
+    thighL: 'legs', shinL: 'legs', footL: 'legs',
+    thighR: 'legs', shinR: 'legs', footR: 'legs'
+  };
+
+  const _vA = new THREE.Vector3();
+  const _vB = new THREE.Vector3();
+  const _vC = new THREE.Vector3();
+  const _vD = new THREE.Vector3();
+  const _qA = new THREE.Quaternion();
+  const _mA = new THREE.Matrix4();
+  const _upY = new THREE.Vector3(0, 1, 0);
+
+  function solveTwoBoneIK(root, target, l1, l2, bendHint, outJoint, outEnd) {
+    _vA.subVectors(target, root);
+    let dist = _vA.length();
+    const minD = Math.abs(l1 - l2) + 0.05;
+    const maxD = (l1 + l2) - 0.05;
+    if (dist < 1e-4) _vA.set(0, -1, 0);
+    else _vA.multiplyScalar(1 / dist);
+    dist = clamp(dist, minD, maxD);
+
+    outEnd.copy(root).addScaledVector(_vA, dist);
+
+    const cosA = clamp((l1 * l1 + dist * dist - l2 * l2) / (2 * l1 * dist), -1, 1);
+    const sinA = Math.sqrt(Math.max(0, 1 - cosA * cosA));
+
+    _vB.copy(bendHint).addScaledVector(_vA, -bendHint.dot(_vA));
+    if (_vB.lengthSq() < 1e-6) _vB.set(0, 0, 1);
+    _vB.normalize();
+
+    outJoint.copy(root)
+      .addScaledVector(_vA, l1 * cosA)
+      .addScaledVector(_vB, l1 * sinA);
+  }
+
+  function quatFromSegment(pStart, pEnd, upRef, outQuat) {
+    const dir = _vC.subVectors(pEnd, pStart);
+    if (dir.lengthSq() < 1e-8) {
+      outQuat.identity();
+      return;
+    }
+    dir.normalize();
+    const xAxis = _vD.crossVectors(upRef, dir);
+    if (xAxis.lengthSq() < 1e-6) {
+      xAxis.set(1, 0, 0).cross(dir);
+    }
+    xAxis.normalize();
+    const zAxis = _vB.crossVectors(xAxis, dir).normalize();
+    _mA.makeBasis(xAxis, dir, zAxis);
+    outQuat.setFromRotationMatrix(_mA);
+  }
+
+  function createPoseState() {
+    return {
+      bones: BONE_NAMES.map(() => ({
+        start: new THREE.Vector3(),
+        end: new THREE.Vector3(),
+        center: new THREE.Vector3(),
+        quat: new THREE.Quaternion(),
+        charge: 1.0,
+        radius: 2.2
+      })),
+      weakPoints: [new THREE.Vector3(), new THREE.Vector3(), new THREE.Vector3()],
+      pelvisGround: new THREE.Vector3(),
+      chestPartAmount: 0
+    };
+  }
+
+  function evaluateTitanPose(t, outPose) {
+    let px = 40;
+    let pz = 0;
+    let py = 17.8;
+    let torsoPitch = 0.06;
+    let torsoYaw = 0;
+    let torsoRoll = 0;
+    let headPitch = 0.08;
+
+    const footPosL = new THREE.Vector3();
+    const footPosR = new THREE.Vector3();
+    const stepHeight = 2.6;
+
+    if (t < 6.0) {
+      px = 40 - 4 * t;
+      const ffTimes = [1.0, 2.5, 4.0, 5.5];
+      let sink = 0;
+      let swayZ = 0;
+      for (let i = 0; i < ffTimes.length; i++) {
+        const dt = t - ffTimes[i];
+        if (dt >= 0 && dt < 0.7) {
+          const p = Math.sin(Math.min(1, dt / 0.25) * Math.PI * 0.5) * Math.exp(-dt * 3.8);
+          sink += p * 1.45;
+          swayZ += (i % 2 === 0 ? 1 : -1) * p * 1.1;
+        }
+      }
+      py = 17.6 - sink;
+      pz = swayZ + 0.55 * Math.sin(t * Math.PI / 1.5);
+      torsoYaw = 0.18 * Math.sin(t * Math.PI / 1.5 - 0.2);
+      torsoRoll = 0.08 * Math.sin(t * Math.PI / 1.5);
+
+      if (t < 1.0) {
+        const u = easeInOutCubic(t / 1.0);
+        footPosL.set(lerp(42.5, 33.5, u), Math.sin(u * Math.PI) * stepHeight, 4.1);
+      } else if (t < 2.6) {
+        footPosL.set(33.5, 0, 4.1);
+      } else if (t < 4.0) {
+        const u = easeInOutCubic((t - 2.6) / 1.4);
+        footPosL.set(lerp(33.5, 21.5, u), Math.sin(u * Math.PI) * stepHeight, 4.1);
+      } else if (t < 5.5) {
+        footPosL.set(21.5, 0, 4.1);
+      } else {
+        const u = easeInOutCubic((t - 5.5) / 0.5);
+        footPosL.set(lerp(21.5, 16.2, u), Math.sin(u * Math.PI) * 1.4, 4.2);
+      }
+
+      if (t < 1.1) {
+        footPosR.set(37.5, 0, -4.1);
+      } else if (t < 2.5) {
+        const u = easeInOutCubic((t - 1.1) / 1.4);
+        footPosR.set(lerp(37.5, 27.5, u), Math.sin(u * Math.PI) * stepHeight, -4.1);
+      } else if (t < 4.1) {
+        footPosR.set(27.5, 0, -4.1);
+      } else if (t < 5.5) {
+        const u = easeInOutCubic((t - 4.1) / 1.4);
+        footPosR.set(lerp(27.5, 15.5, u), Math.sin(u * Math.PI) * stepHeight, -4.2);
+      } else {
+        footPosR.set(15.5, 0, -4.2);
+      }
+    } else {
+      px = 16.0;
+      footPosL.set(16.2, 0, 4.2);
+      footPosR.set(15.5, 0, -4.2);
+
+      if (t < 7.5) {
+        const u = smoothstep(6.0, 7.2, t);
+        const slam = smoothstep(7.2, 7.5, t);
+        py = lerp(17.6, 18.4, u) - slam * 5.8;
+        torsoPitch = lerp(0.06, -0.20, u) + slam * 0.92;
+        torsoYaw = lerp(0, -0.45, u) + slam * 0.85;
+      } else if (t < 10.5) {
+        const rec = smoothstep(7.5, 8.0, t) * 0.6;
+        py = 12.6 + rec;
+        torsoPitch = 0.74 - rec * 0.05;
+        torsoYaw = 0.40;
+      } else if (t < 12.0) {
+        const u = easeInOutCubic((t - 10.5) / 1.5);
+        py = lerp(13.2, 17.8, u);
+        torsoPitch = lerp(0.70, -0.05, u);
+        torsoYaw = lerp(0.40, -0.22, u);
+      } else if (t < 16.0) {
+        const drop = smoothstep(12.0, 13.0, t);
+        const rise = smoothstep(15.0, 16.0, t);
+        const k = drop * (1 - rise);
+        px = 16.0 + k * 2.4;
+        py = lerp(17.8, 10.8, k);
+        torsoPitch = lerp(0.05, 0.42, k) - smoothstep(12.0, 12.4, t) * (1 - smoothstep(12.4, 13.0, t)) * 0.35;
+        headPitch = 0.08 + k * 0.55;
+        footPosL.set(16.2 + k * 5.5, k * 1.4, 4.2);
+      } else if (t < 19.3) {
+        const wu = smoothstep(17.0, 18.5, t);
+        const sw = smoothstep(18.5, 19.3, t);
+        py = 17.6 - wu * 1.6 - Math.sin(sw * Math.PI) * 3.8;
+        torsoPitch = 0.06 + wu * 0.15 + Math.sin(sw * Math.PI) * 0.42;
+        torsoYaw = wu * 0.72 - sw * 1.45;
+      } else if (t < 22.5) {
+        const rec = smoothstep(19.3, 21.0, t);
+        py = lerp(16.0, 17.8, rec);
+        torsoPitch = lerp(0.25, 0.08, rec);
+        torsoYaw = lerp(-0.73, 0.0, rec);
+      } else if (t < 29.7) {
+        const skyHit = smoothstep(25.0, 25.25, t) * (1 - smoothstep(25.35, 26.2, t));
+        const s1 = smoothstep(27.0, 27.15, t) * (1 - smoothstep(27.2, 27.8, t));
+        const s2 = smoothstep(29.5, 29.7, t);
+        py = 17.8 - skyHit * 0.6 - s1 * 0.5 - s2 * 0.8;
+        torsoPitch = 0.08 - skyHit * 0.25 + s1 * 0.18 - s2 * 0.22;
+        headPitch = 0.08 - skyHit * 0.48;
+        torsoYaw = 0.05 * Math.sin(t * 1.8);
+      } else {
+        const slump = smoothstep(29.7, 32.6, t);
+        px = 16.0 + slump * 2.8;
+        py = 17.0 - slump * 5.2;
+        torsoPitch = -0.14 + slump * 0.68;
+        headPitch = 0.2 + slump * 0.5;
+      }
+    }
+
+    footPosL.y += terrainHeight(footPosL.x, footPosL.z) + 0.55;
+    footPosR.y += terrainHeight(footPosR.x, footPosR.z) + 0.55;
+    outPose.pelvisGround.set(px, terrainHeight(px, pz), pz);
+
+    const pelvisPos = new THREE.Vector3(px, terrainHeight(px, pz) + py, pz);
+    const spineStart = pelvisPos.clone().add(new THREE.Vector3(0, 1.2, 0));
+
+    const torsoEuler = new THREE.Euler(torsoRoll, torsoYaw, torsoPitch, 'YXZ');
+    const torsoQuat = new THREE.Quaternion().setFromEuler(torsoEuler);
+    const fwdDir = new THREE.Vector3(-1, 0, 0).applyQuaternion(torsoQuat).normalize();
+    const upDir = new THREE.Vector3(0, 1, 0).applyQuaternion(torsoQuat).normalize();
+    const leftDir = new THREE.Vector3(0, 0, 1).applyQuaternion(torsoQuat).normalize();
+
+    const spineEnd = spineStart.clone().addScaledVector(upDir, 4.6);
+    const chestStart = spineEnd.clone();
+    const chestEnd = chestStart.clone().addScaledVector(upDir, 6.2);
+    const neckPos = chestEnd.clone().addScaledVector(upDir, 1.0);
+    const headEnd = neckPos.clone().addScaledVector(
+      new THREE.Vector3(-Math.sin(headPitch), Math.cos(headPitch), 0).applyQuaternion(torsoQuat).normalize(),
+      4.5
+    );
+
+    const shoulderL = chestStart.clone().addScaledVector(upDir, 4.8).addScaledVector(leftDir, 8.0);
+    const shoulderR = chestStart.clone().addScaledVector(upDir, 4.8).addScaledVector(leftDir, -8.0);
+    const hipL = pelvisPos.clone().addScaledVector(leftDir, 3.6).add(new THREE.Vector3(0, -0.5, 0));
+    const hipR = pelvisPos.clone().addScaledVector(leftDir, -3.6).add(new THREE.Vector3(0, -0.5, 0));
+
+    const handTargetL = new THREE.Vector3();
+    const handTargetR = new THREE.Vector3();
+
+    if (t < 6.0) {
+      const phaseL = Math.sin((t - 0.25) * Math.PI / 1.5);
+      const phaseR = -phaseL;
+      handTargetL.copy(shoulderL).addScaledVector(upDir, -14.2).addScaledVector(fwdDir, 3.8 * phaseL).addScaledVector(leftDir, 1.6);
+      handTargetR.copy(shoulderR).addScaledVector(upDir, -14.2).addScaledVector(fwdDir, 3.8 * phaseR).addScaledVector(leftDir, -1.6);
+    } else if (t < 7.5) {
+      const u = smoothstep(6.0, 7.2, t);
+      const slam = smoothstep(7.2, 7.5, t);
+      const raised = shoulderR.clone().add(new THREE.Vector3(3.0, 12.5, -2.5));
+      const restR = shoulderR.clone().addScaledVector(upDir, -14.0).addScaledVector(fwdDir, 2.0);
+      const slamEnd = SLAM_TARGET.clone().add(new THREE.Vector3(0, 1.4, 0));
+      if (t < 7.2) handTargetR.lerpVectors(restR, raised, u);
+      else handTargetR.lerpVectors(raised, slamEnd, slam * slam);
+
+      handTargetL.copy(shoulderL).addScaledVector(upDir, -13.5).addScaledVector(fwdDir, -2.5).addScaledVector(leftDir, 2.5);
+    } else if (t < 10.5) {
+      handTargetR.copy(SLAM_TARGET).add(new THREE.Vector3(0, 1.4, 0));
+      handTargetL.copy(shoulderL).addScaledVector(upDir, -12.5).addScaledVector(fwdDir, -2.0).addScaledVector(leftDir, 2.5);
+    } else if (t < 12.0) {
+      const u = easeInOutCubic((t - 10.5) / 1.5);
+      const planted = SLAM_TARGET.clone().add(new THREE.Vector3(0, 1.4, 0));
+      const lifted = new THREE.Vector3(12.5, 29.0, -10.5);
+      handTargetR.lerpVectors(planted, lifted, u);
+      handTargetL.copy(shoulderL).addScaledVector(upDir, -13.5).addScaledVector(leftDir, 2.0);
+    } else if (t < 16.0) {
+      const k = smoothstep(12.0, 13.0, t) * (1 - smoothstep(15.0, 16.0, t));
+      handTargetL.copy(shoulderL).add(new THREE.Vector3(-3.0, -13.5 + k * 2.0, 2.5));
+      handTargetR.copy(shoulderR).add(new THREE.Vector3(-2.5, -13.0 + k * 2.0, -2.5));
+    } else if (t < 19.3) {
+      const wu = smoothstep(17.0, 18.5, t);
+      const sw = smoothstep(18.5, 19.3, t);
+      const restL = shoulderL.clone().add(new THREE.Vector3(-2.0, -14.0, 2.2));
+      const cockedL = new THREE.Vector3(24.0, 5.5, 13.5);
+      if (t < 18.5) {
+        handTargetL.lerpVectors(restL, cockedL, wu);
+      } else {
+        const ang = lerp(1.15, -2.15, sw);
+        const rad = 14.5;
+        handTargetL.set(16.0 - Math.sin(ang + 1.2) * rad * 0.85, 2.0 + Math.pow(Math.abs(sw - 0.55) * 2, 2) * 2.5, Math.sin(ang) * rad);
+        if (t >= 18.8 && t <= 19.2) {
+          const k = 1 - Math.abs(t - 19.0) / 0.2;
+          handTargetL.lerp(new THREE.Vector3(5.5, 1.9, 1.0), k * 0.9);
+        }
+      }
+      handTargetR.copy(shoulderR).addScaledVector(upDir, -13.5).addScaledVector(fwdDir, -3.0 * wu).addScaledVector(leftDir, -2.2);
+    } else if (t < 22.5) {
+      const rec = smoothstep(19.3, 21.5, t);
+      const endSweep = new THREE.Vector3(4.0, 4.5, -12.0);
+      const guardL = shoulderL.clone().add(new THREE.Vector3(-3.0, -12.0, 2.5));
+      handTargetL.lerpVectors(endSweep, guardL, rec);
+      handTargetR.copy(shoulderR).add(new THREE.Vector3(-3.0, -12.5, -2.5));
+    } else {
+      const flinch = Math.sin(t * 2.2) * 1.4;
+      handTargetL.copy(shoulderL).add(new THREE.Vector3(-4.5, -10.5 + flinch, 3.0));
+      handTargetR.copy(shoulderR).add(new THREE.Vector3(-4.5, -10.5 - flinch, -3.0));
+    }
+
+    const kneeL = new THREE.Vector3();
+    const ankleL = new THREE.Vector3();
+    const kneeR = new THREE.Vector3();
+    const ankleR = new THREE.Vector3();
+    const kneeHintL = fwdDir.clone().addScaledVector(leftDir, 0.25);
+    const kneeHintR = fwdDir.clone().addScaledVector(leftDir, -0.25);
+    solveTwoBoneIK(hipL, footPosL, 8.8, 8.2, kneeHintL, kneeL, ankleL);
+    solveTwoBoneIK(hipR, footPosR, 8.8, 8.2, kneeHintR, kneeR, ankleR);
+
+    if (t >= 12.2 && t < 15.8) {
+      const k = smoothstep(12.2, 13.0, t) * (1 - smoothstep(15.0, 15.8, t));
+      const groundKnee = new THREE.Vector3(13.5, terrainHeight(13.5, 4.2) + 1.2, 4.2);
+      kneeL.lerp(groundKnee, k * 0.9);
+    }
+
+    const elbowL = new THREE.Vector3();
+    const wristL = new THREE.Vector3();
+    const elbowR = new THREE.Vector3();
+    const wristR = new THREE.Vector3();
+    const armHintL = new THREE.Vector3(0.8, 0.2, 0.7).applyQuaternion(torsoQuat);
+    const armHintR = new THREE.Vector3(0.8, 0.2, -0.7).applyQuaternion(torsoQuat);
+    solveTwoBoneIK(shoulderL, handTargetL, 7.5, 7.2, armHintL, elbowL, wristL);
+    solveTwoBoneIK(shoulderR, handTargetR, 7.5, 7.2, armHintR, elbowR, wristR);
+
+    const fistEndL = wristL.clone().addScaledVector(_vA.subVectors(wristL, elbowL).normalize(), 2.4);
+    const fistEndR = wristR.clone().addScaledVector(_vA.subVectors(wristR, elbowR).normalize(), 2.4);
+    const footTipL = ankleL.clone().add(new THREE.Vector3(-2.6, -0.35, 0));
+    const footTipR = ankleR.clone().add(new THREE.Vector3(-2.6, -0.35, 0));
+
+    function setBone(idx, p0, p1, upHint, radius, charge) {
+      const b = outPose.bones[idx];
+      b.start.copy(p0);
+      b.end.copy(p1);
+      b.center.lerpVectors(p0, p1, 0.5);
+      quatFromSegment(p0, p1, upHint, b.quat);
+      b.radius = radius;
+      b.charge = charge;
+    }
+
+    let baseCharge = 1.0;
+    if (t >= 12.0 && t < 16.0) {
+      baseCharge = lerp(0.4, 1.0, smoothstep(15.0, 16.0, t));
+    }
+    const rightArmCharge = (t >= 6.0 && t <= 7.8) ? 1.6 : baseCharge;
+    const leftArmCharge = (t >= 17.0 && t <= 19.5) ? 1.6 : baseCharge;
+
+    function boneCharge(name, nominal) {
+      const rel = COLLAPSE_GROUPS[BONE_GROUP[name]];
+      return t >= rel ? 0.0 : nominal;
+    }
+
+    setBone(BONE_INDEX.pelvis, pelvisPos.clone().add(new THREE.Vector3(0, -1.2, 0)), pelvisPos.clone().add(new THREE.Vector3(0, 1.4, 0)), fwdDir, 3.6, boneCharge('pelvis', baseCharge));
+    setBone(BONE_INDEX.spine, spineStart, spineEnd, fwdDir, 3.3, boneCharge('spine', baseCharge));
+    setBone(BONE_INDEX.chest, chestStart, chestEnd, fwdDir, 4.4, boneCharge('chest', baseCharge));
+    setBone(BONE_INDEX.head, neckPos, headEnd, fwdDir, 2.4, boneCharge('head', baseCharge));
+
+    setBone(BONE_INDEX.upperArmL, shoulderL, elbowL, upDir, 2.1, boneCharge('upperArmL', leftArmCharge));
+    setBone(BONE_INDEX.forearmL, elbowL, wristL, upDir, 1.9, boneCharge('forearmL', leftArmCharge));
+    setBone(BONE_INDEX.fistL, wristL, fistEndL, upDir, 2.2, boneCharge('fistL', leftArmCharge));
+
+    setBone(BONE_INDEX.upperArmR, shoulderR, elbowR, upDir, 2.1, boneCharge('upperArmR', rightArmCharge));
+    setBone(BONE_INDEX.forearmR, elbowR, wristR, upDir, 1.9, boneCharge('forearmR', rightArmCharge));
+    setBone(BONE_INDEX.fistR, wristR, fistEndR, upDir, 2.2, boneCharge('fistR', rightArmCharge));
+
+    setBone(BONE_INDEX.thighL, hipL, kneeL, fwdDir, 2.5, boneCharge('thighL', baseCharge));
+    setBone(BONE_INDEX.shinL, kneeL, ankleL, fwdDir, 2.0, boneCharge('shinL', baseCharge));
+    setBone(BONE_INDEX.footL, ankleL, footTipL, upDir, 1.8, boneCharge('footL', baseCharge));
+
+    setBone(BONE_INDEX.thighR, hipR, kneeR, fwdDir, 2.5, boneCharge('thighR', baseCharge));
+    setBone(BONE_INDEX.shinR, kneeR, ankleR, fwdDir, 2.0, boneCharge('shinR', baseCharge));
+    setBone(BONE_INDEX.footR, ankleR, footTipR, upDir, 1.8, boneCharge('footR', baseCharge));
+
+    outPose.weakPoints[0].copy(kneeL).addScaledVector(fwdDir, 1.15).addScaledVector(leftDir, 1.05);
+    outPose.weakPoints[1].copy(shoulderR).addScaledVector(fwdDir, 1.25).addScaledVector(upDir, 1.05).addScaledVector(leftDir, -0.9);
+    outPose.weakPoints[2].copy(chestStart).addScaledVector(upDir, 3.2).addScaledVector(fwdDir, 2.4);
+
+    outPose.chestPartAmount = smoothstep(25.0, 25.45, t);
+  }
+
+  const titanPose = createPoseState();
+  const titanPosePrev = createPoseState();
+
+  const wpGroup = new THREE.Group();
+  scene.add(wpGroup);
+  const wpGeo = new THREE.SphereGeometry(0.6, 20, 16);
+  const wpMaterials = [0, 1, 2].map(() => new THREE.MeshStandardMaterial({
+    color: 0xffaa22,
+    emissive: 0xff8800,
+    emissiveIntensity: 3.2,
+    roughness: 0.3,
+    metalness: 0.1
+  }));
+  const wpMeshes = wpMaterials.map((mat) => {
+    const m = new THREE.Mesh(wpGeo, mat);
+    wpGroup.add(m);
+    return m;
+  });
+  const wpLights = [0, 1, 2].map(() => {
+    const l = new THREE.PointLight(0xff9922, 1.8, 12, 1.8);
+    scene.add(l);
+    return l;
+  });
+
+  const { map: boulderAlbedoMap, emissiveMap: boulderOreMap } = createBoulderTextures();
+
+  function createBoulderMaterial() {
+    const mat = new THREE.MeshStandardMaterial({
+      map: boulderAlbedoMap,
+      emissiveMap: boulderOreMap,
+      emissive: new THREE.Color(0x2884ff),
+      emissiveIntensity: 1.0,
+      color: 0xffffff,
+      roughness: 0.9,
+      metalness: 0.08,
+      envMapIntensity: 0.3
+    });
+    mat.onBeforeCompile = (shader) => {
+      shader.vertexShader = shader.vertexShader
+        .replace('#include <common>', '#include <common>\nattribute float aOreGlow;\nvarying float vOreGlow;')
+        .replace('#include <begin_vertex>', '#include <begin_vertex>\nvOreGlow = aOreGlow;');
+      shader.fragmentShader = shader.fragmentShader
+        .replace('#include <common>', '#include <common>\nvarying float vOreGlow;')
+        .replace('#include <emissivemap_fragment>', '#include <emissivemap_fragment>\ntotalEmissiveRadiance *= vOreGlow;');
+    };
+    return mat;
+  }
+
+  function makeIrregularRockGeo(seedIdx) {
+    const gRng = mulberry32(4200 + seedIdx * 97);
+    const geo = new THREE.IcosahedronGeometry(0.5, 1);
+    const pos = geo.attributes.position;
+    const dirs = [];
+    for (let k = 0; k < 6; k++) {
+      dirs.push(new THREE.Vector3(gRng() * 2 - 1, gRng() * 2 - 1, gRng() * 2 - 1).normalize());
+    }
+    for (let i = 0; i < pos.count; i++) {
+      const v = new THREE.Vector3(pos.getX(i), pos.getY(i), pos.getZ(i));
+      const n = v.clone().normalize();
+      let disp = 0.85;
+      for (let k = 0; k < dirs.length; k++) {
+        disp += 0.16 * Math.abs(n.dot(dirs[k]));
+      }
+      v.multiplyScalar(disp);
+      v.y *= 0.88;
+      pos.setXYZ(i, v.x, v.y, v.z);
+    }
+    geo.computeVertexNormals();
+    return geo;
+  }
+
+  const boulderVariants = [0, 1, 2, 3].map((v) => {
+    const geo = makeIrregularRockGeo(v);
+    const oreAttr = new THREE.InstancedBufferAttribute(new Float32Array(36).fill(1.0), 1);
+    geo.setAttribute('aOreGlow', oreAttr);
+    const mat = createBoulderMaterial();
+    const mesh = new THREE.InstancedMesh(geo, mat, 36);
+    mesh.castShadow = true;
+    mesh.receiveShadow = true;
+    mesh.frustumCulled = false;
+    scene.add(mesh);
+    return { mesh, mat, oreAttr, count: 0 };
+  });
+
+  const BONE_BOULDER_COUNTS = {
+    pelvis: 11, spine: 10, chest: 12, head: 8,
+    upperArmL: 8, forearmL: 8, fistL: 8,
+    upperArmR: 8, forearmR: 8, fistR: 8,
+    thighL: 10, shinL: 10, footL: 7,
+    thighR: 10, shinR: 10, footR: 8
+  };
+
+  const boulders = [];
+  const restPose = createPoseState();
+  evaluateTitanPose(0, restPose);
+
+  (function initBoulders() {
+    let idx = 0;
+    const coverOffsets = [
+      new THREE.Vector3(-3.35, 0.15, 0.0),
+      new THREE.Vector3(-2.75, 1.35, -1.25),
+      new THREE.Vector3(-2.75, 1.35, 1.25),
+      new THREE.Vector3(-2.75, -1.15, -1.25),
+      new THREE.Vector3(-2.75, -1.15, 1.25)
+    ];
+    for (let bi = 0; bi < BONE_NAMES.length; bi++) {
+      const name = BONE_NAMES[bi];
+      const count = BONE_BOULDER_COUNTS[name];
+      const bone = restPose.bones[bi];
+      const boneLen = bone.start.distanceTo(bone.end);
+      const localPlaced = [];
+
+      for (let k = 0; k < count; k++) {
+        const variantIdx = idx % 4;
+        const slotIdx = boulderVariants[variantIdx].count++;
+        const isChestCover = (name === 'chest' && k < 5);
+
+        const baseScale = isChestCover
+          ? (k === 0 ? 2.15 : lerp(1.65, 2.05, rng()))
+          : (name === 'pelvis' || name === 'chest' || name === 'spine' || name === 'thighL' || name === 'thighR')
+            ? lerp(1.5, 3.4, rng())
+            : lerp(1.1, 2.5, rng());
+        const sx = baseScale * lerp(0.85, 1.20, rng());
+        const sy = baseScale * lerp(0.80, 1.15, rng());
+        const sz = baseScale * lerp(0.85, 1.20, rng());
+        const effRadius = Math.max(sx, sy, sz) * 0.50;
+
+        const localPos = new THREE.Vector3();
+        if (isChestCover) {
+          localPos.copy(coverOffsets[k]).applyQuaternion(bone.quat.clone().invert());
+        } else {
+          for (let attempt = 0; attempt < 60; attempt++) {
+            const ang = (k / count) * Math.PI * 2 + rng() * 0.9;
+            const along = lerp(-boneLen * 0.42, boneLen * 0.42, (k + rng() * 0.7) / count);
+            const radial = bone.radius * lerp(0.65, 1.25, rng());
+            localPos.set(Math.cos(ang) * radial, along, Math.sin(ang) * radial);
+            if (name === 'chest' && localPos.z < -0.5) localPos.z = Math.abs(localPos.z);
+
+            let ok = true;
+            for (let j = 0; j < localPlaced.length; j++) {
+              const other = localPlaced[j];
+              if (localPos.distanceTo(other.localPos) < effRadius + other.effRadius + 0.36) {
+                ok = false;
+                break;
+              }
+            }
+            if (ok) break;
+          }
+        }
+        localPlaced.push({ localPos: localPos.clone(), effRadius });
+
+        const quat = new THREE.Quaternion().setFromEuler(
+          new THREE.Euler(rng() * Math.PI * 2, rng() * Math.PI * 2, rng() * Math.PI * 2)
+        );
+        const rotAxis = new THREE.Vector3(rng() * 2 - 1, rng() * 2 - 1, rng() * 2 - 1).normalize();
+        const partDir = isChestCover
+          ? new THREE.Vector3(k === 0 ? 1.0 : (localPos.x >= 0 ? 1 : -1), k === 0 ? 0.65 : localPos.y * 0.45 + 0.15, 0).normalize()
+          : null;
+
+        boulders.push({
+          idx,
+          variantIdx,
+          slotIdx,
+          boneIndex: bi,
+          boneName: name,
+          releaseTime: COLLAPSE_GROUPS[BONE_GROUP[name]],
+          localPos,
+          scale: new THREE.Vector3(sx, sy, sz),
+          effRadius,
+          baseQuat: quat,
+          rotAxis,
+          rotSpeed: lerp(0.15, 0.45, rng()),
+          driftFreq: lerp(0.8, 1.7, rng()),
+          driftPhase: rng() * Math.PI * 2,
+          isChestCover,
+          partDir,
+          relPos: new THREE.Vector3(),
+          relVel: new THREE.Vector3(),
+          relQuat: new THREE.Quaternion(),
+          landTime: 999,
+          landPos: new THREE.Vector3()
+        });
+        idx++;
+      }
+    }
+
+    // Global relaxation pass in rest pose so no boulder ever touches another across bones
+    const wpA = new THREE.Vector3();
+    const wpB = new THREE.Vector3();
+    const diff = new THREE.Vector3();
+    for (let iter = 0; iter < 18; iter++) {
+      let moved = false;
+      for (let i = 0; i < boulders.length; i++) {
+        const bi = boulders[i];
+        const bBone = restPose.bones[bi.boneIndex];
+        wpA.copy(bi.localPos).applyQuaternion(bBone.quat).add(bBone.center);
+        for (let j = i + 1; j < boulders.length; j++) {
+          const bj = boulders[j];
+          const jBone = restPose.bones[bj.boneIndex];
+          wpB.copy(bj.localPos).applyQuaternion(jBone.quat).add(jBone.center);
+          diff.subVectors(wpB, wpA);
+          const dist = diff.length();
+          const minDist = bi.effRadius + bj.effRadius + 0.36;
+          if (dist < minDist) {
+            moved = true;
+            if (dist < 1e-4) diff.set(0, 1, 0);
+            else diff.multiplyScalar(1 / dist);
+            const push = (minDist - dist) * 0.55;
+            if (!bi.isChestCover) {
+              const locDelta = diff.clone().multiplyScalar(-push).applyQuaternion(bBone.quat.clone().invert());
+              bi.localPos.add(locDelta);
+              wpA.addScaledVector(diff, -push);
+            }
+            if (!bj.isChestCover) {
+              const locDelta = diff.clone().multiplyScalar(push).applyQuaternion(jBone.quat.clone().invert());
+              bj.localPos.add(locDelta);
+            }
+          }
+        }
+      }
+      if (!moved) break;
+    }
+  })();
+
+  function evalBoulderTransformAt(b, pose, t, outPos, outQuat) {
+    const bone = pose.bones[b.boneIndex];
+    const lp = _vA.copy(b.localPos);
+    const df = b.driftPhase + t * b.driftFreq;
+    lp.x += Math.sin(df) * 0.08;
+    lp.y += Math.cos(df * 0.9) * 0.08;
+    lp.z += Math.sin(df * 1.15 + 1.0) * 0.08;
+
+    if (b.isChestCover && pose.chestPartAmount > 0) {
+      lp.addScaledVector(b.partDir, pose.chestPartAmount * 3.1);
+    }
+
+    outPos.copy(lp).applyQuaternion(bone.quat).add(bone.center);
+    _qA.setFromAxisAngle(b.rotAxis, t * b.rotSpeed);
+    outQuat.copy(bone.quat).multiply(b.baseQuat).multiply(_qA);
+  }
+
+  const collapseCachePoses = {};
+  (function precomputeCollapseTrajectories() {
+    const uniqueRelTimes = [...new Set(Object.values(COLLAPSE_GROUPS))];
+    const dtVel = 0.02;
+    for (const tr of uniqueRelTimes) {
+      const p0 = createPoseState();
+      const p1 = createPoseState();
+      evaluateTitanPose(tr, p0);
+      evaluateTitanPose(tr - dtVel, p1);
+      collapseCachePoses[tr] = { p0, p1 };
+    }
+
+    const pos0 = new THREE.Vector3();
+    const posPrev = new THREE.Vector3();
+    const q0 = new THREE.Quaternion();
+    const qDummy = new THREE.Quaternion();
+    const g = 9.81;
+    const sortedLandings = [];
+
+    for (let i = 0; i < boulders.length; i++) {
+      const b = boulders[i];
+      const tr = b.releaseTime;
+      const { p0, p1 } = collapseCachePoses[tr];
+      evalBoulderTransformAt(b, p0, tr, pos0, q0);
+      evalBoulderTransformAt(b, p1, tr - dtVel, posPrev, qDummy);
+
+      b.relPos.copy(pos0);
+      b.relQuat.copy(q0);
+      b.relVel.subVectors(pos0, posPrev).multiplyScalar(1 / dtVel);
+      const boneCenter = p0.bones[b.boneIndex].center;
+      const outDir = _vB.subVectors(pos0, boneCenter);
+      if (outDir.lengthSq() > 1e-4) outDir.normalize();
+      b.relVel.addScaledVector(outDir, 1.8 + hashInt(i * 19 + 3) * 2.2);
+
+      const groundOffset = b.effRadius * 0.62;
+      const y0 = b.relPos.y;
+      const vy0 = b.relVel.y;
+      let tEst = (vy0 + Math.sqrt(Math.max(0, vy0 * vy0 + 2 * g * Math.max(0.1, y0 - groundOffset)))) / g;
+      for (let iter = 0; iter < 3; iter++) {
+        const lx = b.relPos.x + b.relVel.x * tEst;
+        const lz = b.relPos.z + b.relVel.z * tEst;
+        const gy = terrainHeight(lx, lz) + groundOffset;
+        tEst = (vy0 + Math.sqrt(Math.max(0, vy0 * vy0 + 2 * g * Math.max(0.05, y0 - gy)))) / g;
+      }
+      b.landTime = tr + tEst;
+      b.landPos.set(
+        b.relPos.x + b.relVel.x * tEst,
+        terrainHeight(b.relPos.x + b.relVel.x * tEst, b.relPos.z + b.relVel.z * tEst) + groundOffset,
+        b.relPos.z + b.relVel.z * tEst
+      );
+      sortedLandings.push(b);
+    }
+
+    sortedLandings.sort((a, b) => b.effRadius - a.effRadius);
+    for (let i = 0; i < BOULDER_LAND_SLOTS && i < sortedLandings.length; i++) {
+      const b = sortedLandings[i];
+      boulderLandUniformArray[i].set(b.landPos.x, b.landPos.z, b.landTime, b.effRadius);
+    }
+  })();
+
+  function getCollapseBoulderTransform(b, t, outPos, outQuat) {
+    const dt = t - b.releaseTime;
+    const g = 9.81;
+    if (t < b.landTime) {
+      outPos.set(
+        b.relPos.x + b.relVel.x * dt,
+        b.relPos.y + b.relVel.y * dt - 0.5 * g * dt * dt,
+        b.relPos.z + b.relVel.z * dt
+      );
+      _qA.setFromAxisAngle(b.rotAxis, dt * 1.4);
+      outQuat.copy(b.relQuat).multiply(_qA);
+    } else {
+      const dtB = t - b.landTime;
+      const vyImpact = Math.abs(b.relVel.y - g * (b.landTime - b.releaseTime));
+      const vyBounce = Math.min(4.2, vyImpact * 0.28);
+      const bounceDur = (2 * vyBounce) / g;
+      if (dtB < bounceDur) {
+        const bx = b.landPos.x + b.relVel.x * 0.32 * dtB;
+        const bz = b.landPos.z + b.relVel.z * 0.32 * dtB;
+        const gy = terrainHeight(bx, bz) + b.effRadius * 0.62;
+        outPos.set(bx, gy + vyBounce * dtB - 0.5 * g * dtB * dtB, bz);
+        _qA.setFromAxisAngle(b.rotAxis, (b.landTime - b.releaseTime) * 1.4 + dtB * 0.7);
+        outQuat.copy(b.relQuat).multiply(_qA);
+      } else {
+        const bx = b.landPos.x + b.relVel.x * 0.32 * bounceDur;
+        const bz = b.landPos.z + b.relVel.z * 0.32 * bounceDur;
+        const gy = terrainHeight(bx, bz) + b.effRadius * 0.62;
+        outPos.set(bx, gy, bz);
+        _qA.setFromAxisAngle(b.rotAxis, (b.landTime - b.releaseTime) * 1.4 + bounceDur * 0.7);
+        outQuat.copy(b.relQuat).multiply(_qA);
+      }
+    }
+  }
+
+  // Binding Lightning Arcs (56 simultaneous jagged arcs rendered as crossed 3D ribbons)
+  const ARC_SEGS = 9;
+  const arcGeo = new THREE.BufferGeometry();
+  const arcVerts = new Float32Array(COUNTS.arcs * ARC_SEGS * 8 * 3);
+  const arcCols = new Float32Array(COUNTS.arcs * ARC_SEGS * 8 * 3);
+  const arcIdx = new Uint16Array(COUNTS.arcs * ARC_SEGS * 12);
+  for (let i = 0; i < COUNTS.arcs * ARC_SEGS; i++) {
+    const v = i * 8;
+    const k = i * 12;
+    arcIdx[k] = v; arcIdx[k + 1] = v + 1; arcIdx[k + 2] = v + 2;
+    arcIdx[k + 3] = v + 1; arcIdx[k + 4] = v + 3; arcIdx[k + 5] = v + 2;
+    arcIdx[k + 6] = v + 4; arcIdx[k + 7] = v + 5; arcIdx[k + 8] = v + 6;
+    arcIdx[k + 9] = v + 5; arcIdx[k + 10] = v + 7; arcIdx[k + 11] = v + 6;
+  }
+  const arcPosBuf = new THREE.BufferAttribute(arcVerts, 3);
+  const arcColBuf = new THREE.BufferAttribute(arcCols, 3);
+  arcGeo.setAttribute('position', arcPosBuf);
+  arcGeo.setAttribute('color', arcColBuf);
+  arcGeo.setIndex(new THREE.BufferAttribute(arcIdx, 1));
+
+  const arcMat = new THREE.MeshBasicMaterial({
+    vertexColors: true,
+    transparent: true,
+    opacity: 0.95,
+    blending: THREE.AdditiveBlending,
+    depthWrite: false,
+    side: THREE.DoubleSide,
+    toneMapped: false
+  });
+  const arcMesh = new THREE.Mesh(arcGeo, arcMat);
+  arcMesh.frustumCulled = false;
+  scene.add(arcMesh);
+
+  const arcPairs = [];
+  (function initArcPairs() {
+    const byBone = BONE_NAMES.map(() => []);
+    for (let i = 0; i < boulders.length; i++) byBone[boulders[i].boneIndex].push(i);
+
+    let count = 0;
+    for (let bi = 0; bi < BONE_NAMES.length && count < COUNTS.arcs; bi++) {
+      const list = byBone[bi];
+      const targetForBone = bi < 8 ? 4 : 3;
+      for (let k = 0; k < targetForBone && count < COUNTS.arcs; k++) {
+        const a = list[(k * 2) % list.length];
+        const b = list[(k * 2 + 1 + Math.floor(rng() * 3)) % list.length];
+        arcPairs.push({ a, b: a === b ? list[(k + 1) % list.length] : b, boneIndex: bi });
+        count++;
+      }
+    }
+    while (arcPairs.length < COUNTS.arcs) {
+      const bi = arcPairs.length % BONE_NAMES.length;
+      const list = byBone[bi];
+      arcPairs.push({ a: list[0], b: list[list.length - 1], boneIndex: bi });
+    }
+  })();
+
+  const skyBoltGroup = new THREE.Group();
+  scene.add(skyBoltGroup);
+  const skyBolts = SKY_STRIKES.map((st, sIdx) => {
+    const sRng = mulberry32(9100 + sIdx * 131);
+    const pts = [];
+    const topY = 230;
+    const segs = 22;
+    for (let k = 0; k <= segs; k++) {
+      const u = k / segs;
+      pts.push(new THREE.Vector3(
+        st.pos.x + (sRng() - 0.5) * 14 * Math.sin(u * Math.PI),
+        lerp(topY, st.pos.y, u),
+        st.pos.z + (sRng() - 0.5) * 14 * Math.sin(u * Math.PI)
+      ));
+    }
+    const segPairs = [];
+    for (let k = 0; k < segs; k++) segPairs.push([pts[k], pts[k + 1], 0.55]);
+    for (let br = 0; br < 4; br++) {
+      const startIdx = 4 + br * 4;
+      let bCur = pts[startIdx].clone();
+      const bDir = new THREE.Vector3((sRng() - 0.5) * 12, -16 - sRng() * 10, (sRng() - 0.5) * 12);
+      for (let m = 0; m < 4; m++) {
+        const nxt = bCur.clone().addScaledVector(bDir, 0.35).add(new THREE.Vector3((sRng() - 0.5) * 4, 0, (sRng() - 0.5) * 4));
+        segPairs.push([bCur, nxt, 0.24]);
+        bCur = nxt;
+      }
+    }
+    const geo = new THREE.BufferGeometry();
+    const vArr = new Float32Array(segPairs.length * 8 * 3);
+    const iArr = new Uint16Array(segPairs.length * 12);
+    for (let i = 0; i < segPairs.length; i++) {
+      const [p0, p1, w] = segPairs[i];
+      const dir = new THREE.Vector3().subVectors(p1, p0).normalize();
+      const sideA = new THREE.Vector3(1, 0, 0).cross(dir);
+      if (sideA.lengthSq() < 1e-4) sideA.set(0, 0, 1).cross(dir);
+      sideA.normalize().multiplyScalar(w);
+      const sideB = new THREE.Vector3().crossVectors(dir, sideA).normalize().multiplyScalar(w);
+
+      const vb = i * 8;
+      const setV = (o, v) => { vArr[(vb + o) * 3] = v.x; vArr[(vb + o) * 3 + 1] = v.y; vArr[(vb + o) * 3 + 2] = v.z; };
+      setV(0, p0.clone().add(sideA));
+      setV(1, p0.clone().sub(sideA));
+      setV(2, p1.clone().add(sideA));
+      setV(3, p1.clone().sub(sideA));
+      setV(4, p0.clone().add(sideB));
+      setV(5, p0.clone().sub(sideB));
+      setV(6, p1.clone().add(sideB));
+      setV(7, p1.clone().sub(sideB));
+
+      const k = i * 12;
+      iArr[k] = vb; iArr[k + 1] = vb + 1; iArr[k + 2] = vb + 2;
+      iArr[k + 3] = vb + 1; iArr[k + 4] = vb + 3; iArr[k + 5] = vb + 2;
+      iArr[k + 6] = vb + 4; iArr[k + 7] = vb + 5; iArr[k + 8] = vb + 6;
+      iArr[k + 9] = vb + 5; iArr[k + 10] = vb + 7; iArr[k + 11] = vb + 6;
+    }
+    geo.setAttribute('position', new THREE.BufferAttribute(vArr, 3));
+    geo.setIndex(new THREE.BufferAttribute(iArr, 1));
+    const mat = new THREE.MeshBasicMaterial({
+      color: 0xd9f0ff,
+      transparent: true,
+      opacity: 1,
+      blending: THREE.AdditiveBlending,
+      depthWrite: false,
+      side: THREE.DoubleSide,
+      toneMapped: false
+    });
+    const mesh = new THREE.Mesh(geo, mat);
+    mesh.visible = false;
+    skyBoltGroup.add(mesh);
+    return { mesh, mat, t: st.t };
+  });
+
+  // =========================================================================
+  // 7. THE HUNTER (16 POSED PARTS), MOTION, VERLET RAGDOLL & SMOOTH BLEND
+  // =========================================================================
+  const hunterMaterials = [];
+  function makeHunterMat(colorHex, roughnessBase, metalness) {
+    const m = new THREE.MeshStandardMaterial({
+      color: colorHex,
+      roughness: roughnessBase,
+      metalness,
+      envMapIntensity: 0.35
+    });
+    hunterMaterials.push({ mat: m, baseRough: roughnessBase, baseColor: new THREE.Color(colorHex) });
+    return m;
+  }
+
+  const matCloth = makeHunterMat(0x1f2633, 0.90, 0.05);
+  const matLeather = makeHunterMat(0x3a2a20, 0.85, 0.08);
+  const matMetal = makeHunterMat(0x6e7d91, 0.55, 0.72);
+  const matAccent = makeHunterMat(0xe84828, 0.82, 0.08);
+  const matBlade = new THREE.MeshBasicMaterial({ color: 0x8efaff, toneMapped: false });
+
+  const HUNTER_PART_NAMES = [
+    'pelvis', 'torso', 'head',
+    'upperArmL', 'forearmL', 'handL',
+    'upperArmR', 'forearmR', 'handR',
+    'thighL', 'shinL', 'footL',
+    'thighR', 'shinR', 'footR',
+    'cloak'
+  ];
+  const hunterParts = {};
+  const hunterGroup = new THREE.Group();
+  scene.add(hunterGroup);
+
+  function addHunterPart(name, geo, mat, childFn) {
+    const m = new THREE.Mesh(geo, mat);
+    m.castShadow = true;
+    m.receiveShadow = true;
+    if (childFn) childFn(m);
+    hunterGroup.add(m);
+    hunterParts[name] = m;
+    return m;
+  }
+
+  (function buildHunterGeometry() {
+    addHunterPart('pelvis', new THREE.BoxGeometry(0.24, 0.18, 0.30), matLeather);
+    addHunterPart('torso', new THREE.BoxGeometry(0.28, 0.44, 0.38), matCloth, (m) => {
+      const sash = new THREE.Mesh(new THREE.BoxGeometry(0.30, 0.36, 0.12), matAccent);
+      sash.rotation.x = 0.45;
+      m.add(sash);
+      const plate = new THREE.Mesh(new THREE.BoxGeometry(0.30, 0.16, 0.42), matMetal);
+      plate.position.y = 0.14;
+      m.add(plate);
+    });
+    addHunterPart('head', new THREE.SphereGeometry(0.14, 14, 12), matCloth, (m) => {
+      const hood = new THREE.Mesh(new THREE.ConeGeometry(0.16, 0.24, 8), matAccent);
+      hood.position.set(-0.04, 0.08, 0);
+      hood.rotation.z = 0.35;
+      m.add(hood);
+      const visor = new THREE.Mesh(new THREE.BoxGeometry(0.05, 0.04, 0.14), matMetal);
+      visor.position.set(0.12, 0.01, 0);
+      m.add(visor);
+    });
+
+    const uArmGeo = new THREE.CylinderGeometry(0.055, 0.048, 0.28, 8);
+    const fArmGeo = new THREE.CylinderGeometry(0.046, 0.038, 0.26, 8);
+    const handGeo = new THREE.BoxGeometry(0.08, 0.08, 0.07);
+
+    addHunterPart('upperArmL', uArmGeo, matCloth);
+    addHunterPart('forearmL', fArmGeo, matMetal, (m) => {
+      const launcher = new THREE.Mesh(new THREE.BoxGeometry(0.11, 0.14, 0.10), matMetal);
+      launcher.position.set(0.05, -0.02, 0);
+      m.add(launcher);
+      const coil = new THREE.Mesh(new THREE.CylinderGeometry(0.025, 0.025, 0.08, 8), matBlade);
+      coil.position.set(0.08, -0.08, 0);
+      m.add(coil);
+    });
+    addHunterPart('handL', handGeo, matLeather);
+
+    addHunterPart('upperArmR', uArmGeo, matCloth);
+    addHunterPart('forearmR', fArmGeo, matLeather);
+    addHunterPart('handR', handGeo, matLeather, (m) => {
+      const hilt = new THREE.Mesh(new THREE.CylinderGeometry(0.02, 0.02, 0.20, 6), matMetal);
+      hilt.rotation.z = Math.PI / 2;
+      m.add(hilt);
+      const blade = new THREE.Mesh(new THREE.BoxGeometry(0.88, 0.05, 0.018), matBlade);
+      blade.position.set(0.50, 0.01, 0);
+      m.add(blade);
+    });
+
+    const thighGeo = new THREE.CylinderGeometry(0.078, 0.062, 0.42, 8);
+    const shinGeo = new THREE.CylinderGeometry(0.058, 0.044, 0.42, 8);
+    const footGeo = new THREE.BoxGeometry(0.22, 0.08, 0.10);
+
+    addHunterPart('thighL', thighGeo, matCloth);
+    addHunterPart('shinL', shinGeo, matMetal);
+    addHunterPart('footL', footGeo, matLeather);
+    addHunterPart('thighR', thighGeo, matCloth);
+    addHunterPart('shinR', shinGeo, matMetal);
+    addHunterPart('footR', footGeo, matLeather);
+
+    const cloakGeo = new THREE.BoxGeometry(0.04, 0.72, 0.46);
+    cloakGeo.translate(0, -0.36, 0);
+    addHunterPart('cloak', cloakGeo, matAccent);
+  })();
+
+  const SWING1_ANG0 = -2.35;
+  const SWING1_ANG_SPAN = -Math.PI * 2 * 1.15;
+  const SWING1_R0 = 16.5;
+  const SWING1_R1 = 2.4;
+  const SWING1_START_POS = new THREE.Vector3(
+    (40 - 4 * 3.3 - 1.5) + SWING1_R0 * Math.cos(SWING1_ANG0),
+    1.5,
+    4.0 + SWING1_R0 * Math.sin(SWING1_ANG0)
+  );
+  const SWING1_END_POS = new THREE.Vector3(
+    (40 - 4 * 5.0 - 1.5) + SWING1_R1 * Math.cos(SWING1_ANG0 + SWING1_ANG_SPAN),
+    9.5,
+    4.0 + SWING1_R1 * Math.sin(SWING1_ANG0 + SWING1_ANG_SPAN)
+  );
+
+  function getHunterTrajectoryPos(t, out) {
+    if (t < 3.0) {
+      const u = t / 3.0;
+      const sx = lerp(-40, 0, easeInOutCubic(u * 0.92 + u * 0.08));
+      const sz = lerp(10, -12, smoothstep(0.0, 1.0, u));
+      out.set(sx, terrainHeight(sx, sz) + 1.05, sz);
+    } else if (t < 3.3) {
+      const u = (t - 3.0) / 0.3;
+      const x = lerp(0, SWING1_START_POS.x, u);
+      const z = lerp(-12, SWING1_START_POS.z, u);
+      out.set(x, lerp(terrainHeight(0, -12) + 1.05, SWING1_START_POS.y, u) + Math.sin(u * Math.PI) * 0.45, z);
+    } else if (t < 5.0) {
+      const u = (t - 3.3) / 1.7;
+      const ang = SWING1_ANG0 + u * SWING1_ANG_SPAN;
+      const r = SWING1_R0 * Math.pow(1 - u, 0.7) + SWING1_R1 * (1 - Math.pow(1 - u, 0.7));
+      const cx = 40 - 4 * t - 1.5;
+      out.set(cx + r * Math.cos(ang), lerp(SWING1_START_POS.y, SWING1_END_POS.y, smoothstep(0, 1, u)), 4.0 + r * Math.sin(ang));
+    } else if (t < 5.6) {
+      const u = (t - 5.0) / 0.6;
+      out.set(lerp(SWING1_END_POS.x, 10.0, u), lerp(SWING1_END_POS.y, 6.2, u), lerp(SWING1_END_POS.z, 1.0, u));
+    } else if (t < 6.5) {
+      const u = (t - 5.6) / 0.9;
+      const x = lerp(10.0, SLAM_TARGET.x, u);
+      const z = lerp(1.0, SLAM_TARGET.z, u);
+      const gy = terrainHeight(x, z) + 1.05;
+      out.set(x, Math.max(gy, lerp(6.2, gy, Math.min(1, u * 1.45))), z);
+    } else if (t < 7.5) {
+      const u = (t - 6.5) / 1.0;
+      const x = lerp(SLAM_TARGET.x, -15.0, u);
+      const z = lerp(SLAM_TARGET.z, -9.0, u);
+      out.set(x, terrainHeight(x, z) + 1.08, z);
+    } else if (t < 9.0) {
+      const u = (t - 7.5) / 1.5;
+      const x = lerp(-15.0, -9.0, u);
+      const z = lerp(-9.0, -2.0, u);
+      out.set(x, terrainHeight(x, z) + 1.08, z);
+    } else if (t < 10.5) {
+      const u = (t - 9.0) / 1.5;
+      const x = lerp(-9.0, -5.0, u);
+      const z = lerp(-2.0, -4.0, u);
+      out.set(x, terrainHeight(x, z) + 1.10, z);
+    } else if (t < 12.0) {
+      const u = easeInOutCubic((t - 10.5) / 1.5);
+      out.set(lerp(-5.0, 13.8, u), lerp(terrainHeight(-5, -4) + 1.10, 30.8, u) + Math.sin(u * Math.PI) * 2.2, lerp(-4.0, -8.8, u));
+    } else if (t < 13.5) {
+      const u = (t - 12.0) / 1.5;
+      const x = lerp(13.8, -4.0, u);
+      const z = lerp(-8.8, -4.0, u);
+      const yG = terrainHeight(x, z) + 1.05;
+      out.set(x, Math.max(yG, lerp(30.8, yG, u * u) + Math.sin(u * Math.PI) * 2.5), z);
+    } else if (t < 16.0) {
+      const u = (t - 13.5) / 2.5;
+      const x = lerp(-4.0, 3.0, u);
+      const z = lerp(-4.0, 3.0, u);
+      out.set(x, terrainHeight(x, z) + 1.05, z);
+    } else if (t <= 19.0) {
+      const u = (t - 16.0) / 3.0;
+      const x = lerp(3.0, 5.5, u);
+      const z = lerp(3.0, 1.0, u);
+      out.set(x, terrainHeight(x, z) + 1.05, z);
+    } else if (t < 22.5) {
+      const dt = t - 19.0;
+      const tAir = Math.min(dt, 1.83);
+      const tGnd = Math.max(0, dt - 1.83);
+      const x = 5.5 - 14.0 * tAir * 0.92 - 2.0 * tGnd * (1 - 0.5 * Math.min(1, tGnd / 0.6));
+      const z = 1.0 - 6.0 * tAir * 0.92 - 0.8 * tGnd * (1 - 0.5 * Math.min(1, tGnd / 0.6));
+      const y = Math.max(terrainHeight(x, z) + 0.5, 1.05 + 9 * dt - 4.9 * dt * dt);
+      out.set(x, y, z);
+    } else if (t < 23.5) {
+      const u = (t - 22.5) / 1.0;
+      const x = lerp(ragdollRestCenter.x, -9.0, u);
+      const z = lerp(ragdollRestCenter.z, -8.5, u);
+      out.set(x, terrainHeight(x, z) + 1.08, z);
+    } else if (t < 27.0) {
+      const u = (t - 23.5) / 3.5;
+      const ease = easeInOutCubic(u);
+      out.set(lerp(-9.0, 10.5, ease), lerp(terrainHeight(-9, -8.5) + 1.08, 27.2, ease) - Math.sin(u * Math.PI) * 2.5, lerp(-8.5, -2.0, ease));
+    } else if (t < 29.5) {
+      const u = (t - 27.0) / 2.5;
+      if (u < 0.4) {
+        const k = easeInOutCubic(u / 0.4);
+        out.set(lerp(10.5, 9.5, k), lerp(27.2, 29.0, k), lerp(-2.0, 4.5, k));
+      } else if (u < 0.7) {
+        const k = easeInOutCubic((u - 0.4) / 0.3);
+        out.set(lerp(9.5, 5.5, k), lerp(29.0, 24.8, k), lerp(4.5, -5.0, k));
+      } else {
+        const k = easeInOutCubic((u - 0.7) / 0.3);
+        out.set(lerp(5.5, 11.6, k), lerp(24.8, 28.0, k), lerp(-5.0, -0.5, k));
+      }
+    } else if (t < 31.5) {
+      const u = (t - 29.5) / 2.0;
+      const x = lerp(11.6, -8.0, u);
+      const z = lerp(-0.5, 2.0, u);
+      const yG = terrainHeight(x, z) + 1.05;
+      out.set(x, Math.max(yG, lerp(28.0, yG, u * u)), z);
+    } else if (t < 33.0) {
+      const u = (t - 31.5) / 1.5;
+      const x = lerp(-8.0, -15.0, u);
+      const z = lerp(2.0, 5.0, u);
+      out.set(x, terrainHeight(x, z) + 1.05, z);
+    } else {
+      out.set(-15.0, terrainHeight(-15.0, 5.0) + 1.05, 5.0);
+    }
+    return out;
+  }
+
+  function createHunterPoseStruct() {
+    const parts = {};
+    for (const name of HUNTER_PART_NAMES) {
+      parts[name] = { pos: new THREE.Vector3(), quat: new THREE.Quaternion() };
+    }
+    return {
+      parts,
+      chestPos: new THREE.Vector3(),
+      launcherPos: new THREE.Vector3(),
+      bladeTipPos: new THREE.Vector3(),
+      bladeVel: new THREE.Vector3()
+    };
+  }
+
+  function evaluateProceduralHunterPose(t, outStruct) {
+    const chestPos = getHunterTrajectoryPos(t, new THREE.Vector3());
+    const pNext = getHunterTrajectoryPos(Math.min(DURATION, t + 0.03), new THREE.Vector3());
+    const pPrev = getHunterTrajectoryPos(Math.max(0, t - 0.03), new THREE.Vector3());
+    const vel = new THREE.Vector3().subVectors(pNext, pPrev).multiplyScalar(1 / 0.06);
+    const speed = vel.length();
+
+    let fwd = new THREE.Vector3(vel.x, 0, vel.z);
+    if (t >= 32.8) {
+      fwd.set(16 - chestPos.x, 0, -chestPos.z);
+    } else if (fwd.lengthSq() < 0.04) {
+      fwd.set(16 - chestPos.x, 0, -chestPos.z);
+    }
+    fwd.normalize();
+
+    const airborne = (t >= 3.3 && t < 5.8) || (t >= 10.5 && t < 13.5) || (t >= 23.8 && t < 31.5);
+    const pitchForward = airborne ? clamp(-vel.y * 0.035, -0.5, 0.5) + 0.25 : clamp(speed * 0.03, 0.02, 0.42);
+    const yaw = Math.atan2(-fwd.z, fwd.x);
+    const rootQuat = new THREE.Quaternion().setFromEuler(new THREE.Euler(0, yaw, -pitchForward, 'YXZ'));
+
+    let getupCrouch = 0;
+    if (t >= 21.5 && t < 22.5) {
+      getupCrouch = 1 - smoothstep(21.5, 22.5, t);
+    }
+    if (t >= 31.5 && t < 32.35) {
+      const rollSpin = -((t - 31.5) / 0.85) * Math.PI * 2;
+      rootQuat.multiply(new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 0, 1), rollSpin));
+    }
+
+    const pelvisBase = chestPos.clone().add(new THREE.Vector3(0, -0.32 - getupCrouch * 0.35, 0));
+    const localUp = new THREE.Vector3(0, 1, 0).applyQuaternion(rootQuat);
+    const localFwd = new THREE.Vector3(1, 0, 0).applyQuaternion(rootQuat);
+    const localRight = new THREE.Vector3(0, 0, 1).applyQuaternion(rootQuat);
+
+    const torsoPos = pelvisBase.clone().addScaledVector(localUp, 0.30);
+    const headPos = pelvisBase.clone().addScaledVector(localUp, 0.68);
+
+    const strideFreq = airborne ? 3.5 : (speed > 1.5 ? 11.5 : 1.8);
+    const phase = t * strideFreq;
+    const strideAmp = airborne ? 0.45 : clamp(speed / 12.0, 0.05, 1.05);
+
+    function poseLimbPair(rootPos, upperName, lowerName, endName, upperLen, lowerLen, hipAng, kneeAng) {
+      const qUpper = rootQuat.clone().multiply(new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 0, 1), hipAng));
+      const uDir = new THREE.Vector3(0, -1, 0).applyQuaternion(qUpper);
+      const uCenter = rootPos.clone().addScaledVector(uDir, upperLen * 0.5);
+      const jointPos = rootPos.clone().addScaledVector(uDir, upperLen);
+
+      const qLower = qUpper.clone().multiply(new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 0, 1), kneeAng));
+      const lDir = new THREE.Vector3(0, -1, 0).applyQuaternion(qLower);
+      const lCenter = jointPos.clone().addScaledVector(lDir, lowerLen * 0.5);
+      const endPos = jointPos.clone().addScaledVector(lDir, lowerLen);
+
+      outStruct.parts[upperName].pos.copy(uCenter);
+      outStruct.parts[upperName].quat.copy(qUpper);
+      outStruct.parts[lowerName].pos.copy(lCenter);
+      outStruct.parts[lowerName].quat.copy(qLower);
+      outStruct.parts[endName].pos.copy(endPos);
+      outStruct.parts[endName].quat.copy(qLower);
+      return { endPos };
+    }
+
+    outStruct.parts.pelvis.pos.copy(pelvisBase);
+    outStruct.parts.pelvis.quat.copy(rootQuat);
+    outStruct.parts.torso.pos.copy(torsoPos);
+    outStruct.parts.torso.quat.copy(rootQuat);
+    outStruct.parts.head.pos.copy(headPos);
+    outStruct.parts.head.quat.copy(rootQuat);
+
+    const legSwingL = Math.sin(phase) * strideAmp - getupCrouch * 0.9;
+    const kneeBendL = Math.max(0.12, -Math.cos(phase) * 0.9 * strideAmp + 0.35 + getupCrouch * 1.1);
+    const legSwingR = -Math.sin(phase) * strideAmp - getupCrouch * 0.6;
+    const kneeBendR = Math.max(0.12, Math.cos(phase) * 0.9 * strideAmp + 0.35 + getupCrouch * 0.9);
+
+    poseLimbPair(pelvisBase.clone().addScaledVector(localRight, -0.10), 'thighL', 'shinL', 'footL', 0.42, 0.42, legSwingL, -kneeBendL);
+    poseLimbPair(pelvisBase.clone().addScaledVector(localRight, 0.10), 'thighR', 'shinR', 'footR', 0.42, 0.42, legSwingR, -kneeBendR);
+
+    const tetherAim = (t >= 2.9 && t <= 5.6) || (t >= 8.9 && t <= 12.4) || (t >= 23.4 && t <= 31.5);
+    const armAngL = tetherAim ? 1.35 : -Math.sin(phase) * 0.85 * strideAmp;
+    const elbowAngL = tetherAim ? 0.25 : 0.65;
+    const leftArmRes = poseLimbPair(torsoPos.clone().addScaledVector(localUp, 0.16).addScaledVector(localRight, -0.22), 'upperArmL', 'forearmL', 'handL', 0.28, 0.26, armAngL, elbowAngL);
+
+    let slashBoost = 0;
+    for (const s of STRIKES) {
+      const dt = t - s.t;
+      if (dt > -0.22 && dt < 0.22) {
+        slashBoost = Math.sin(((dt + 0.22) / 0.44) * Math.PI) * 2.1;
+      }
+    }
+    const armAngR = Math.sin(phase) * 0.85 * strideAmp - 0.35 + slashBoost;
+    const elbowAngR = 0.55 - slashBoost * 0.2;
+    const rightArmRes = poseLimbPair(torsoPos.clone().addScaledVector(localUp, 0.16).addScaledVector(localRight, 0.22), 'upperArmR', 'forearmR', 'handR', 0.28, 0.26, armAngR, elbowAngR);
+
+    const cloakAnchor = torsoPos.clone().addScaledVector(localUp, 0.18).addScaledVector(localFwd, -0.16);
+    const cloakFlutter = Math.sin(t * 14.0) * 0.18;
+    const cloakQuat = rootQuat.clone().multiply(new THREE.Quaternion().setFromEuler(new THREE.Euler(0, 0, -0.55 - clamp(speed * 0.04, 0, 0.6) + cloakFlutter)));
+    outStruct.parts.cloak.pos.copy(cloakAnchor);
+    outStruct.parts.cloak.quat.copy(cloakQuat);
+
+    outStruct.chestPos.copy(torsoPos);
+    outStruct.launcherPos.copy(leftArmRes.endPos);
+    outStruct.bladeTipPos.copy(rightArmRes.endPos).addScaledVector(localFwd, 0.85);
+    outStruct.bladeVel.copy(vel).addScaledVector(localUp, -slashBoost * 8.0);
+  }
+
+  const RAGDOLL_START = 19.000;
+  const RAGDOLL_END = 21.500;
+  const RAGDOLL_STEPS = Math.round((RAGDOLL_END - RAGDOLL_START) / FIXED_DT);
+  const ragdollStepsCache = new Array(RAGDOLL_STEPS + 1);
+  let ragdollMaxSimulatedStep = -1;
+  const ragdollRestCenter = new THREE.Vector3(-19.2, terrainHeight(-19.2, -9.6) + 1.0, -9.6);
+
+  const RAGDOLL_STICKS = [
+    [2, 1, 0.44], [1, 0, 0.38], [2, 0, 0.80],
+    [1, 3, 0.22], [1, 6, 0.22], [3, 6, 0.42],
+    [2, 3, 0.50], [2, 6, 0.50],
+    [3, 4, 0.28], [4, 5, 0.26],
+    [6, 7, 0.28], [7, 8, 0.26],
+    [2, 9, 0.42], [9, 10, 0.42],
+    [2, 11, 0.42], [11, 12, 0.42],
+    [9, 11, 0.24]
+  ];
+
+  const ragdollCur = new Float32Array(COUNTS.ragdollPoints * 3);
+  const ragdollPrev = new Float32Array(COUNTS.ragdollPoints * 3);
+  const ragdollImpactTimes = [];
+
+  function initRagdoll() {
+    const startPose = createHunterPoseStruct();
+    evaluateProceduralHunterPose(RAGDOLL_START, startPose);
+    const p = startPose.parts;
+    const pts = [
+      p.head.pos,
+      p.torso.pos,
+      p.pelvis.pos,
+      p.torso.pos.clone().add(new THREE.Vector3(0, 0.16, -0.21)),
+      p.forearmL.pos.clone().add(new THREE.Vector3(0, 0.13, 0)),
+      p.handL.pos,
+      p.torso.pos.clone().add(new THREE.Vector3(0, 0.16, 0.21)),
+      p.forearmR.pos.clone().add(new THREE.Vector3(0, 0.13, 0)),
+      p.handR.pos,
+      p.shinL.pos.clone().add(new THREE.Vector3(0, 0.21, 0)),
+      p.footL.pos,
+      p.shinR.pos.clone().add(new THREE.Vector3(0, 0.21, 0)),
+      p.footR.pos
+    ];
+    const rRng = mulberry32(1900);
+    for (let i = 0; i < COUNTS.ragdollPoints; i++) {
+      const x = pts[i].x;
+      const y = pts[i].y;
+      const z = pts[i].z;
+      ragdollCur[i * 3] = x;
+      ragdollCur[i * 3 + 1] = y;
+      ragdollCur[i * 3 + 2] = z;
+      const spinX = (y - p.pelvis.pos.y) * 4.5 + (rRng() - 0.5) * 2.2;
+      const spinY = -(x - p.pelvis.pos.x) * 3.0 + (rRng() - 0.5) * 1.5;
+      const spinZ = (rRng() - 0.5) * 3.0;
+      ragdollPrev[i * 3] = x - (-14.0 + spinX) * FIXED_DT;
+      ragdollPrev[i * 3 + 1] = y - (9.0 + spinY) * FIXED_DT;
+      ragdollPrev[i * 3 + 2] = z - (-6.0 + spinZ) * FIXED_DT;
+    }
+    ragdollStepsCache[0] = new Float32Array(ragdollCur);
+    ragdollMaxSimulatedStep = 0;
+
+    stepRagdollTo(RAGDOLL_STEPS);
+    const endState = ragdollStepsCache[RAGDOLL_STEPS];
+    ragdollRestCenter.set(
+      endState[2 * 3],
+      terrainHeight(endState[2 * 3], endState[2 * 3 + 2]) + 1.05,
+      endState[2 * 3 + 2]
+    );
+  }
+
+  function stepRagdollTo(targetStep) {
+    const clamped = Math.min(RAGDOLL_STEPS, Math.max(0, targetStep));
+    const gTerm = -9.81 * FIXED_DT * FIXED_DT;
+    while (ragdollMaxSimulatedStep < clamped) {
+      const nextStep = ragdollMaxSimulatedStep + 1;
+      let hitThisStep = false;
+      for (let i = 0; i < COUNTS.ragdollPoints; i++) {
+        const b = i * 3;
+        const x = ragdollCur[b], y = ragdollCur[b + 1], z = ragdollCur[b + 2];
+        const vx = (x - ragdollPrev[b]) * 0.9988;
+        const vy = (y - ragdollPrev[b + 1]) * 0.9988;
+        const vz = (z - ragdollPrev[b + 2]) * 0.9988;
+        ragdollPrev[b] = x;
+        ragdollPrev[b + 1] = y;
+        ragdollPrev[b + 2] = z;
+        ragdollCur[b] = x + vx;
+        ragdollCur[b + 1] = y + vy + gTerm;
+        ragdollCur[b + 2] = z + vz;
+      }
+
+      for (let iter = 0; iter < 10; iter++) {
+        for (let s = 0; s < RAGDOLL_STICKS.length; s++) {
+          const [ia, ib, rest] = RAGDOLL_STICKS[s];
+          const a = ia * 3, b = ib * 3;
+          const dx = ragdollCur[b] - ragdollCur[a];
+          const dy = ragdollCur[b + 1] - ragdollCur[a + 1];
+          const dz = ragdollCur[b + 2] - ragdollCur[a + 2];
+          const d = Math.hypot(dx, dy, dz);
+          if (d > 1e-5) {
+            if (s === RAGDOLL_STICKS.length - 1 && d >= rest) continue;
+            const diff = (d - rest) / d * 0.5;
+            ragdollCur[a] += dx * diff;
+            ragdollCur[a + 1] += dy * diff;
+            ragdollCur[a + 2] += dz * diff;
+            ragdollCur[b] -= dx * diff;
+            ragdollCur[b + 1] -= dy * diff;
+            ragdollCur[b + 2] -= dz * diff;
+          }
+        }
+
+        for (let i = 0; i < COUNTS.ragdollPoints; i++) {
+          const b = i * 3;
+          const gy = terrainHeight(ragdollCur[b], ragdollCur[b + 2]) + 0.12;
+          if (ragdollCur[b + 1] < gy) {
+            const vy = ragdollCur[b + 1] - ragdollPrev[b + 1];
+            if (iter === 0 && vy < -0.008) hitThisStep = true;
+            ragdollCur[b + 1] = gy;
+            const vx = ragdollCur[b] - ragdollPrev[b];
+            const vz = ragdollCur[b + 2] - ragdollPrev[b + 2];
+            ragdollPrev[b] = ragdollCur[b] - vx * 0.88;
+            ragdollPrev[b + 2] = ragdollCur[b + 2] - vz * 0.88;
+            if (iter === 9 && vy < -0.002) {
+              ragdollPrev[b + 1] = gy + vy * 0.25;
+            }
+          }
+        }
+      }
+
+      if (hitThisStep) {
+        const tHit = RAGDOLL_START + nextStep * FIXED_DT;
+        if (ragdollImpactTimes.length === 0 || tHit - ragdollImpactTimes[ragdollImpactTimes.length - 1] > 0.16) {
+          ragdollImpactTimes.push(tHit);
+        }
+      }
+
+      ragdollStepsCache[nextStep] = new Float32Array(ragdollCur);
+      ragdollMaxSimulatedStep = nextStep;
+    }
+  }
+
+  function evaluateRagdollPoseAt(t, outStruct) {
+    const fStep = clamp((t - RAGDOLL_START) / FIXED_DT, 0, RAGDOLL_STEPS);
+    const s0 = Math.floor(fStep);
+    const s1 = Math.min(RAGDOLL_STEPS, s0 + 1);
+    const alpha = fStep - s0;
+    const p0 = ragdollStepsCache[s0];
+    const p1 = ragdollStepsCache[s1];
+
+    const pts = [];
+    for (let i = 0; i < COUNTS.ragdollPoints; i++) {
+      const b = i * 3;
+      pts.push(new THREE.Vector3(
+        lerp(p0[b], p1[b], alpha),
+        lerp(p0[b + 1], p1[b + 1], alpha),
+        lerp(p0[b + 2], p1[b + 2], alpha)
+      ));
+    }
+
+    const torsoSide = new THREE.Vector3().subVectors(pts[6], pts[3]).normalize();
+    function segPose(name, a, b) {
+      outStruct.parts[name].pos.lerpVectors(a, b, 0.5);
+      quatFromSegment(a, b, torsoSide, outStruct.parts[name].quat);
+    }
+
+    segPose('pelvis', pts[2], pts[1]);
+    outStruct.parts.pelvis.pos.copy(pts[2]);
+    segPose('torso', pts[2], pts[1]);
+    segPose('head', pts[1], pts[0]);
+    outStruct.parts.head.pos.copy(pts[0]);
+
+    segPose('upperArmL', pts[3], pts[4]);
+    segPose('forearmL', pts[4], pts[5]);
+    outStruct.parts.handL.pos.copy(pts[5]);
+    outStruct.parts.handL.quat.copy(outStruct.parts.forearmL.quat);
+
+    segPose('upperArmR', pts[6], pts[7]);
+    segPose('forearmR', pts[7], pts[8]);
+    outStruct.parts.handR.pos.copy(pts[8]);
+    outStruct.parts.handR.quat.copy(outStruct.parts.forearmR.quat);
+
+    segPose('thighL', pts[2], pts[9]);
+    segPose('shinL', pts[9], pts[10]);
+    outStruct.parts.footL.pos.copy(pts[10]);
+    outStruct.parts.footL.quat.copy(outStruct.parts.shinL.quat);
+
+    segPose('thighR', pts[2], pts[11]);
+    segPose('shinR', pts[11], pts[12]);
+    outStruct.parts.footR.pos.copy(pts[12]);
+    outStruct.parts.footR.quat.copy(outStruct.parts.shinR.quat);
+
+    outStruct.parts.cloak.pos.copy(pts[1]);
+    outStruct.parts.cloak.quat.copy(outStruct.parts.torso.quat);
+
+    outStruct.chestPos.copy(pts[1]);
+    outStruct.launcherPos.copy(pts[5]);
+    outStruct.bladeTipPos.copy(pts[8]);
+    outStruct.bladeVel.set(-5, 0, -2);
+  }
+
+  initRagdoll();
+
+  const hunterPose = createHunterPoseStruct();
+  const hunterBlendA = createHunterPoseStruct();
+  const hunterBlendB = createHunterPoseStruct();
+
+  function evaluateHunterPose(t, outStruct) {
+    if (t >= RAGDOLL_START && t <= RAGDOLL_END) {
+      evaluateRagdollPoseAt(t, outStruct);
+    } else if (t > RAGDOLL_END && t < 22.500) {
+      const alpha = smoothstep(RAGDOLL_END, 22.500, t);
+      evaluateRagdollPoseAt(RAGDOLL_END, hunterBlendA);
+      evaluateProceduralHunterPose(t, hunterBlendB);
+      for (const name of HUNTER_PART_NAMES) {
+        outStruct.parts[name].pos.lerpVectors(hunterBlendA.parts[name].pos, hunterBlendB.parts[name].pos, alpha);
+        outStruct.parts[name].quat.copy(hunterBlendA.parts[name].quat).slerp(hunterBlendB.parts[name].quat, alpha);
+      }
+      outStruct.chestPos.lerpVectors(hunterBlendA.chestPos, hunterBlendB.chestPos, alpha);
+      outStruct.launcherPos.lerpVectors(hunterBlendA.launcherPos, hunterBlendB.launcherPos, alpha);
+      outStruct.bladeTipPos.lerpVectors(hunterBlendA.bladeTipPos, hunterBlendB.bladeTipPos, alpha);
+      outStruct.bladeVel.copy(hunterBlendB.bladeVel);
+    } else {
+      evaluateProceduralHunterPose(t, outStruct);
+    }
+  }
+
+  // =========================================================================
+  // 8. VERLET TETHERS (3 ROPES x 32 POINTS AT 1/240 s WITH CAPSULE COLLISION)
+  // =========================================================================
+  const TETHER_SPECS = [
+    { tFire: 3.000, tAttach: 3.300, tRelease: 5.600, tEnd: 6.200, boneName: 'shinL', localOffset: new THREE.Vector3(0, 0.8, 0) },
+    { tFire: 9.000, tAttach: 9.300, tRelease: 12.400, tEnd: 13.000, boneName: 'forearmR', localOffset: new THREE.Vector3(0, -1.0, 0) },
+    { tFire: 23.500, tAttach: 23.800, tRelease: 31.500, tEnd: 32.100, boneName: 'chest', localOffset: new THREE.Vector3(-2.3, 2.2, 0) }
+  ];
+
+  const tetherMeshes = TETHER_SPECS.map((spec) => {
+    const N = COUNTS.ropePoints;
+    const sides = 5;
+    const geo = new THREE.BufferGeometry();
+    const verts = new Float32Array(N * sides * 3);
+    const idxs = [];
+    for (let i = 0; i < N - 1; i++) {
+      for (let s = 0; s < sides; s++) {
+        const a = i * sides + s;
+        const b = i * sides + (s + 1) % sides;
+        const c = (i + 1) * sides + s;
+        const d = (i + 1) * sides + (s + 1) % sides;
+        idxs.push(a, c, b, b, c, d);
+      }
+    }
+    geo.setAttribute('position', new THREE.BufferAttribute(verts, 3));
+    geo.setIndex(idxs);
+    const mat = new THREE.MeshBasicMaterial({ color: 0x99ecff, toneMapped: false });
+    const mesh = new THREE.Mesh(geo, mat);
+    mesh.visible = false;
+    mesh.frustumCulled = false;
+    scene.add(mesh);
+
+    const totalSteps = Math.round((spec.tEnd - spec.tFire) / FIXED_DT);
+    return {
+      spec,
+      mesh,
+      geo,
+      verts,
+      totalSteps,
+      cache: new Array(totalSteps + 1),
+      maxStep: -1,
+      cur: new Float32Array(N * 3),
+      prev: new Float32Array(N * 3),
+      constLen: 14.0
+    };
+  });
+
+  function closestPointOnSegment(p, a, b, out) {
+    const abx = b.x - a.x, aby = b.y - a.y, abz = b.z - a.z;
+    const lenSq = abx * abx + aby * aby + abz * abz;
+    if (lenSq < 1e-8) return out.copy(a);
+    const t = clamp(((p.x - a.x) * abx + (p.y - a.y) * aby + (p.z - a.z) * abz) / lenSq, 0, 1);
+    return out.set(a.x + abx * t, a.y + aby * t, a.z + abz * t);
+  }
+
+  const ropePoseT = createPoseState();
+  const ropePoseH = createHunterPoseStruct();
+
+  function stepTetherTo(tm, targetStep) {
+    const clamped = Math.min(tm.totalSteps, Math.max(0, targetStep));
+    const N = COUNTS.ropePoints;
+    const spec = tm.spec;
+
+    if (tm.maxStep < 0) {
+      evaluateHunterPose(spec.tFire, ropePoseH);
+      const p0 = ropePoseH.launcherPos;
+      for (let i = 0; i < N; i++) {
+        tm.cur[i * 3] = p0.x;
+        tm.cur[i * 3 + 1] = p0.y;
+        tm.cur[i * 3 + 2] = p0.z;
+        tm.prev[i * 3] = p0.x;
+        tm.prev[i * 3 + 1] = p0.y;
+        tm.prev[i * 3 + 2] = p0.z;
+      }
+      tm.cache[0] = new Float32Array(tm.cur);
+      tm.maxStep = 0;
+    }
+
+    const boneIdx = BONE_INDEX[spec.boneName];
+    const capsuleBones = [BONE_INDEX.shinL, BONE_INDEX.thighL, BONE_INDEX.forearmR, BONE_INDEX.upperArmR, BONE_INDEX.chest, BONE_INDEX.pelvis];
+    const tmpP = new THREE.Vector3();
+    const tmpC = new THREE.Vector3();
+
+    while (tm.maxStep < clamped) {
+      const nextStep = tm.maxStep + 1;
+      const t = spec.tFire + nextStep * FIXED_DT;
+      evaluateTitanPose(t, ropePoseT);
+      evaluateHunterPose(t, ropePoseH);
+
+      const launcher = ropePoseH.launcherPos;
+      const bone = ropePoseT.bones[boneIdx];
+      const anchor = spec.localOffset.clone().applyQuaternion(bone.quat).add(bone.center);
+
+      const directDist = launcher.distanceTo(anchor);
+      let segLen;
+      const isFlying = t < spec.tAttach;
+      const isAttached = t >= spec.tAttach && t < spec.tRelease;
+
+      if (isFlying) {
+        const u = (t - spec.tFire) / (spec.tAttach - spec.tFire);
+        segLen = Math.max(0.05, (directDist * u) / (N - 1));
+      } else if (isAttached) {
+        if (spec.boneName === 'shinL' && t >= 3.3 && t <= 5.0) {
+          const distNow = launcher.distanceTo(anchor);
+          const wrapBonus = smoothstep(3.3, 5.0, t) * 11.2;
+          segLen = Math.max(0.15, (distNow + wrapBonus) / (N - 1));
+        } else {
+          segLen = Math.max(0.10, (directDist * 1.02) / (N - 1));
+        }
+      } else {
+        segLen = Math.max(0.15, tm.constLen / (N - 1));
+      }
+      if (isAttached) tm.constLen = segLen * (N - 1);
+
+      const gx = 16.0 * FIXED_DT * FIXED_DT;
+      const gy = -9.81 * FIXED_DT * FIXED_DT;
+      for (let i = 1; i < N - 1; i++) {
+        const b = i * 3;
+        const x = tm.cur[b], y = tm.cur[b + 1], z = tm.cur[b + 2];
+        const vx = (x - tm.prev[b]) * 0.996;
+        const vy = (y - tm.prev[b + 1]) * 0.996;
+        const vz = (z - tm.prev[b + 2]) * 0.996;
+        tm.prev[b] = x;
+        tm.prev[b + 1] = y;
+        tm.prev[b + 2] = z;
+        tm.cur[b] = x + vx + gx;
+        tm.cur[b + 1] = y + vy + gy;
+        tm.cur[b + 2] = z + vz;
+      }
+
+      if (!isFlying && !isAttached) {
+        const b = (N - 1) * 3;
+        const x = tm.cur[b], y = tm.cur[b + 1], z = tm.cur[b + 2];
+        const vx = (x - tm.prev[b]) * 0.992;
+        const vy = (y - tm.prev[b + 1]) * 0.992;
+        const vz = (z - tm.prev[b + 2]) * 0.992;
+        tm.prev[b] = x; tm.prev[b + 1] = y; tm.prev[b + 2] = z;
+        tm.cur[b] = x + vx + gx; tm.cur[b + 1] = y + vy + gy; tm.cur[b + 2] = z + vz;
+      }
+
+      for (let iter = 0; iter < 8; iter++) {
+        tm.cur[0] = launcher.x; tm.cur[1] = launcher.y; tm.cur[2] = launcher.z;
+        if (isFlying) {
+          const u = (t - spec.tFire) / (spec.tAttach - spec.tFire);
+          const tip = tmpP.lerpVectors(launcher, anchor, u);
+          tm.cur[(N - 1) * 3] = tip.x; tm.cur[(N - 1) * 3 + 1] = tip.y; tm.cur[(N - 1) * 3 + 2] = tip.z;
+        } else if (isAttached) {
+          tm.cur[(N - 1) * 3] = anchor.x; tm.cur[(N - 1) * 3 + 1] = anchor.y; tm.cur[(N - 1) * 3 + 2] = anchor.z;
+        }
+
+        for (let i = 0; i < N - 1; i++) {
+          const a = i * 3, b = (i + 1) * 3;
+          const dx = tm.cur[b] - tm.cur[a];
+          const dy = tm.cur[b + 1] - tm.cur[a + 1];
+          const dz = tm.cur[b + 2] - tm.cur[a + 2];
+          const d = Math.hypot(dx, dy, dz);
+          if (d > 1e-5) {
+            const diff = (d - segLen) / d;
+            const wA = i === 0 ? 0 : 0.5;
+            const wB = (i + 1 === N - 1 && (isFlying || isAttached)) ? 0 : (i === 0 ? 1.0 : 0.5);
+            if (wA + wB > 0) {
+              tm.cur[a] += dx * diff * wA;
+              tm.cur[a + 1] += dy * diff * wA;
+              tm.cur[a + 2] += dz * diff * wA;
+              tm.cur[b] -= dx * diff * wB;
+              tm.cur[b + 1] -= dy * diff * wB;
+              tm.cur[b + 2] -= dz * diff * wB;
+            }
+          }
+        }
+
+        for (let i = 1; i < N - 1; i++) {
+          const idx = i * 3;
+          tmpP.set(tm.cur[idx], tm.cur[idx + 1], tm.cur[idx + 2]);
+          for (let cb = 0; cb < capsuleBones.length; cb++) {
+            const bn = ropePoseT.bones[capsuleBones[cb]];
+            if (bn.charge <= 0 && t > 30.0) continue;
+            closestPointOnSegment(tmpP, bn.start, bn.end, tmpC);
+            const dist = tmpP.distanceTo(tmpC);
+            const rad = bn.radius * 0.92;
+            if (dist < rad) {
+              if (dist > 1e-4) {
+                tmpP.sub(tmpC).multiplyScalar(rad / dist).add(tmpC);
+              } else {
+                tmpP.y += rad;
+              }
+            }
+          }
+          const gy = terrainHeight(tmpP.x, tmpP.z) + 0.05;
+          if (tmpP.y < gy) tmpP.y = gy;
+          tm.cur[idx] = tmpP.x; tm.cur[idx + 1] = tmpP.y; tm.cur[idx + 2] = tmpP.z;
+        }
+      }
+
+      tm.cache[nextStep] = new Float32Array(tm.cur);
+      tm.maxStep = nextStep;
+    }
+  }
+
+  function updateTetherMeshes(motionTime) {
+    const N = COUNTS.ropePoints;
+    const sides = 5;
+    const r = 0.042;
+    const p = new THREE.Vector3();
+    const tang = new THREE.Vector3();
+    const nrm = new THREE.Vector3();
+    const binrm = new THREE.Vector3();
+
+    for (let m = 0; m < tetherMeshes.length; m++) {
+      const tm = tetherMeshes[m];
+      const spec = tm.spec;
+      if (motionTime < spec.tFire || motionTime >= spec.tEnd) {
+        tm.mesh.visible = false;
+        continue;
+      }
+      tm.mesh.visible = true;
+      const fStep = clamp((motionTime - spec.tFire) / FIXED_DT, 0, tm.totalSteps);
+      const s0 = Math.floor(fStep);
+      const s1 = Math.min(tm.totalSteps, s0 + 1);
+      stepTetherTo(tm, s1);
+      const a0 = tm.cache[s0];
+      const a1 = tm.cache[s1];
+      const alpha = fStep - s0;
+
+      for (let i = 0; i < N; i++) {
+        const b = i * 3;
+        p.set(lerp(a0[b], a1[b], alpha), lerp(a0[b + 1], a1[b + 1], alpha), lerp(a0[b + 2], a1[b + 2], alpha));
+        const iPrev = Math.max(0, i - 1) * 3;
+        const iNext = Math.min(N - 1, i + 1) * 3;
+        tang.set(
+          lerp(a0[iNext], a1[iNext], alpha) - lerp(a0[iPrev], a1[iPrev], alpha),
+          lerp(a0[iNext + 1], a1[iNext + 1], alpha) - lerp(a0[iPrev + 1], a1[iPrev + 1], alpha),
+          lerp(a0[iNext + 2], a1[iNext + 2], alpha) - lerp(a0[iPrev + 2], a1[iPrev + 2], alpha)
+        );
+        if (tang.lengthSq() < 1e-6) tang.set(1, 0, 0);
+        tang.normalize();
+        nrm.set(0, 1, 0).cross(tang);
+        if (nrm.lengthSq() < 1e-4) nrm.set(1, 0, 0).cross(tang);
+        nrm.normalize();
+        binrm.crossVectors(tang, nrm).normalize();
+
+        for (let s = 0; s < sides; s++) {
+          const ang = (s / sides) * Math.PI * 2;
+          const vIdx = (i * sides + s) * 3;
+          tm.verts[vIdx] = p.x + (nrm.x * Math.cos(ang) + binrm.x * Math.sin(ang)) * r;
+          tm.verts[vIdx + 1] = p.y + (nrm.y * Math.cos(ang) + binrm.y * Math.sin(ang)) * r;
+          tm.verts[vIdx + 2] = p.z + (nrm.z * Math.cos(ang) + binrm.z * Math.sin(ang)) * r;
+        }
+      }
+      tm.geo.attributes.position.needsUpdate = true;
+    }
+  }
+
+  // =========================================================================
+  // 9. STRIKE SPARKS (80 PER STRIKE), SLAM CLODS & COLLAPSE DUST PUFFS
+  // =========================================================================
+  const SPARKS_PER_STRIKE = 80;
+  const TOTAL_SPARKS = STRIKES.length * SPARKS_PER_STRIKE;
+  const sparkData = [];
+  const sparkPoseH = createHunterPoseStruct();
+
+  (function initSparks() {
+    const spRng = mulberry32(5511);
+    for (let si = 0; si < STRIKES.length; si++) {
+      const s = STRIKES[si];
+      evaluateHunterPose(s.t, sparkPoseH);
+      const origin = sparkPoseH.bladeTipPos.clone();
+      const baseDir = sparkPoseH.bladeVel.clone();
+      if (baseDir.lengthSq() < 0.2) baseDir.set(1, 0.5, 0);
+      baseDir.normalize();
+
+      for (let k = 0; k < SPARKS_PER_STRIKE; k++) {
+        const dir = baseDir.clone().add(new THREE.Vector3(
+          (spRng() - 0.5) * 1.15,
+          (spRng() - 0.3) * 1.05 + 0.2,
+          (spRng() - 0.5) * 1.15
+        )).normalize();
+        const speed = lerp(12, 34, spRng());
+        sparkData.push({
+          tStart: s.t,
+          origin,
+          vel: dir.multiplyScalar(speed),
+          life: lerp(0.45, 0.78, spRng())
+        });
+      }
+    }
+  })();
+
+  const sparkGeo = new THREE.BoxGeometry(0.06, 0.06, 0.52);
+  const sparkMat = new THREE.MeshBasicMaterial({ color: 0xffd27d, toneMapped: false });
+  const sparkInst = new THREE.InstancedMesh(sparkGeo, sparkMat, TOTAL_SPARKS);
+  sparkInst.frustumCulled = false;
+  scene.add(sparkInst);
+
+  const CLOD_COUNT = 130;
+  const clods = [];
+  (function initClods() {
+    const cRng = mulberry32(7500);
+    for (let i = 0; i < CLOD_COUNT; i++) {
+      const ang = cRng() * Math.PI * 2;
+      const rad = lerp(0.8, 3.8, cRng());
+      const vHoriz = lerp(6, 22, cRng());
+      const vUp = lerp(7, 19, cRng());
+      clods.push({
+        origin: new THREE.Vector3(SLAM_TARGET.x + Math.cos(ang) * rad, SLAM_TARGET.y + 0.2, SLAM_TARGET.z + Math.sin(ang) * rad),
+        vel: new THREE.Vector3(Math.cos(ang) * vHoriz, vUp, Math.sin(ang) * vHoriz),
+        scale: lerp(0.18, 0.55, cRng()),
+        isGrass: i % 3 === 0,
+        spin: new THREE.Vector3(cRng() * 8, cRng() * 8, cRng() * 8)
+      });
+    }
+  })();
+  const clodGeo = new THREE.DodecahedronGeometry(0.5, 0);
+  const clodMat = new THREE.MeshStandardMaterial({ roughness: 0.9, metalness: 0.02, color: 0xffffff });
+  const clodInst = new THREE.InstancedMesh(clodGeo, clodMat, CLOD_COUNT);
+  for (let i = 0; i < CLOD_COUNT; i++) {
+    clodInst.setColorAt(i, new THREE.Color(clods[i].isGrass ? 0x2f5425 : 0x241d17));
+  }
+  clodInst.instanceColor.needsUpdate = true;
+  clodInst.frustumCulled = false;
+  scene.add(clodInst);
+
+  const dustTex = createSoftParticleTexture();
+  const dustGroup = new THREE.Group();
+  scene.add(dustGroup);
+  const dustSprites = [];
+  for (let i = 0; i < BOULDER_LAND_SLOTS; i++) {
+    const mat = new THREE.SpriteMaterial({
+      map: dustTex,
+      color: 0x3b4554,
+      transparent: true,
+      opacity: 0,
+      depthWrite: false
+    });
+    const sp = new THREE.Sprite(mat);
+    sp.visible = false;
+    dustGroup.add(sp);
+    dustSprites.push({ sp, mat, landVec: boulderLandUniformArray[i] });
+  }
+
+  // =========================================================================
+  // 10. CAMERA SYSTEM (EXACT 7-SHOT SCHEDULE + RULE OF THIRDS + TRAUMA SHAKE)
+  // =========================================================================
+  const camSmoothedPoseH = createHunterPoseStruct();
+
+  function getSmoothedH(simTime) {
+    const out = new THREE.Vector3();
+    for (let k = 0; k < 8; k++) {
+      const tk = Math.max(0, simTime - k * 0.05);
+      const mk = getMotionTime(tk);
+      evaluateHunterPose(mk, camSmoothedPoseH);
+      out.add(camSmoothedPoseH.chestPos);
+    }
+    return out.multiplyScalar(1 / 8);
+  }
+
+  function composeThirdsFrame(camPos, pLL, pUR, pTop, baseFov, aspect) {
+    const d1 = new THREE.Vector3().subVectors(pLL, camPos).normalize();
+    const d2 = new THREE.Vector3().subVectors(pUR, camPos).normalize();
+    const fwd = new THREE.Vector3().addVectors(d1, d2).normalize();
+    const right = new THREE.Vector3().crossVectors(fwd, _upY).normalize();
+    const up = new THREE.Vector3().crossVectors(right, fwd).normalize();
+
+    const pts = pTop ? [pLL, pUR, pTop] : [pLL, pUR];
+    let minY = 99, maxY = -99;
+    for (let i = 0; i < pts.length; i++) {
+      const dp = new THREE.Vector3().subVectors(pts[i], camPos).normalize();
+      const ya = dp.dot(up);
+      if (ya < minY) minY = ya;
+      if (ya > maxY) maxY = ya;
+    }
+    const yMid = 0.5 * (minY + maxY);
+    fwd.addScaledVector(up, yMid * 0.85).normalize();
+    right.crossVectors(fwd, _upY).normalize();
+    up.crossVectors(right, fwd).normalize();
+
+    let reqTanY = Math.tan(THREE.MathUtils.degToRad(baseFov) * 0.5);
+    for (let i = 0; i < pts.length; i++) {
+      const d = new THREE.Vector3().subVectors(pts[i], camPos);
+      const z = d.dot(fwd);
+      if (z > 0.2) {
+        reqTanY = Math.max(reqTanY, Math.abs(d.dot(up)) / (z * 0.86), Math.abs(d.dot(right)) / (z * 0.86 * aspect));
+      }
+    }
+    const finalFov = Math.min(92.0, THREE.MathUtils.radToDeg(2 * Math.atan(reqTanY)));
+    return { lookAt: camPos.clone().addScaledVector(fwd, 30.0), fov: finalFov };
+  }
+
+  function updateCamera(simTime, motionTime, poseT, poseH) {
+    const H = poseH.chestPos.clone();
+    const Hs = getSmoothedH(simTime);
+    const TC = poseT.bones[BONE_INDEX.chest].center.clone();
+    const MID = new THREE.Vector3().addVectors(H, TC).multiplyScalar(0.5);
+
+    const hPrev = getHunterTrajectoryPos(Math.max(0, motionTime - 0.02), new THREE.Vector3());
+    const hNext = getHunterTrajectoryPos(Math.min(DURATION, motionTime + 0.02), new THREE.Vector3());
+    const vH = hNext.distanceTo(hPrev) / 0.04;
+
+    const aspect = camera.aspect;
+    const camPos = new THREE.Vector3();
+    let lookAt = new THREE.Vector3();
+    let fov = 40;
+
+    if (simTime < 3.0) {
+      camPos.set(-70, 6, 50);
+      lookAt.copy(MID);
+      fov = 40;
+    } else if (simTime < 9.0) {
+      const dirHoriz = new THREE.Vector3(Hs.x - TC.x, 0, Hs.z - TC.z);
+      if (dirHoriz.lengthSq() < 1e-4) dirHoriz.set(-1, 0, 0);
+      dirHoriz.normalize();
+      camPos.copy(Hs).addScaledVector(dirHoriz, 9.0).add(new THREE.Vector3(0, 3, 0));
+      fov = 55 + Math.min(12, 0.4 * vH);
+      const targetW1 = poseT.weakPoints[0];
+      const urTarget = simTime < 5.3 ? targetW1 : TC;
+      const composed = composeThirdsFrame(camPos, H, urTarget, TC, fov, aspect);
+      lookAt.copy(composed.lookAt);
+      fov = composed.fov;
+    } else if (simTime < 16.0) {
+      const angRad = THREE.MathUtils.degToRad(200 + 6 * (simTime - 9));
+      const pg = poseT.pelvisGround;
+      camPos.set(pg.x + 55 * Math.cos(angRad), 12, pg.z + 55 * Math.sin(angRad));
+      lookAt.copy(TC).multiplyScalar(0.6).addScaledVector(Hs, 0.4);
+      fov = 45;
+    } else if (simTime < 22.5) {
+      camPos.set(-14, 1.5, -46);
+      lookAt.copy(MID);
+      fov = 42;
+    } else if (simTime < 29.5) {
+      const velDir = new THREE.Vector3().subVectors(hNext, hPrev);
+      if (velDir.lengthSq() < 1e-4) velDir.subVectors(poseT.weakPoints[2], H);
+      velDir.normalize();
+      if (simTime >= 27.0) {
+        velDir.set(Math.max(0.25, velDir.x), velDir.y * 0.3, velDir.z).normalize();
+      }
+      camPos.copy(Hs).addScaledVector(velDir, -6.0).add(new THREE.Vector3(0, 2, 0));
+      fov = 60 + Math.min(12, 0.4 * vH);
+      const W3 = poseT.weakPoints[2];
+      const composed = composeThirdsFrame(camPos, H, W3, TC, fov, aspect);
+      lookAt.copy(composed.lookAt);
+      fov = composed.fov;
+    } else if (simTime < 36.0) {
+      camPos.set(-74, 25, -60);
+      lookAt.set(16, 14, 0);
+      fov = 38;
+    } else {
+      const dt = simTime - 36.0;
+      camPos.copy(H).add(new THREE.Vector3(-8 - 2 * dt, 2 + 0.5 * dt, 6));
+      lookAt.copy(H).add(new THREE.Vector3(0, 1, 0));
+      fov = 35;
+    }
+
+    if (aspect < 1.25) {
+      fov = THREE.MathUtils.radToDeg(2 * Math.atan(Math.tan(THREE.MathUtils.degToRad(fov) * 0.5) * (1.42 / aspect)));
+    }
+
+    const trauma = getTrauma(simTime);
+    const tSq = trauma * trauma;
+    const nx = smoothNoise1D(simTime * 17.0, 11);
+    const ny = smoothNoise1D(simTime * 17.0, 23);
+    const nz = smoothNoise1D(simTime * 17.0, 37);
+    const rx = smoothNoise1D(simTime * 19.0, 41);
+    const ry = smoothNoise1D(simTime * 19.0, 53);
+    const rz = smoothNoise1D(simTime * 19.0, 67);
+
+    camera.fov = fov;
+    camera.updateProjectionMatrix();
+    camera.position.copy(camPos);
+    camera.lookAt(lookAt);
+
+    if (tSq > 1e-5) {
+      camera.translateX(nx * 0.6 * tSq);
+      camera.translateY(ny * 0.6 * tSq);
+      camera.translateZ(nz * 0.35 * tSq);
+      const maxRot = THREE.MathUtils.degToRad(2.5) * tSq;
+      camera.rotateX(rx * maxRot);
+      camera.rotateY(ry * maxRot);
+      camera.rotateZ(rz * maxRot);
+    }
+    camera.updateMatrixWorld();
+
+    postMaterial.uniforms.uTraumaSq.value = tSq;
+  }
+
+  // =========================================================================
+  // 11. WORLD-ANCHORED ORTHOGRAPHIC HUD PASS (INSIDE #stage, WORDLESS)
+  // =========================================================================
+  const hudScene = new THREE.Scene();
+  const hudCamera = new THREE.OrthographicCamera(0, window.innerWidth, window.innerHeight, 0, -10, 10);
+  const glyphAtlas = createGlyphAtlas();
+
+  function makeHudQuad(colorHex, opacity = 1.0) {
+    const geo = new THREE.PlaneGeometry(1, 1);
+    const col = new THREE.Color(colorHex).convertSRGBToLinear();
+    const mat = new THREE.MeshBasicMaterial({ color: col, transparent: true, opacity, depthTest: false, depthWrite: false, toneMapped: false });
+    const mesh = new THREE.Mesh(geo, mat);
+    hudScene.add(mesh);
+    return { mesh, mat, col };
+  }
+
+  const hpBg = makeHudQuad(0x0b0e14, 0.78);
+  const hpBorder = makeHudQuad(0x6c7c96, 0.55);
+  const hpTrail = makeHudQuad(0xffd9a0, 0.85);
+  const hpFill = makeHudQuad(0xd93832, 0.95);
+
+  const stagBg = makeHudQuad(0x0b0e14, 0.78);
+  const stagFill = makeHudQuad(0xe8a828, 0.95);
+
+  const wpBrackets = [0, 1, 2].map(() => {
+    const segs = [];
+    for (let k = 0; k < 8; k++) segs.push(makeHudQuad(0xffb833, 0.9));
+    return segs;
+  });
+
+  const arrowGeo = new THREE.BufferGeometry();
+  arrowGeo.setAttribute('position', new THREE.BufferAttribute(new Float32Array([
+    0, 11, 0,
+    -8, -9, 0,
+    8, -9, 0
+  ]), 3));
+  const arrowMat = new THREE.MeshBasicMaterial({
+    color: new THREE.Color(0xff5a36).convertSRGBToLinear(),
+    transparent: true,
+    opacity: 0.95,
+    depthTest: false,
+    depthWrite: false,
+    toneMapped: false
+  });
+  const arrowMesh = new THREE.Mesh(arrowGeo, arrowMat);
+  arrowMesh.visible = false;
+  hudScene.add(arrowMesh);
+
+  const dmgNumbers = STRIKES.map((s) => {
+    const str = String(s.dmg);
+    const digits = [];
+    for (let i = 0; i < str.length; i++) {
+      const ch = parseInt(str[i], 10);
+      const geo = new THREE.PlaneGeometry(24, 30);
+      const u0 = ch / 10;
+      const u1 = (ch + 1) / 10;
+      const uvs = geo.attributes.uv;
+      uvs.setXY(0, u0, 1);
+      uvs.setXY(1, u1, 1);
+      uvs.setXY(2, u0, 0);
+      uvs.setXY(3, u1, 0);
+      const mat = new THREE.MeshBasicMaterial({
+        map: glyphAtlas,
+        transparent: true,
+        opacity: 0,
+        depthTest: false,
+        depthWrite: false,
+        toneMapped: false
+      });
+      const mesh = new THREE.Mesh(geo, mat);
+      mesh.visible = false;
+      hudScene.add(mesh);
+      digits.push({ mesh, mat });
+    }
+    return { strike: s, digits };
+  });
+
+  const hudProjVec = new THREE.Vector3();
+
+  function projectToScreen(worldPos, w, h) {
+    const viewZ = hudProjVec.copy(worldPos).applyMatrix4(camera.matrixWorldInverse).z;
+    const behind = viewZ > -0.05;
+    hudProjVec.copy(worldPos).project(camera);
+    let sx = (hudProjVec.x * 0.5 + 0.5) * w;
+    let sy = (hudProjVec.y * 0.5 + 0.5) * h;
+    if (behind) {
+      sx = w - sx;
+      sy = h - sy;
+    }
+    return { sx, sy, behind, dist: Math.max(1, -viewZ) };
+  }
+
+  function updateHUD(simTime, poseT) {
+    const w = window.innerWidth;
+    const h = window.innerHeight;
+    hudCamera.right = w;
+    hudCamera.top = h;
+    hudCamera.updateProjectionMatrix();
+
+    let hp = BOSS_MAX_HP;
+    let trailHp = BOSS_MAX_HP;
+    let stagger = 0;
+    let lastStrikeTime = -99;
+
+    for (let i = 0; i < STRIKES.length; i++) {
+      const s = STRIKES[i];
+      if (simTime >= s.t) {
+        const preHp = hp;
+        hp = Math.max(0, hp - s.dmg);
+        const dt = simTime - s.t;
+        trailHp = dt < 0.600 ? lerp(preHp, hp, dt / 0.600) : hp;
+        stagger = s.stagAfter;
+        lastStrikeTime = s.t;
+      }
+    }
+
+    let stagPulse = 0;
+    if (simTime >= 12.000 && simTime < 16.000) {
+      stagger = simTime >= 15.000 ? lerp(100, 0, (simTime - 15.000) / 1.000) : 100;
+      stagPulse = 0.5 + 0.5 * Math.sin(simTime * 18.0);
+    }
+
+    const barW = Math.min(500, w * 0.44);
+    const barH = 10;
+    const barY = h - Math.max(28, h * 0.045);
+    const cx = w * 0.5;
+
+    function placeBar(item, x, y, bw, bh, z) {
+      item.mesh.position.set(x, y, z);
+      item.mesh.scale.set(Math.max(0.001, bw), bh, 1);
+    }
+
+    placeBar(hpBorder, cx, barY, barW + 4, barH + 4, 0);
+    placeBar(hpBg, cx, barY, barW, barH, 1);
+    const trailW = barW * (trailHp / BOSS_MAX_HP);
+    placeBar(hpTrail, cx - (barW - trailW) * 0.5, barY, trailW, barH, 2);
+    hpTrail.mesh.visible = trailW > 0.5;
+    const fillW = barW * (hp / BOSS_MAX_HP);
+    placeBar(hpFill, cx - (barW - fillW) * 0.5, barY, fillW, barH, 3);
+    hpFill.mesh.visible = fillW > 0.5;
+    const strikeFlash = (simTime - lastStrikeTime >= 0 && simTime - lastStrikeTime < 0.14) ? 1 : 0;
+    hpFill.mat.color.setHex(strikeFlash ? 0xffffff : 0xd93832).convertSRGBToLinear();
+
+    const stagH = 5;
+    const stagY = barY - 13;
+    placeBar(stagBg, cx, stagY, barW, stagH, 1);
+    const stagW = barW * (stagger / 100);
+    placeBar(stagFill, cx - (barW - stagW) * 0.5, stagY, stagW, stagH, 2);
+    stagFill.mesh.visible = stagW > 0.5;
+    stagFill.mat.color.setHex(stagPulse > 0.5 ? 0xfff0aa : 0xe8a828).convertSRGBToLinear();
+
+    const currentTargetWp = simTime < 5.0 ? 0 : (simTime < 12.0 ? 1 : (simTime >= 25.0 && simTime < 29.5 ? 2 : -1));
+    const wpVisible = [
+      simTime < 5.000,
+      simTime < 12.000,
+      simTime >= 25.000 && simTime < 29.500
+    ];
+
+    for (let i = 0; i < 3; i++) {
+      const segs = wpBrackets[i];
+      if (!wpVisible[i]) {
+        for (let k = 0; k < 8; k++) segs[k].mesh.visible = false;
+        continue;
+      }
+      const proj = projectToScreen(poseT.weakPoints[i], w, h);
+      const onScreen = !proj.behind && proj.sx > 12 && proj.sx < w - 12 && proj.sy > 94 && proj.sy < h - 12;
+      if (!onScreen) {
+        for (let k = 0; k < 8; k++) segs[k].mesh.visible = false;
+        continue;
+      }
+      const isTarget = i === currentTargetWp;
+      const rad = clamp(920 / proj.dist, 16, 52);
+      const arm = Math.max(6, rad * 0.36);
+      const thick = isTarget ? 2.6 : 1.7;
+      const colHex = isTarget ? 0xffe488 : 0xd98022;
+      const alpha = isTarget ? 0.96 : 0.45;
+
+      const corners = [[-1, 1], [1, 1], [-1, -1], [1, -1]];
+      for (let c = 0; c < 4; c++) {
+        const [sxSign, sySign] = corners[c];
+        const cornerX = proj.sx + sxSign * rad;
+        const cornerY = proj.sy + sySign * rad;
+        const hSeg = segs[c * 2];
+        const vSeg = segs[c * 2 + 1];
+        hSeg.mesh.visible = true;
+        vSeg.mesh.visible = true;
+        hSeg.mat.color.setHex(colHex).convertSRGBToLinear();
+        vSeg.mat.color.setHex(colHex).convertSRGBToLinear();
+        hSeg.mat.opacity = alpha;
+        vSeg.mat.opacity = alpha;
+        hSeg.mesh.position.set(cornerX - sxSign * arm * 0.5, cornerY, 4);
+        hSeg.mesh.scale.set(arm, thick, 1);
+        vSeg.mesh.position.set(cornerX, cornerY - sySign * arm * 0.5, 4);
+        vSeg.mesh.scale.set(thick, arm, 1);
+      }
+    }
+
+    let threatPt = null;
+    let isAttackThreat = false;
+    if (simTime >= 6.000 && simTime < 7.500) {
+      const pFistR = projectToScreen(poseT.bones[BONE_INDEX.fistR].center, w, h);
+      if (pFistR.behind || pFistR.sx < 16 || pFistR.sx > w - 16 || pFistR.sy < 96 || pFistR.sy > h - 16) {
+        threatPt = pFistR;
+        isAttackThreat = true;
+      }
+    } else if (simTime >= 17.000 && simTime < 19.300) {
+      const pFistL = projectToScreen(poseT.bones[BONE_INDEX.fistL].center, w, h);
+      if (pFistL.behind || pFistL.sx < 16 || pFistL.sx > w - 16 || pFistL.sy < 96 || pFistL.sy > h - 16) {
+        threatPt = pFistL;
+        isAttackThreat = true;
+      }
+    }
+    if (!threatPt && simTime < 30.800) {
+      const pChest = projectToScreen(poseT.bones[BONE_INDEX.chest].center, w, h);
+      if (pChest.behind || pChest.sx < 12 || pChest.sx > w - 12 || pChest.sy < 94 || pChest.sy > h - 12) {
+        threatPt = pChest;
+      }
+    }
+    if (threatPt) {
+      const cx0 = w * 0.5;
+      const cy0 = (h + 90) * 0.5;
+      let dx = threatPt.sx - cx0;
+      let dy = threatPt.sy - cy0;
+      const dLen = Math.hypot(dx, dy);
+      if (dLen > 1e-3) { dx /= dLen; dy /= dLen; } else { dx = 1; dy = 0; }
+      const marginX = w * 0.5 - 28;
+      const marginYTop = h - 28 - cy0;
+      const marginYBot = cy0 - 104;
+      const tx = Math.abs(dx) > 1e-4 ? marginX / Math.abs(dx) : 1e9;
+      const ty = dy > 1e-4 ? marginYTop / dy : (dy < -1e-4 ? marginYBot / -dy : 1e9);
+      const tEdge = Math.min(tx, ty);
+      arrowMesh.visible = true;
+      arrowMesh.position.set(cx0 + dx * tEdge, cy0 + dy * tEdge, 5);
+      arrowMesh.rotation.z = Math.atan2(dy, dx) - Math.PI * 0.5;
+      arrowMat.color.setHex(isAttackThreat ? 0xff4228 : 0x7bc8ff).convertSRGBToLinear();
+    } else {
+      arrowMesh.visible = false;
+    }
+
+    for (let i = 0; i < dmgNumbers.length; i++) {
+      const dn = dmgNumbers[i];
+      const dt = simTime - dn.strike.t;
+      if (dt < 0 || dt >= 0.900) {
+        for (let k = 0; k < dn.digits.length; k++) dn.digits[k].mesh.visible = false;
+        continue;
+      }
+      const proj = projectToScreen(poseT.weakPoints[dn.strike.wp], w, h);
+      if (proj.behind) {
+        for (let k = 0; k < dn.digits.length; k++) dn.digits[k].mesh.visible = false;
+        continue;
+      }
+      const rise = 60 * easeOutCubic(dt / 0.900);
+      const alpha = dt < 0.45 ? 1.0 : 1.0 - (dt - 0.45) / 0.45;
+      const pop = dt < 0.12 ? lerp(1.35, 1.0, dt / 0.12) : 1.0;
+      const sy = clamp(proj.sy + rise, 108, h - 48);
+      const sx = clamp(proj.sx, 48, w - 48);
+      const spacing = 19 * pop;
+      const totalW = (dn.digits.length - 1) * spacing;
+      for (let k = 0; k < dn.digits.length; k++) {
+        const dg = dn.digits[k];
+        dg.mesh.visible = true;
+        dg.mesh.position.set(sx - totalW * 0.5 + k * spacing, sy, 6);
+        dg.mesh.scale.set(pop, pop, 1);
+        dg.mat.opacity = alpha;
+      }
+    }
+  }
+
+  // =========================================================================
+  // 12. WEB AUDIO SYNTHESIS ENGINE (SEED 4242, ZERO AUDIO FILES/MUSIC)
+  // =========================================================================
+  const AudioEngine = (() => {
+    let ctx = null;
+    let masterGain = null;
+    let stormDuckGain = null;
+    let compressor = null;
+    let whiteBuf = null;
+    let pinkBuf = null;
+
+    let windFilter = null, windGain = null;
+    let rainFilter = null, rainGain = null;
+    let rumbleOsc = null, rumbleNoiseFilter = null, rumbleGain = null, rumblePanner = null;
+    let crackleFilter = null, crackleHumOsc = null, crackleGain = null, cracklePanner = null;
+    let reelOsc = null, reelGain = null, reelPanner = null;
+    let whooshFilter = null, whooshGain = null, whooshPanner = null;
+
+    const activeOneShots = new Set();
+    let initialized = false;
+    let isMuted = true;
+
+    function createNoiseBuffer(audioCtx, lengthSec, isPink) {
+      const sr = audioCtx.sampleRate;
+      const len = Math.floor(sr * lengthSec);
+      const buf = audioCtx.createBuffer(1, len, sr);
+      const data = buf.getChannelData(0);
+      const aRng = mulberry32(AUDIO_SEED + (isPink ? 77 : 13));
+      let b0 = 0, b1 = 0, b2 = 0, b3 = 0, b4 = 0, b5 = 0, b6 = 0;
+      for (let i = 0; i < len; i++) {
+        const w = aRng() * 2 - 1;
+        if (!isPink) {
+          data[i] = w;
+        } else {
+          b0 = 0.99886 * b0 + w * 0.0555179;
+          b1 = 0.99332 * b1 + w * 0.0750759;
+          b2 = 0.96900 * b2 + w * 0.1538520;
+          b3 = 0.86650 * b3 + w * 0.3104856;
+          b4 = 0.55000 * b4 + w * 0.5329522;
+          b5 = -0.7616 * b5 - w * 0.0168980;
+          data[i] = (b0 + b1 + b2 + b3 + b4 + b5 + b6 + w * 0.5362) * 0.11;
+          b6 = w * 0.115926;
+        }
+      }
+      return buf;
+    }
+
+    function makePanner() {
+      const p = ctx.createPanner();
+      p.panningModel = 'HRTF';
+      p.distanceModel = 'inverse';
+      p.refDistance = 14;
+      p.maxDistance = 260;
+      p.rolloffFactor = 0.85;
+      return p;
+    }
+
+    function setPannerPos(panner, v) {
+      if (!panner) return;
+      if (panner.positionX) {
+        panner.positionX.value = v.x;
+        panner.positionY.value = v.y;
+        panner.positionZ.value = v.z;
+      } else if (panner.setPosition) {
+        panner.setPosition(v.x, v.y, v.z);
+      }
+    }
+
+    function updateListener() {
+      if (!ctx || !ctx.listener) return;
+      const l = ctx.listener;
+      const fwd = new THREE.Vector3(0, 0, -1).applyQuaternion(camera.quaternion);
+      const up = new THREE.Vector3(0, 1, 0).applyQuaternion(camera.quaternion);
+      if (l.positionX) {
+        l.positionX.value = camera.position.x;
+        l.positionY.value = camera.position.y;
+        l.positionZ.value = camera.position.z;
+        l.forwardX.value = fwd.x; l.forwardY.value = fwd.y; l.forwardZ.value = fwd.z;
+        l.upX.value = up.x; l.upY.value = up.y; l.upZ.value = up.z;
+      } else if (l.setPosition) {
+        l.setPosition(camera.position.x, camera.position.y, camera.position.z);
+        l.setOrientation(fwd.x, fwd.y, fwd.z, up.x, up.y, up.z);
+      }
+    }
+
+    function init() {
+      if (initialized) return;
+      initialized = true;
+      const AC = window.AudioContext || window.webkitAudioContext;
+      if (!AC) return;
+      try {
+        ctx = new AC();
+        ctx.resume().catch(() => {});
+
+        compressor = ctx.createDynamicsCompressor();
+        compressor.threshold.value = -14;
+        compressor.knee.value = 12;
+        compressor.ratio.value = 6;
+        compressor.attack.value = 0.003;
+        compressor.release.value = 0.16;
+
+        masterGain = ctx.createGain();
+        masterGain.gain.value = 0;
+
+        stormDuckGain = ctx.createGain();
+        stormDuckGain.gain.value = 1.0;
+
+        stormDuckGain.connect(masterGain);
+        masterGain.connect(compressor);
+        compressor.connect(ctx.destination);
+
+        whiteBuf = createNoiseBuffer(ctx, 3.0, false);
+        pinkBuf = createNoiseBuffer(ctx, 4.0, true);
+
+        const windSrc = ctx.createBufferSource();
+        windSrc.buffer = pinkBuf;
+        windSrc.loop = true;
+        windFilter = ctx.createBiquadFilter();
+        windFilter.type = 'bandpass';
+        windFilter.frequency.value = 340;
+        windFilter.Q.value = 1.1;
+        windGain = ctx.createGain();
+        windGain.gain.value = 0.24;
+        windSrc.connect(windFilter).connect(windGain).connect(stormDuckGain);
+        windSrc.start();
+
+        const rainSrc = ctx.createBufferSource();
+        rainSrc.buffer = whiteBuf;
+        rainSrc.loop = true;
+        rainFilter = ctx.createBiquadFilter();
+        rainFilter.type = 'bandpass';
+        rainFilter.frequency.value = 2400;
+        rainFilter.Q.value = 0.65;
+        rainGain = ctx.createGain();
+        rainGain.gain.value = 0.12;
+        rainSrc.connect(rainFilter).connect(rainGain).connect(stormDuckGain);
+        rainSrc.start();
+
+        rumblePanner = makePanner();
+        rumblePanner.connect(masterGain);
+        rumbleGain = ctx.createGain();
+        rumbleGain.gain.value = 0;
+        rumbleGain.connect(rumblePanner);
+        rumbleOsc = ctx.createOscillator();
+        rumbleOsc.type = 'triangle';
+        rumbleOsc.frequency.value = 42;
+        const rumbleNoiseSrc = ctx.createBufferSource();
+        rumbleNoiseSrc.buffer = pinkBuf;
+        rumbleNoiseSrc.loop = true;
+        rumbleNoiseFilter = ctx.createBiquadFilter();
+        rumbleNoiseFilter.type = 'lowpass';
+        rumbleNoiseFilter.frequency.value = 95;
+        rumbleOsc.connect(rumbleGain);
+        rumbleNoiseSrc.connect(rumbleNoiseFilter).connect(rumbleGain);
+        rumbleOsc.start();
+        rumbleNoiseSrc.start();
+
+        cracklePanner = makePanner();
+        cracklePanner.connect(masterGain);
+        crackleGain = ctx.createGain();
+        crackleGain.gain.value = 0;
+        crackleGain.connect(cracklePanner);
+        crackleHumOsc = ctx.createOscillator();
+        crackleHumOsc.type = 'sawtooth';
+        crackleHumOsc.frequency.value = 115;
+        const humFilter = ctx.createBiquadFilter();
+        humFilter.type = 'lowpass';
+        humFilter.frequency.value = 380;
+        const crackleNoiseSrc = ctx.createBufferSource();
+        crackleNoiseSrc.buffer = whiteBuf;
+        crackleNoiseSrc.loop = true;
+        crackleFilter = ctx.createBiquadFilter();
+        crackleFilter.type = 'bandpass';
+        crackleFilter.frequency.value = 3200;
+        crackleFilter.Q.value = 1.6;
+        crackleHumOsc.connect(humFilter).connect(crackleGain);
+        crackleNoiseSrc.connect(crackleFilter).connect(crackleGain);
+        crackleHumOsc.start();
+        crackleNoiseSrc.start();
+
+        reelPanner = makePanner();
+        reelPanner.connect(masterGain);
+        reelGain = ctx.createGain();
+        reelGain.gain.value = 0;
+        reelGain.connect(reelPanner);
+        reelOsc = ctx.createOscillator();
+        reelOsc.type = 'sine';
+        reelOsc.frequency.value = 420;
+        reelOsc.connect(reelGain);
+        reelOsc.start();
+
+        whooshPanner = makePanner();
+        whooshPanner.connect(masterGain);
+        whooshGain = ctx.createGain();
+        whooshGain.gain.value = 0;
+        whooshGain.connect(whooshPanner);
+        const whooshSrc = ctx.createBufferSource();
+        whooshSrc.buffer = pinkBuf;
+        whooshSrc.loop = true;
+        whooshFilter = ctx.createBiquadFilter();
+        whooshFilter.type = 'bandpass';
+        whooshFilter.frequency.value = 600;
+        whooshFilter.Q.value = 1.4;
+        whooshSrc.connect(whooshFilter).connect(whooshGain);
+        whooshSrc.start();
+      } catch (_) {
+        ctx = null;
+      }
+    }
+
+    function resume() {
+      if (ctx && ctx.state === 'suspended') {
+        ctx.resume().catch(() => {});
+      }
+    }
+
+    function stopAllOneShots() {
+      if (!ctx) return;
+      const now = ctx.currentTime;
+      for (const item of activeOneShots) {
+        try {
+          item.gain.gain.cancelScheduledValues(now);
+          item.gain.gain.setValueAtTime(0, now);
+          for (const node of item.nodes) node.stop(now + 0.01);
+        } catch (_) {}
+      }
+      activeOneShots.clear();
+    }
+
+    function registerOneShot(gainNode, nodes, endTime) {
+      const entry = { gain: gainNode, nodes };
+      activeOneShots.add(entry);
+      const ms = Math.max(50, (endTime - ctx.currentTime) * 1000 + 80);
+      setTimeout(() => { activeOneShots.delete(entry); }, ms);
+    }
+
+    function playThud(pos, fStart, fEnd, dur, vol, noiseVol) {
+      if (!ctx || isMuted) return;
+      const now = ctx.currentTime;
+      const panner = makePanner();
+      setPannerPos(panner, pos);
+      panner.connect(masterGain);
+      const g = ctx.createGain();
+      g.gain.setValueAtTime(vol, now);
+      g.gain.exponentialRampToValueAtTime(0.001, now + dur);
+      g.connect(panner);
+
+      const osc = ctx.createOscillator();
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(fStart, now);
+      osc.frequency.exponentialRampToValueAtTime(fEnd, now + dur * 0.7);
+      osc.connect(g);
+      osc.start(now);
+      osc.stop(now + dur);
+
+      const nSrc = ctx.createBufferSource();
+      nSrc.buffer = pinkBuf;
+      const nFil = ctx.createBiquadFilter();
+      nFil.type = 'lowpass';
+      nFil.frequency.value = 260;
+      const nGain = ctx.createGain();
+      nGain.gain.setValueAtTime(noiseVol, now);
+      nGain.gain.exponentialRampToValueAtTime(0.001, now + dur * 0.8);
+      nSrc.connect(nFil).connect(nGain).connect(panner);
+      nSrc.start(now);
+      nSrc.stop(now + dur);
+
+      registerOneShot(g, [osc, nSrc], now + dur);
+    }
+
+    function playTetherSnap(pos, isAttach) {
+      if (!ctx || isMuted) return;
+      const now = ctx.currentTime;
+      const panner = makePanner();
+      setPannerPos(panner, pos);
+      panner.connect(masterGain);
+      const g = ctx.createGain();
+      const dur = isAttach ? 0.14 : 0.10;
+      g.gain.setValueAtTime(isAttach ? 0.28 : 0.32, now);
+      g.gain.exponentialRampToValueAtTime(0.001, now + dur);
+      g.connect(panner);
+
+      const osc = ctx.createOscillator();
+      osc.type = isAttach ? 'triangle' : 'sawtooth';
+      osc.frequency.setValueAtTime(isAttach ? 1850 : 1400, now);
+      osc.frequency.exponentialRampToValueAtTime(isAttach ? 1200 : 240, now + dur);
+      osc.connect(g);
+      osc.start(now);
+      osc.stop(now + dur);
+      registerOneShot(g, [osc], now + dur);
+    }
+
+    function playStrike(pos, idx, hitStopDur) {
+      if (!ctx || isMuted) return;
+      const now = ctx.currentTime;
+      const pitches = [520, 660, 840, 1080];
+      const f = pitches[idx % pitches.length];
+
+      stormDuckGain.gain.cancelScheduledValues(now);
+      stormDuckGain.gain.setValueAtTime(0.25, now);
+      stormDuckGain.gain.setValueAtTime(0.25, now + hitStopDur);
+      stormDuckGain.gain.linearRampToValueAtTime(1.0, now + hitStopDur + 0.16);
+
+      const panner = makePanner();
+      setPannerPos(panner, pos);
+      panner.connect(masterGain);
+      const g = ctx.createGain();
+      g.gain.setValueAtTime(0.45, now);
+      g.gain.exponentialRampToValueAtTime(0.001, now + 0.42);
+      g.connect(panner);
+
+      const osc1 = ctx.createOscillator();
+      osc1.type = 'triangle';
+      osc1.frequency.setValueAtTime(f, now);
+      osc1.frequency.exponentialRampToValueAtTime(f * 0.72, now + 0.35);
+
+      const osc2 = ctx.createOscillator();
+      osc2.type = 'sine';
+      osc2.frequency.setValueAtTime(f * 2.41, now);
+      osc2.connect(g);
+      osc1.connect(g);
+      osc1.start(now);
+      osc2.start(now);
+      osc1.stop(now + 0.42);
+      osc2.stop(now + 0.42);
+      registerOneShot(g, [osc1, osc2], now + 0.42);
+    }
+
+    function playThunder(strikePos, intensity) {
+      if (!ctx || isMuted) return;
+      const dist = camera.position.distanceTo(strikePos);
+      const delay = dist / 340.0;
+      const start = ctx.currentTime + delay;
+      const dur = 2.6;
+
+      const g = ctx.createGain();
+      g.gain.setValueAtTime(0.001, start);
+      g.gain.linearRampToValueAtTime(0.55 * intensity, start + 0.03);
+      g.gain.exponentialRampToValueAtTime(0.22 * intensity, start + 0.25);
+      g.gain.exponentialRampToValueAtTime(0.001, start + dur);
+      g.connect(masterGain);
+
+      const nSrc = ctx.createBufferSource();
+      nSrc.buffer = pinkBuf;
+      const nFil = ctx.createBiquadFilter();
+      nFil.type = 'lowpass';
+      nFil.frequency.setValueAtTime(1800, start);
+      nFil.frequency.exponentialRampToValueAtTime(85, start + 1.4);
+      nSrc.connect(nFil).connect(g);
+      nSrc.start(start);
+      nSrc.stop(start + dur);
+      registerOneShot(g, [nSrc], start + dur);
+    }
+
+    function playBoneFailWhine(pos) {
+      if (!ctx || isMuted) return;
+      const now = ctx.currentTime;
+      const panner = makePanner();
+      setPannerPos(panner, pos);
+      panner.connect(masterGain);
+      const g = ctx.createGain();
+      g.gain.setValueAtTime(0.18, now);
+      g.gain.setValueAtTime(0.18, now + 0.38);
+      g.gain.linearRampToValueAtTime(0.0, now + 0.42);
+      g.connect(panner);
+
+      const osc = ctx.createOscillator();
+      osc.type = 'sawtooth';
+      osc.frequency.setValueAtTime(760, now);
+      osc.frequency.exponentialRampToValueAtTime(85, now + 0.40);
+      osc.connect(g);
+      osc.start(now);
+      osc.stop(now + 0.42);
+      registerOneShot(g, [osc], now + 0.42);
+    }
+
+    let lastBoulderThudWallTime = 0;
+
+    function updateContinuous(shouldBeAudible, simTime, wetness, poseT, poseH, avgCharge, maxLimbSpeed, hunterSpeed) {
+      if (!ctx) return;
+      const now = ctx.currentTime;
+      const targetMaster = shouldBeAudible ? 0.85 : 0.0;
+      if (!shouldBeAudible && !isMuted) {
+        stopAllOneShots();
+      }
+      isMuted = !shouldBeAudible;
+      masterGain.gain.setTargetAtTime(targetMaster, now, 0.012);
+
+      if (!shouldBeAudible) return;
+      updateListener();
+
+      const gust = 0.5 + 0.5 * Math.sin(simTime * 0.45 + Math.sin(simTime * 0.17));
+      windFilter.frequency.setTargetAtTime(260 + gust * 380, now, 0.05);
+      windGain.gain.setTargetAtTime(0.16 + gust * 0.14, now, 0.05);
+      rainFilter.frequency.setTargetAtTime(lerp(2400, 1250, wetness), now, 0.05);
+      rainGain.gain.setTargetAtTime(lerp(0.10, 0.19, wetness), now, 0.05);
+
+      const chestPos = poseT.bones[BONE_INDEX.chest].center;
+      setPannerPos(rumblePanner, chestPos);
+      setPannerPos(cracklePanner, chestPos);
+      const speedNorm = clamp(maxLimbSpeed / 12.0, 0, 1.4);
+      const aliveFactor = avgCharge > 0.02 ? 1 : 0;
+      rumbleOsc.frequency.setTargetAtTime(32 + speedNorm * 22, now, 0.04);
+      rumbleNoiseFilter.frequency.setTargetAtTime(55 + speedNorm * 90, now, 0.04);
+      rumbleGain.gain.setTargetAtTime(aliveFactor * (0.04 + speedNorm * 0.24), now, 0.04);
+
+      crackleFilter.frequency.setTargetAtTime(1600 + avgCharge * 1800, now, 0.04);
+      crackleHumOsc.frequency.setTargetAtTime(95 + avgCharge * 35, now, 0.04);
+      crackleGain.gain.setTargetAtTime(clamp(avgCharge * 0.11, 0, 0.25), now, 0.04);
+
+      setPannerPos(reelPanner, poseH.chestPos);
+      setPannerPos(whooshPanner, poseH.chestPos);
+      const tetherAttached =
+        (simTime >= 3.3 && simTime < 5.6) ||
+        (simTime >= 9.3 && simTime < 12.4) ||
+        (simTime >= 23.8 && simTime < 31.5);
+      reelOsc.frequency.setTargetAtTime(280 + hunterSpeed * 28, now, 0.03);
+      reelGain.gain.setTargetAtTime(tetherAttached ? 0.055 : 0.0, now, 0.03);
+
+      const whooshLevel = clamp((hunterSpeed - 3.5) / 22.0, 0, 0.22);
+      whooshFilter.frequency.setTargetAtTime(350 + hunterSpeed * 42, now, 0.03);
+      whooshGain.gain.setTargetAtTime(whooshLevel, now, 0.03);
+    }
+
+    function triggerCrossedEvents(prevT, curT, poseT, poseH) {
+      if (!ctx || isMuted || curT <= prevT) return;
+      const crossed = (evT) => prevT < evT && evT <= curT;
+
+      const ffs = [
+        [1.000, BONE_INDEX.footL], [2.500, BONE_INDEX.footR],
+        [4.000, BONE_INDEX.footL], [5.500, BONE_INDEX.footR]
+      ];
+      for (const [ft, bi] of ffs) {
+        if (crossed(ft)) playThud(poseT.bones[bi].center, 85, 28, 0.36, 0.45, 0.18);
+      }
+
+      if (crossed(7.500)) playThud(SLAM_TARGET, 115, 22, 0.72, 0.85, 0.45);
+      if (crossed(13.000)) playThud(poseT.bones[BONE_INDEX.shinL].start, 95, 24, 0.58, 0.65, 0.32);
+      if (crossed(19.000)) playThud(poseH.chestPos, 150, 42, 0.28, 0.55, 0.35);
+
+      for (const ts of TETHER_SPECS) {
+        if (crossed(ts.tFire)) playTetherSnap(poseH.launcherPos, false);
+        if (crossed(ts.tAttach)) playTetherSnap(poseT.bones[BONE_INDEX[ts.boneName]].center, true);
+      }
+
+      for (let i = 0; i < STRIKES.length; i++) {
+        if (crossed(STRIKES[i].t)) playStrike(poseT.weakPoints[STRIKES[i].wp], i, STRIKES[i].hitStop);
+      }
+
+      for (const sk of SKY_STRIKES) {
+        if (crossed(sk.t)) playThunder(sk.pos, sk.intensity);
+      }
+
+      for (const rt of ragdollImpactTimes) {
+        if (crossed(rt)) playThud(poseH.chestPos, 95, 38, 0.16, 0.24, 0.12);
+      }
+
+      const boneGroups = [
+        [29.700, BONE_INDEX.head], [30.200, BONE_INDEX.upperArmR], [30.800, BONE_INDEX.chest],
+        [31.400, BONE_INDEX.spine], [32.000, BONE_INDEX.pelvis], [32.600, BONE_INDEX.thighL]
+      ];
+      for (const [bt, bi] of boneGroups) {
+        if (crossed(bt)) playBoneFailWhine(poseT.bones[bi].center);
+      }
+
+      const wallNow = performance.now();
+      if (curT > 30.0 && curT < 36.0 && wallNow - lastBoulderThudWallTime > 45) {
+        for (let i = 0; i < boulders.length; i++) {
+          const b = boulders[i];
+          if (crossed(b.landTime)) {
+            playThud(b.landPos, 72, 26, 0.24, 0.22, 0.14);
+            lastBoulderThudWallTime = wallNow;
+            break;
+          }
+        }
+      }
+    }
+
+    return { init, resume, updateContinuous, triggerCrossedEvents, stopAllOneShots };
+  })();
+
+  AudioEngine.init();
+  const unlockAudio = () => {
+    AudioEngine.init();
+    AudioEngine.resume();
+  };
+  window.addEventListener('pointerdown', unlockAudio, { passive: true });
+  window.addEventListener('keydown', unlockAudio, { passive: true });
+
+  // =========================================================================
+  // 13. MAIN FRAME EVALUATION (`renderAt(simTime)`)
+  // =========================================================================
+  const _mat4 = new THREE.Matrix4();
+  const _posTmp = new THREE.Vector3();
+  const _quatTmp = new THREE.Quaternion();
+  const _scaleTmp = new THREE.Vector3();
+
+  const STATIC_SHOCKWAVES = [
+    { t: 1.000, getPos: (p) => p.bones[BONE_INDEX.footL].center, s: 0.45 },
+    { t: 2.500, getPos: (p) => p.bones[BONE_INDEX.footR].center, s: 0.45 },
+    { t: 4.000, getPos: (p) => p.bones[BONE_INDEX.footL].center, s: 0.45 },
+    { t: 5.500, getPos: (p) => p.bones[BONE_INDEX.footR].center, s: 0.45 },
+    { t: 7.500, getPos: () => SLAM_TARGET, s: 1.00 },
+    { t: 13.000, getPos: (p) => p.bones[BONE_INDEX.shinL].start, s: 0.72 }
+  ];
+  (function bakeStaticShockwaves() {
+    const tmpP = createPoseState();
+    for (let i = 0; i < STATIC_SHOCKWAVES.length; i++) {
+      const sw = STATIC_SHOCKWAVES[i];
+      evaluateTitanPose(sw.t, tmpP);
+      const pt = sw.getPos(tmpP);
+      shockWaveUniformArray[i].set(pt.x, pt.z, sw.t, sw.s);
+    }
+    for (let i = 0; i < 10 && i + 6 < MAX_SHOCKWAVES; i++) {
+      const bl = boulderLandUniformArray[i];
+      shockWaveUniformArray[i + 6].set(bl.x, bl.y, bl.z, 0.28);
+    }
+  })();
+
+  const boulderWorldPos = new Array(boulders.length).fill(null).map(() => new THREE.Vector3());
+
+  function renderAt(simTime, prevSimTime, allowTriggerAudio) {
+    const motionTime = getMotionTime(simTime);
+    const wetness = getWetness(simTime);
+    const skyFlash = getSkyFlash(simTime);
+
+    evaluateTitanPose(motionTime, titanPose);
+    evaluateTitanPose(Math.max(0, motionTime - 0.03), titanPosePrev);
+    evaluateHunterPose(motionTime, hunterPose);
+
+    let maxLimbSpeed = 0;
+    let chargeSum = 0;
+    for (let i = 0; i < BONE_NAMES.length; i++) {
+      chargeSum += titanPose.bones[i].charge;
+      const spd = titanPose.bones[i].end.distanceTo(titanPosePrev.bones[i].end) / 0.03;
+      if (spd > maxLimbSpeed) maxLimbSpeed = spd;
+    }
+    const avgCharge = chargeSum / BONE_NAMES.length;
+
+    const hPrev = getHunterTrajectoryPos(Math.max(0, motionTime - 0.03), _vA);
+    const hNext = getHunterTrajectoryPos(Math.min(DURATION, motionTime + 0.03), _vB);
+    const hunterSpeed = hNext.distanceTo(hPrev) / 0.06;
+
+    // Wetness response: roughness 0.90 -> 0.35, stronger specular env reflections, darker wet surfaces
+    const wetRough = lerp(0.90, 0.35, wetness);
+    const wetEnv = lerp(0.25, 1.45, wetness);
+    const wetDark = lerp(1.0, 0.62, wetness);
+    plateauMat.roughness = wetRough;
+    plateauMat.envMapIntensity = wetEnv;
+    plateauMat.color.setRGB(wetDark, wetDark, wetDark);
+
+    const tick20Hz = Math.floor(motionTime * 20);
+    const flicker = 0.72 + 0.56 * hashInt(tick20Hz * 17 + 5);
+    for (let v = 0; v < 4; v++) {
+      const m = boulderVariants[v].mat;
+      m.roughness = wetRough;
+      m.envMapIntensity = wetEnv;
+      m.color.setRGB(wetDark, wetDark, wetDark);
+    }
+
+    for (let i = 0; i < hunterMaterials.length; i++) {
+      const hm = hunterMaterials[i];
+      hm.mat.roughness = lerp(hm.baseRough, Math.min(hm.baseRough, 0.35), wetness);
+      hm.mat.envMapIntensity = lerp(0.35, 1.45, wetness);
+      const dk = lerp(1.0, 0.72, wetness);
+      hm.mat.color.copy(hm.baseColor).multiplyScalar(dk);
+    }
+
+    for (const name of HUNTER_PART_NAMES) {
+      const mesh = hunterParts[name];
+      const p = hunterPose.parts[name];
+      mesh.position.copy(p.pos);
+      mesh.quaternion.copy(p.quat);
+    }
+
+    // Boulders & per-boulder ore glow driven by parent bone charge
+    for (let i = 0; i < boulders.length; i++) {
+      const b = boulders[i];
+      if (motionTime < b.releaseTime) {
+        evalBoulderTransformAt(b, titanPose, motionTime, _posTmp, _quatTmp);
+      } else {
+        getCollapseBoulderTransform(b, motionTime, _posTmp, _quatTmp);
+      }
+      boulderWorldPos[i].copy(_posTmp);
+      _mat4.compose(_posTmp, _quatTmp, b.scale);
+      const bv = boulderVariants[b.variantIdx];
+      bv.mesh.setMatrixAt(b.slotIdx, _mat4);
+      const boneCh = titanPose.bones[b.boneIndex].charge;
+      bv.oreAttr.setX(b.slotIdx, boneCh > 0.01 ? (0.15 + 1.05 * boneCh * flicker) : 0.0);
+    }
+    for (let v = 0; v < 4; v++) {
+      boulderVariants[v].mesh.instanceMatrix.needsUpdate = true;
+      boulderVariants[v].oreAttr.needsUpdate = true;
+    }
+
+    // Weak points
+    const wpBreakTimes = [5.000, 12.000, 29.500];
+    const wpStrikeTimes = [[5.000], [12.000], [27.000, 29.500]];
+    for (let i = 0; i < 3; i++) {
+      const mesh = wpMeshes[i];
+      const mat = wpMaterials[i];
+      const pl = wpLights[i];
+      if (i === 2 && motionTime >= COLLAPSE_GROUPS.chest) {
+        mesh.visible = false;
+        pl.intensity = 0;
+        continue;
+      }
+      mesh.visible = true;
+      mesh.position.copy(titanPose.weakPoints[i]);
+      pl.position.copy(titanPose.weakPoints[i]);
+
+      let flash = 0;
+      for (const st of wpStrikeTimes[i]) {
+        const dt = simTime - st;
+        if (dt >= 0 && dt < 0.25) flash = Math.max(flash, 1 - dt / 0.25);
+      }
+      const broken = simTime >= wpBreakTimes[i] + 0.22;
+      const exposed = i !== 2 || motionTime >= 25.000;
+
+      if (flash > 0) {
+        mat.color.setHex(0xffffff);
+        mat.emissive.setHex(0xffffff);
+        mat.emissiveIntensity = 8.0 * flash + 2.0;
+        pl.color.setHex(0xffffff);
+        pl.intensity = 5.0 * flash;
+      } else if (broken) {
+        mat.color.setHex(0x181a20);
+        mat.emissive.setHex(0x000000);
+        mat.emissiveIntensity = 0;
+        pl.intensity = 0;
+      } else {
+        const pulse = 2.6 + 0.7 * Math.sin(simTime * 5.0 + i);
+        mat.color.setHex(0xffaa22);
+        mat.emissive.setHex(0xff7b00);
+        mat.emissiveIntensity = exposed ? pulse : 0.9;
+        pl.color.setHex(0xff8811);
+        pl.intensity = exposed ? 2.2 : 0.3;
+      }
+    }
+
+    // Binding Lightning Arcs (56 arcs flickering at 20 Hz from motionTime)
+    const perp1 = _vC;
+    const perp2 = _vD;
+    const dirArc = new THREE.Vector3();
+    const curPt = new THREE.Vector3();
+    const nxtPt = new THREE.Vector3();
+
+    for (let aIdx = 0; aIdx < COUNTS.arcs; aIdx++) {
+      const pair = arcPairs[aIdx];
+      const charge = titanPose.bones[pair.boneIndex].charge;
+      const active = charge > 0.02;
+
+      const pa = boulderWorldPos[pair.a];
+      const pb = boulderWorldPos[pair.b];
+      dirArc.subVectors(pb, pa);
+      const len = dirArc.length();
+      if (len > 1e-4) dirArc.multiplyScalar(1 / len);
+
+      perp1.set(0, 1, 0).cross(dirArc);
+      if (perp1.lengthSq() < 1e-4) perp1.set(1, 0, 0).cross(dirArc);
+      perp1.normalize();
+      perp2.crossVectors(dirArc, perp1).normalize();
+
+      const segSeed = tick20Hz * 131 + aIdx * 37;
+      const arcVis = active && hashInt(segSeed + 3) < clamp(charge * 0.92, 0.15, 1.0);
+      const w = arcVis ? (0.045 + 0.045 * charge) : 0.0;
+      const br = arcVis ? (0.85 + 1.15 * charge) : 0.0;
+
+      for (let s = 0; s < ARC_SEGS; s++) {
+        const u0 = s / ARC_SEGS;
+        const u1 = (s + 1) / ARC_SEGS;
+        const env0 = Math.sin(u0 * Math.PI);
+        const env1 = Math.sin(u1 * Math.PI);
+
+        const j0x = (hashInt(segSeed + s * 7 + 1) - 0.5) * 1.45 * env0;
+        const j0y = (hashInt(segSeed + s * 7 + 2) - 0.5) * 1.45 * env0;
+        const j1x = (hashInt(segSeed + (s + 1) * 7 + 1) - 0.5) * 1.45 * env1;
+        const j1y = (hashInt(segSeed + (s + 1) * 7 + 2) - 0.5) * 1.45 * env1;
+
+        curPt.lerpVectors(pa, pb, u0).addScaledVector(perp1, j0x).addScaledVector(perp2, j0y);
+        nxtPt.lerpVectors(pa, pb, u1).addScaledVector(perp1, j1x).addScaledVector(perp2, j1y);
+
+        const baseV = (aIdx * ARC_SEGS + s) * 8;
+        const writeV = (off, vx, vy, vz, cr, cg, cb) => {
+          const i3 = (baseV + off) * 3;
+          arcVerts[i3] = vx; arcVerts[i3 + 1] = vy; arcVerts[i3 + 2] = vz;
+          arcCols[i3] = cr; arcCols[i3 + 1] = cg; arcCols[i3 + 2] = cb;
+        };
+
+        const cr = 0.55 * br, cg = 0.85 * br, cb = 1.65 * br;
+        writeV(0, curPt.x + perp1.x * w, curPt.y + perp1.y * w, curPt.z + perp1.z * w, cr, cg, cb);
+        writeV(1, curPt.x - perp1.x * w, curPt.y - perp1.y * w, curPt.z - perp1.z * w, cr, cg, cb);
+        writeV(2, nxtPt.x + perp1.x * w, nxtPt.y + perp1.y * w, nxtPt.z + perp1.z * w, cr, cg, cb);
+        writeV(3, nxtPt.x - perp1.x * w, nxtPt.y - perp1.y * w, nxtPt.z - perp1.z * w, cr, cg, cb);
+        writeV(4, curPt.x + perp2.x * w, curPt.y + perp2.y * w, curPt.z + perp2.z * w, cr, cg, cb);
+        writeV(5, curPt.x - perp2.x * w, curPt.y - perp2.y * w, curPt.z - perp2.z * w, cr, cg, cb);
+        writeV(6, nxtPt.x + perp2.x * w, nxtPt.y + perp2.y * w, nxtPt.z + perp2.z * w, cr, cg, cb);
+        writeV(7, nxtPt.x - perp2.x * w, nxtPt.y - perp2.y * w, nxtPt.z - perp2.z * w, cr, cg, cb);
+      }
+    }
+    arcPosBuf.needsUpdate = true;
+    arcColBuf.needsUpdate = true;
+
+    const lightBones = [BONE_INDEX.chest, BONE_INDEX.fistL, BONE_INDEX.fistR, BONE_INDEX.shinL];
+    const arcStrengthVec = grassUniforms.uArcStrength.value;
+    for (let i = 0; i < 4; i++) {
+      const bn = titanPose.bones[lightBones[i]];
+      arcLightPositions[i].copy(bn.center);
+      const st = bn.charge * flicker;
+      arcPointLights[i].position.copy(bn.center);
+      arcPointLights[i].intensity = st * 2.8;
+      if (i === 0) arcStrengthVec.x = st;
+      else if (i === 1) arcStrengthVec.y = st;
+      else if (i === 2) arcStrengthVec.z = st;
+      else arcStrengthVec.w = st;
+    }
+
+    for (let i = 0; i < skyBolts.length; i++) {
+      const sb = skyBolts[i];
+      const dt = simTime - sb.t;
+      const vis = dt >= 0 && dt < 0.250;
+      sb.mesh.visible = vis;
+      if (vis) {
+        sb.mat.opacity = (dt < 0.08 || (dt > 0.13 && dt < 0.21)) ? 1.0 : 0.45;
+      }
+    }
+
+    skyUniforms.uTime.value = motionTime;
+    skyUniforms.uFlash.value = skyFlash;
+    skyUniforms.uWetness.value = wetness;
+    skyFlashLight.intensity = skyFlash * 3.4;
+    scene.fog.color.copy(baseFogColor).lerp(flashFogColor, clamp(skyFlash * 0.55, 0, 0.75));
+    grassUniforms.uFogColor.value.copy(scene.fog.color);
+
+    updateCamera(simTime, motionTime, titanPose, hunterPose);
+
+    grassUniforms.uMotionTime.value = motionTime;
+    grassUniforms.uWetness.value = wetness;
+    grassUniforms.uSkyFlash.value = skyFlash;
+    grassUniforms.uSweepState.value.set(titanPose.pelvisGround.x, titanPose.pelvisGround.z, 18.5, 1);
+
+    rainUniforms.uMotionTime.value = motionTime;
+    rainUniforms.uCamPos.value.copy(camera.position);
+    rainUniforms.uSkyFlash.value = skyFlash;
+
+    updateTetherMeshes(motionTime);
+
+    for (let i = 0; i < TOTAL_SPARKS; i++) {
+      const sp = sparkData[i];
+      const dt = simTime - sp.tStart;
+      if (dt < 0 || dt >= sp.life) {
+        _scaleTmp.set(0, 0, 0);
+        _mat4.compose(_posTmp.set(0, -100, 0), _quatTmp.identity(), _scaleTmp);
+        sparkInst.setMatrixAt(i, _mat4);
+        continue;
+      }
+      _posTmp.set(
+        sp.origin.x + sp.vel.x * dt,
+        sp.origin.y + sp.vel.y * dt - 0.5 * 14.0 * dt * dt,
+        sp.origin.z + sp.vel.z * dt
+      );
+      _vA.set(sp.vel.x, sp.vel.y - 14.0 * dt, sp.vel.z);
+      const spd = _vA.length();
+      if (spd > 1e-4) _vA.multiplyScalar(1 / spd);
+      _quatTmp.setFromUnitVectors(new THREE.Vector3(0, 0, 1), _vA);
+      const fade = 1 - dt / sp.life;
+      _scaleTmp.set(fade, fade, fade * clamp(spd * 0.06, 0.4, 2.2));
+      _mat4.compose(_posTmp, _quatTmp, _scaleTmp);
+      sparkInst.setMatrixAt(i, _mat4);
+    }
+    sparkInst.instanceMatrix.needsUpdate = true;
+
+    const slamDt = motionTime - 7.500;
+    for (let i = 0; i < CLOD_COUNT; i++) {
+      const c = clods[i];
+      if (slamDt < 0 || slamDt > 3.2) {
+        _scaleTmp.set(0, 0, 0);
+        _mat4.compose(_posTmp.set(0, -100, 0), _quatTmp.identity(), _scaleTmp);
+        clodInst.setMatrixAt(i, _mat4);
+        continue;
+      }
+      const cx = c.origin.x + c.vel.x * slamDt;
+      const cz = c.origin.z + c.vel.z * slamDt;
+      const gy = terrainHeight(cx, cz);
+      const cy = c.origin.y + c.vel.y * slamDt - 0.5 * 11.5 * slamDt * slamDt;
+      _scaleTmp.setScalar(cy < gy ? 0 : c.scale);
+      _posTmp.set(cx, Math.max(gy, cy), cz);
+      _quatTmp.setFromEuler(new THREE.Euler(c.spin.x * slamDt, c.spin.y * slamDt, c.spin.z * slamDt));
+      _mat4.compose(_posTmp, _quatTmp, _scaleTmp);
+      clodInst.setMatrixAt(i, _mat4);
+    }
+    clodInst.instanceMatrix.needsUpdate = true;
+
+    for (let i = 0; i < dustSprites.length; i++) {
+      const ds = dustSprites[i];
+      const dt = motionTime - ds.landVec.z;
+      if (dt < 0 || dt > 1.8) {
+        ds.sp.visible = false;
+      } else {
+        ds.sp.visible = true;
+        const u = dt / 1.8;
+        const sc = lerp(ds.landVec.w * 1.4, ds.landVec.w * 5.2, easeOutCubic(u));
+        ds.sp.position.set(ds.landVec.x, terrainHeight(ds.landVec.x, ds.landVec.y) + sc * 0.25, ds.landVec.y);
+        ds.sp.scale.set(sc, sc * 0.65, 1);
+        ds.mat.opacity = (1 - u) * 0.45;
+      }
+    }
+
+    updateHUD(simTime, titanPose);
+
+    renderer.setRenderTarget(renderTarget);
+    renderer.autoClear = true;
+    renderer.render(scene, camera);
+
+    renderer.setRenderTarget(null);
+    renderer.autoClear = false;
+    renderer.clear();
+    renderer.render(postScene, postCamera);
+    renderer.clearDepth();
+    renderer.render(hudScene, hudCamera);
+
+    const shouldPlayAudio = (simState === 'PLAYING') && !isScrubbing;
+    AudioEngine.updateContinuous(shouldPlayAudio, simTime, wetness, titanPose, hunterPose, avgCharge, maxLimbSpeed, hunterSpeed);
+    if (allowTriggerAudio && shouldPlayAudio) {
+      AudioEngine.triggerCrossedEvents(prevSimTime, simTime, titanPose, hunterPose);
+    }
+  }
+
+  // =========================================================================
+  // 14. PLAYBACK STATE MACHINE & DOCK CONTROLS
+  // =========================================================================
+  const countdownEl = document.getElementById('countdown');
+  const btnRefire = document.getElementById('btn-refire');
+  const btnToggle = document.getElementById('btn-toggle');
+  const iconPause = document.getElementById('icon-pause');
+  const iconPlay = document.getElementById('icon-play');
+  const speedPills = Array.from(document.querySelectorAll('.speed-pill'));
+  const scrubber = document.getElementById('scrubber');
+
+  let simState = 'COUNTDOWN';
+  let simTime = 0.000;
+  let playbackSpeed = 1.0;
+  let countdownElapsed = 0;
+  let holdElapsed = 0;
+  let lastFrameMs = null;
+  let isScrubbing = false;
+
+  function setToggleVisual(isPlayingOrCounting) {
+    if (isPlayingOrCounting) {
+      iconPause.style.display = '';
+      iconPlay.style.display = 'none';
+      btnToggle.setAttribute('aria-label', 'Pause');
+    } else {
+      iconPause.style.display = 'none';
+      iconPlay.style.display = '';
+      btnToggle.setAttribute('aria-label', 'Play');
+    }
+  }
+
+  function hideCountdown() {
+    countdownEl.style.display = 'none';
+    countdownEl.textContent = '';
+  }
+
+  btnToggle.addEventListener('click', () => {
+    AudioEngine.resume();
+    if (simState === 'PLAYING') {
+      simState = 'PAUSED';
+      setToggleVisual(false);
+      AudioEngine.stopAllOneShots();
+    } else if (simState === 'COUNTDOWN' || simState === 'REFIRE_HOLD') {
+      hideCountdown();
+      simTime = 0.000;
+      scrubber.value = '0';
+      simState = 'PAUSED';
+      setToggleVisual(false);
+      AudioEngine.stopAllOneShots();
+      renderAt(simTime, simTime, false);
+    } else if (simState === 'PAUSED') {
+      simState = 'PLAYING';
+      setToggleVisual(true);
+    } else if (simState === 'ENDED') {
+      simTime = 0.000;
+      scrubber.value = '0';
+      hideCountdown();
+      simState = 'PLAYING';
+      setToggleVisual(true);
+      renderAt(simTime, simTime, false);
+    }
+  });
+
+  speedPills.forEach((pill) => {
+    pill.addEventListener('click', () => {
+      playbackSpeed = parseFloat(pill.dataset.speed);
+      speedPills.forEach((p) => {
+        const active = p === pill;
+        p.classList.toggle('is-active', active);
+        p.setAttribute('aria-checked', active ? 'true' : 'false');
+      });
+    });
+  });
+
+  scrubber.addEventListener('pointerdown', () => {
+    isScrubbing = true;
+    AudioEngine.stopAllOneShots();
+  });
+  window.addEventListener('pointerup', () => { isScrubbing = false; });
+
+  scrubber.addEventListener('input', () => {
+    if (simState === 'COUNTDOWN' || simState === 'REFIRE_HOLD') {
+      hideCountdown();
+    }
+    simTime = clamp(parseFloat(scrubber.value) || 0, 0, DURATION);
+    simState = 'PAUSED';
+    setToggleVisual(false);
+    AudioEngine.stopAllOneShots();
+    renderAt(simTime, simTime, false);
+  });
+
+  btnRefire.addEventListener('click', () => {
+    AudioEngine.resume();
+    AudioEngine.stopAllOneShots();
+    hideCountdown();
+    simTime = 0.000;
+    scrubber.value = '0';
+    holdElapsed = 0;
+    simState = 'REFIRE_HOLD';
+    setToggleVisual(true);
+    renderAt(0.000, 0.000, false);
+  });
+
+  window.addEventListener('resize', () => {
+    const w = window.innerWidth;
+    const h = window.innerHeight;
+    const dpr = Math.min(window.devicePixelRatio || 1, 2);
+    renderer.setPixelRatio(dpr);
+    renderer.setSize(w, h, false);
+    camera.aspect = w / Math.max(1, h);
+    camera.updateProjectionMatrix();
+
+    rtWidth = Math.max(1, Math.floor(w * dpr));
+    rtHeight = Math.max(1, Math.floor(h * dpr));
+    renderTarget.dispose();
+    renderTarget = makeRenderTarget(rtWidth, rtHeight);
+    postMaterial.uniforms.tDiffuse.value = renderTarget.texture;
+    postMaterial.uniforms.uResolution.value.set(rtWidth, rtHeight);
+
+    renderAt(simTime, simTime, false);
+  });
+
+  countdownEl.style.display = 'block';
+  countdownEl.textContent = '3';
+  renderAt(0.000, 0.000, false);
+
+  function tick(nowMs) {
+    requestAnimationFrame(tick);
+    if (lastFrameMs === null) {
+      lastFrameMs = nowMs;
+      return;
+    }
+    const dt = Math.min((nowMs - lastFrameMs) / 1000, 0.1);
+    lastFrameMs = nowMs;
+
+    if (simState === 'COUNTDOWN') {
+      countdownElapsed += dt;
+      if (countdownElapsed < 1.000) {
+        countdownEl.style.display = 'block';
+        countdownEl.textContent = '3';
+      } else if (countdownElapsed < 2.000) {
+        countdownEl.style.display = 'block';
+        countdownEl.textContent = '2';
+      } else if (countdownElapsed < 3.000) {
+        countdownEl.style.display = 'block';
+        countdownEl.textContent = '1';
+      } else {
+        hideCountdown();
+        simState = 'PLAYING';
+        setToggleVisual(true);
+        const prev = simTime;
+        simTime = Math.min(DURATION, (countdownElapsed - 3.000) * playbackSpeed);
+        scrubber.value = simTime.toFixed(3);
+        renderAt(simTime, prev, true);
+        return;
+      }
+      renderAt(0.000, 0.000, false);
+    } else if (simState === 'REFIRE_HOLD') {
+      hideCountdown();
+      holdElapsed += dt;
+      if (holdElapsed >= 1.000) {
+        simState = 'PLAYING';
+        setToggleVisual(true);
+        const prev = simTime;
+        simTime = Math.min(DURATION, (holdElapsed - 1.000) * playbackSpeed);
+        scrubber.value = simTime.toFixed(3);
+        renderAt(simTime, prev, true);
+        return;
+      }
+      renderAt(0.000, 0.000, false);
+    } else if (simState === 'PLAYING') {
+      const prev = simTime;
+      simTime = Math.min(DURATION, simTime + dt * playbackSpeed);
+      scrubber.value = simTime.toFixed(3);
+      renderAt(simTime, prev, true);
+      if (simTime >= DURATION) {
+        simTime = DURATION;
+        scrubber.value = DURATION.toFixed(3);
+        simState = 'ENDED';
+        setToggleVisual(false);
+        AudioEngine.stopAllOneShots();
+      }
+    } else {
+      renderAt(simTime, simTime, false);
+    }
+  }
+
+  requestAnimationFrame(tick);
+})();
+</script>
+</body>
+</html>

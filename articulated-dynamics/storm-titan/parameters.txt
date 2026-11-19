@@ -37,7 +37,25 @@ Models:
 
 ---
 
-### Track 2: Codex CLI (Codex CLI 0.170.0 — First-Party Native)
+### Track 2: Antigravity CLI (Antigravity CLI 1.5.12 — First-Party Native)
+Environment:
+HOME/config=<fresh run-local home: login only>
+
+Command:
+agy \
+  --model <model_id> \
+  --dangerously-skip-permissions \
+  --disable-slash-commands \
+  --settings '{}' \
+  --output-format json \
+  --prompt="<PROMPT>"
+
+Models:
+- gemini-4-hydrogen-xhigh (Gemini 4 Hydrogen, XHigh; protocol v1.1)
+
+---
+
+### Track 3: Codex CLI (Codex CLI 0.170.0 — First-Party Native)
 Environment:
 CODEX_HOME=<fresh run-local home: auth.json only>
 
