@@ -1,18 +1,18 @@
 {
-  "benchmark": "character-action/storm-titan",
-  "model_key": "claude-opus-5.5",
-  "display_name": "Claude Opus 5.5 (Max)",
+  "benchmark": "articulated-dynamics/storm-titan",
+  "model_key": "codex-gpt-6.2-sol",
+  "display_name": "Codex GPT 6.2 Sol (Max)",
   "protocol_version": "v1.1",
   "attempt": {
     "number": 1,
-    "notes": "three earlier launches not counted (rule of 2026-11-18): login revoked (401); stopped for an overlapping Codex job; stopped from outside at ~92 min when the background task was ended"
+    "notes": "first run of the round; Codex CLI 0.170.0 sets the round pin"
   },
   "requested_config": {
-    "harness": "claude",
-    "harness_name": "Claude Code",
-    "harness_version": "2.1.325",
-    "harness_label": "Claude Code 2.1.325",
-    "model_id": "claude-opus-5-5",
+    "harness": "codex",
+    "harness_name": "Codex CLI",
+    "harness_version": "0.170.0",
+    "harness_label": "Codex CLI 0.170.0",
+    "model_id": "gpt-6.2-sol",
     "effort": "max"
   },
   "provenance": {
@@ -20,42 +20,42 @@
     "evaluator_sha256": "8548ec2a423793ff8c3df9ad9e8911ed262f753b375e376ca617209697619174",
     "runtime_verifier_sha256": "86c1e7ee0f776ec36e0b435021de164e3c12b35216d452607b417411835df9c7",
     "sandbox_profile_sha256": "1ee72f1f6ddac91cc042bdde6a60c7c314e74ba81601c8bc80f211aa3ff79d67",
-    "raw_output_sha256": "8f2cecb50c9648c9ee027b934e063ab1f8703473082a3fb50c13739b75e76a0f",
+    "raw_output_sha256": "598a66e9a4a002362ce75c0ce5926e9d737d0f4304f84687d28f059138bba7d6",
     "raw_output_redacted": false,
     "extra_workdir_files": []
   },
   "execution": {
-    "started_at": "2026-11-18T19:53:30.762278+00:00",
-    "completed_at": "2026-11-18T21:36:59.632880+00:00",
-    "wall_clock_seconds": 6208.82,
+    "started_at": "2026-11-18T17:08:23.035604+00:00",
+    "completed_at": "2026-11-18T17:51:13.882182+00:00",
+    "wall_clock_seconds": 2570.84,
     "exit_code": 0,
     "timed_out": false,
     "outcome": "PASS"
   },
   "deliverable": {
     "file": "index.html",
-    "bytes": 200568,
-    "lines_of_code": 3954,
-    "sha256": "08729dbd34a97bbdac514554583b748ec21b44baae201790f9bfc85d1ba742ed"
+    "bytes": 129810,
+    "lines_of_code": 2982,
+    "sha256": "e66eb5775e8a5d550fecde0a27aec3d3c597371c33f92a5e42becce22f55155f"
   },
   "usage": {
     "available": true,
-    "agent_turns": 142,
-    "tool_calls": 140,
-    "input_tokens": 252,
-    "cached_read_tokens": 53068313,
-    "cache_creation_tokens": 622078,
-    "thinking_tokens": 448229,
-    "output_tokens": 624354,
-    "total_tokens": 54314997
+    "agent_turns": 44,
+    "tool_calls": 39,
+    "input_tokens": 6094254,
+    "cached_read_tokens": 5905152,
+    "cache_creation_tokens": 0,
+    "thinking_tokens": 37254,
+    "output_tokens": 106754,
+    "total_tokens": 12106160
   },
   "evaluation": {
-    "file": "/Volumes/Projects_mUSB/IAI_Researching/Performance-Comparison-Demos/character-action/storm-titan/claude-opus-5.5/index.html",
+    "file": "/Volumes/Projects_mUSB/IAI_Researching/Performance-Comparison-Demos/character-action/storm-titan/codex-gpt-6.2-sol/index.html",
     "checks": [
       {
         "name": "Valid UTF-8 Non-Empty Deliverable",
         "passed": true,
-        "detail": "Size: 200,568 bytes, 3954 LOC"
+        "detail": "Size: 129,810 bytes, 2982 LOC"
       },
       {
         "name": "Parsed Single-File HTML Structure",
@@ -90,7 +90,7 @@
       {
         "name": "[Runtime] WebGL Stage, Draw Calls & Three.js r128 Verified",
         "passed": true,
-        "detail": "THREE r128, glStats={'contextsCreated': 1, 'drawCalls': 2615, 'clears': 118}, canvases=1, rect={'x': 0, 'y': 0, 'w': 1920, 'h': 1080}"
+        "detail": "THREE r128, glStats={'contextsCreated': 1, 'drawCalls': 4402, 'clears': 104}, canvases=1, rect={'x': 0, 'y': 0, 'w': 1920, 'h': 1080}"
       },
       {
         "name": "[Runtime] 3.0s Countdown Sequence (3->2->1->Hidden) Verified",
@@ -110,22 +110,22 @@
       {
         "name": "[Runtime] WebGL Canvas-Only 3D Frame Progression & Scrubber Advance",
         "passed": true,
-        "detail": "canvasHashes=(476c86d81af1 -> e6f5091f8763), drawCalls=(2615 -> 6086), scrubber=(0.433 -> 1.150)"
+        "detail": "canvasHashes=(d35ee644a0ad -> 643c6eaedb86), drawCalls=(4570 -> 11122), scrubber=(0.433 -> 1.117)"
       },
       {
         "name": "[Runtime] Pause/Resume Canvas Freeze & 2.0x Playback Rate Verified",
         "passed": true,
-        "detail": "pausedScrub=(1.25 -> 1.25), pausedCanvasFrozen=True, observedRate2x=1.98x"
+        "detail": "pausedScrub=(1.198 -> 1.198), pausedCanvasFrozen=True, observedRate2x=1.93x"
       },
       {
         "name": "[Runtime] Cross-Reload Seed-42 Determinism, Backward Seek & Endpoint Hold",
         "passed": true,
-        "detail": "h(tA)=b6f0a4950fdcd018, backward=b6f0a4950fdcd018, freshReload=b6f0a4950fdcd018, endClamp=40/40, endedCanvasFrozen=True"
+        "detail": "h(tA)=eb4c05eb6cdeadc9, backward=eb4c05eb6cdeadc9, freshReload=eb4c05eb6cdeadc9, endClamp=40/40, endedCanvasFrozen=True"
       },
       {
         "name": "[Runtime] Silent 1.0s Re-Fire Hold & Auto-Restart Verified",
         "passed": true,
-        "detail": "reset=0, at0.82s=0, at1.27s=0.267, silent=True"
+        "detail": "reset=0, at0.82s=0, at1.27s=0.285, silent=True"
       },
       {
         "name": "[Runtime] Pre-Dispatch Network Enforcement (Single Pinned Three.js r128 Only)",

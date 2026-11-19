@@ -1,7 +1,7 @@
 [
   {
-    "benchmark": "character-action/storm-titan",
-    "category": "character-action",
+    "benchmark": "articulated-dynamics/storm-titan",
+    "category": "articulated-dynamics",
     "test": "storm-titan",
     "model_key": "codex-gpt-6.2-astra",
     "model_name": "Codex GPT 6.2 Astra (Max)",
@@ -36,8 +36,8 @@
     "eval_verdict": "PASS"
   },
   {
-    "benchmark": "character-action/storm-titan",
-    "category": "character-action",
+    "benchmark": "articulated-dynamics/storm-titan",
+    "category": "articulated-dynamics",
     "test": "storm-titan",
     "model_key": "codex-gpt-6.2-sol",
     "model_name": "Codex GPT 6.2 Sol (Max)",
@@ -72,8 +72,8 @@
     "eval_verdict": "PASS"
   },
   {
-    "benchmark": "character-action/storm-titan",
-    "category": "character-action",
+    "benchmark": "articulated-dynamics/storm-titan",
+    "category": "articulated-dynamics",
     "test": "storm-titan",
     "model_key": "claude-fable-5.2",
     "model_name": "Claude Fable 5.2 (Max)",
@@ -108,8 +108,8 @@
     "eval_verdict": "PASS"
   },
   {
-    "benchmark": "character-action/storm-titan",
-    "category": "character-action",
+    "benchmark": "articulated-dynamics/storm-titan",
+    "category": "articulated-dynamics",
     "test": "storm-titan",
     "model_key": "claude-opus-5.5",
     "model_name": "Claude Opus 5.5 (Max)",

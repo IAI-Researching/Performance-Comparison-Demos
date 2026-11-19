@@ -45,7 +45,7 @@ To measure real-world engineering utility without artificial constraints or huma
 | **Ballistics** | **[Water Balloon](ballistics/water-balloon/)** | 3D Ballistics Physics & High-Speed Fluid Dynamics | [`prompt.md`](ballistics/water-balloon/prompt.md) | Active Cohort Testing |
 | **Materials** | **[Prince Rupert's Drop](materials/prince-ruperts-drop/)** | Glass Fracture Mechanics & Supersonic Crack Propagation | [`prompt.md`](materials/prince-ruperts-drop/prompt.md) | Active Cohort Testing |
 | **Vehicle Dynamics** | **[F1 Night Duel](vehicle-dynamics/f1-night-duel/)** | Spline-Track Night Race, F1 Car Detail & Synthesized SFX | [`prompt.md`](vehicle-dynamics/f1-night-duel/prompt.md) | Active Cohort Testing (Protocol v1.1) |
-| **Character Action** | **[Storm Titan](character-action/storm-titan/)** | Code-Driven Boss Skeleton, Verlet Tethers & Ragdoll, In-Canvas HUD, Self-Report | [`prompt.md`](character-action/storm-titan/prompt.md) | Active Cohort Testing (Protocol v1.1) |
+| **Articulated Dynamics** | **[Storm Titan](articulated-dynamics/storm-titan/)** | Code-Driven Boss Skeleton, Verlet Tethers & Ragdoll, In-Canvas HUD, Self-Report | [`prompt.md`](articulated-dynamics/storm-titan/prompt.md) | Active Cohort Testing (Protocol v1.1) |
 
 ---
 
@@ -67,8 +67,8 @@ Each benchmark test directory (e.g. [`ballistics/water-balloon/`](ballistics/wat
 
 | Model | Developer Harness | Verification | Wall-Clock | Deliverable |
 | :--- | :--- | :---: | :---: | :---: |
-| **Codex GPT 6.2 Astra (Max)** | Codex CLI | **PASS (100%)** | 3130.5s | [`character-action/storm-titan/codex-gpt-6.2-astra/`](character-action/storm-titan/codex-gpt-6.2-astra/) |
-| **Claude Fable 5.2 (Max)** | Claude Code | **PASS (100%)** | 7666.2s | [`character-action/storm-titan/claude-fable-5.2/`](character-action/storm-titan/claude-fable-5.2/) |
-| **Claude Opus 5.5 (Max)** | Claude Code | **PASS (100%)** | 6208.8s | [`character-action/storm-titan/claude-opus-5.5/`](character-action/storm-titan/claude-opus-5.5/) |
+| **Codex GPT 6.2 Astra (Max)** | Codex CLI | **PASS (100%)** | 3130.5s | [`articulated-dynamics/storm-titan/codex-gpt-6.2-astra/`](articulated-dynamics/storm-titan/codex-gpt-6.2-astra/) |
+| **Claude Fable 5.2 (Max)** | Claude Code | **PASS (100%)** | 7666.2s | [`articulated-dynamics/storm-titan/claude-fable-5.2/`](articulated-dynamics/storm-titan/claude-fable-5.2/) |
+| **Claude Opus 5.5 (Max)** | Claude Code | **PASS (100%)** | 6208.8s | [`articulated-dynamics/storm-titan/claude-opus-5.5/`](articulated-dynamics/storm-titan/claude-opus-5.5/) |
 
-*Showing the 3 most recent benchmark deliverables. See [`TELEMETRY.md`](character-action/storm-titan/TELEMETRY.md) for the complete multi-model leaderboard, full token metrics, cache ratios, and runtime verification logs.*
+*Showing the 3 most recent benchmark deliverables. See [`TELEMETRY.md`](articulated-dynamics/storm-titan/TELEMETRY.md) for the complete multi-model leaderboard, full token metrics, cache ratios, and runtime verification logs.*

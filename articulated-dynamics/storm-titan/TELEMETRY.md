@@ -1,4 +1,4 @@
-# Autonomous Benchmark Telemetry (first passing attempt): character-action/storm-titan
+# Autonomous Benchmark Telemetry (first passing attempt): articulated-dynamics/storm-titan
 
 > Autonomous evaluation under hardened Unobstructed Viewport specification enforcement.
 
@@ -17,7 +17,7 @@
 
 ## 🔬 Methodology & Enforced Constraints
 
-- **Benchmark ID**: `character-action/storm-titan`
+- **Benchmark ID**: `articulated-dynamics/storm-titan`
 - **Protocol**: Autonomous, first passing attempt (zero human-in-the-loop, sandboxed). Each row lists the protocol version it ran under; compare only rows with the same version. See PROTOCOL.md; failed attempts are re-run, not published, and **Attempts** counts every launch including failed ones.
 - **Effort**: reasoning effort is not equal across models (see PROTOCOL.md, Known confounds).
 - **Token and turn columns** are counted differently by each harness; compare them only within one harness.

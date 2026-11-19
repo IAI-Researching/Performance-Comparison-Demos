@@ -1,6 +1,6 @@
 # Benchmark Execution Report: Codex GPT 6.2 Astra (Max)
 
-- **Benchmark**: `character-action/storm-titan`
+- **Benchmark**: `articulated-dynamics/storm-titan`
 - **Developer Harness**: `Codex CLI 0.170.0`
 - **Model ID**: `gpt-6.2-astra`
 - **Reasoning Effort**: `Max`

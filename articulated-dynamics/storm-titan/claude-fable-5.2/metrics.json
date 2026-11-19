@@ -1,18 +1,18 @@
 {
-  "benchmark": "character-action/storm-titan",
-  "model_key": "codex-gpt-6.2-astra",
-  "display_name": "Codex GPT 6.2 Astra (Max)",
+  "benchmark": "articulated-dynamics/storm-titan",
+  "model_key": "claude-fable-5.2",
+  "display_name": "Claude Fable 5.2 (Max)",
   "protocol_version": "v1.1",
   "attempt": {
     "number": 1,
     "notes": null
   },
   "requested_config": {
-    "harness": "codex",
-    "harness_name": "Codex CLI",
-    "harness_version": "0.170.0",
-    "harness_label": "Codex CLI 0.170.0",
-    "model_id": "gpt-6.2-astra",
+    "harness": "claude",
+    "harness_name": "Claude Code",
+    "harness_version": "2.1.325",
+    "harness_label": "Claude Code 2.1.325",
+    "model_id": "claude-fable-5-2",
     "effort": "max"
   },
   "provenance": {
@@ -20,42 +20,42 @@
     "evaluator_sha256": "8548ec2a423793ff8c3df9ad9e8911ed262f753b375e376ca617209697619174",
     "runtime_verifier_sha256": "86c1e7ee0f776ec36e0b435021de164e3c12b35216d452607b417411835df9c7",
     "sandbox_profile_sha256": "1ee72f1f6ddac91cc042bdde6a60c7c314e74ba81601c8bc80f211aa3ff79d67",
-    "raw_output_sha256": "a1b7275a25984a6259a2f66984e7924eddecd46d37364064d881e07c47ce8db7",
+    "raw_output_sha256": "551eb95d9c84e76ef8382dc777b60cc40eafa595329a08bdbbb0f1dc51765f15",
     "raw_output_redacted": false,
     "extra_workdir_files": []
   },
   "execution": {
-    "started_at": "2026-11-18T23:46:02.413238+00:00",
-    "completed_at": "2026-11-19T00:38:12.906964+00:00",
-    "wall_clock_seconds": 3130.47,
+    "started_at": "2026-11-18T21:37:44.323660+00:00",
+    "completed_at": "2026-11-18T23:45:30.618789+00:00",
+    "wall_clock_seconds": 7666.24,
     "exit_code": 0,
     "timed_out": false,
     "outcome": "PASS"
   },
   "deliverable": {
     "file": "index.html",
-    "bytes": 116144,
-    "lines_of_code": 2106,
-    "sha256": "92f55d9afcb57b2eea1c3e99bbe248e1ff4dcb0fb57d809751ffc11c162ecac7"
+    "bytes": 176035,
+    "lines_of_code": 2552,
+    "sha256": "fefa9dac5220cf8c4bc71a1a052997c2d5e4096578489b2af9bc938a44d7c452"
   },
   "usage": {
     "available": true,
-    "agent_turns": 98,
-    "tool_calls": 92,
-    "input_tokens": 12052546,
-    "cached_read_tokens": 11854592,
-    "cache_creation_tokens": 0,
-    "thinking_tokens": 49812,
-    "output_tokens": 115642,
-    "total_tokens": 24022780
+    "agent_turns": 117,
+    "tool_calls": 114,
+    "input_tokens": 154,
+    "cached_read_tokens": 27385762,
+    "cache_creation_tokens": 566406,
+    "thinking_tokens": 541019,
+    "output_tokens": 697996,
+    "total_tokens": 28650318
   },
   "evaluation": {
-    "file": "/Volumes/Projects_mUSB/IAI_Researching/Performance-Comparison-Demos/character-action/storm-titan/codex-gpt-6.2-astra/index.html",
+    "file": "/Volumes/Projects_mUSB/IAI_Researching/Performance-Comparison-Demos/character-action/storm-titan/claude-fable-5.2/index.html",
     "checks": [
       {
         "name": "Valid UTF-8 Non-Empty Deliverable",
         "passed": true,
-        "detail": "Size: 116,144 bytes, 2106 LOC"
+        "detail": "Size: 176,035 bytes, 2552 LOC"
       },
       {
         "name": "Parsed Single-File HTML Structure",
@@ -90,7 +90,7 @@
       {
         "name": "[Runtime] WebGL Stage, Draw Calls & Three.js r128 Verified",
         "passed": true,
-        "detail": "THREE r128, glStats={'contextsCreated': 1, 'drawCalls': 3521, 'clears': 85}, canvases=1, rect={'x': 0, 'y': 0, 'w': 1920, 'h': 1080}"
+        "detail": "THREE r128, glStats={'contextsCreated': 1, 'drawCalls': 13229, 'clears': 1015}, canvases=1, rect={'x': 0, 'y': 0, 'w': 1920, 'h': 1080}"
       },
       {
         "name": "[Runtime] 3.0s Countdown Sequence (3->2->1->Hidden) Verified",
@@ -110,22 +110,22 @@
       {
         "name": "[Runtime] WebGL Canvas-Only 3D Frame Progression & Scrubber Advance",
         "passed": true,
-        "detail": "canvasHashes=(41656cbb58e2 -> ed737319b31e), drawCalls=(3521 -> 9999), scrubber=(0.333 -> 1.033)"
+        "detail": "canvasHashes=(112d8a7e33cd -> 563352ed35b3), drawCalls=(13229 -> 15764), scrubber=(0.432 -> 1.134)"
       },
       {
         "name": "[Runtime] Pause/Resume Canvas Freeze & 2.0x Playback Rate Verified",
         "passed": true,
-        "detail": "pausedScrub=(1.15 -> 1.15), pausedCanvasFrozen=True, observedRate2x=1.91x"
+        "detail": "pausedScrub=(1.216 -> 1.216), pausedCanvasFrozen=True, observedRate2x=1.98x"
       },
       {
         "name": "[Runtime] Cross-Reload Seed-42 Determinism, Backward Seek & Endpoint Hold",
         "passed": true,
-        "detail": "h(tA)=8cbd563dbe188762, backward=8cbd563dbe188762, freshReload=8cbd563dbe188762, endClamp=40/40, endedCanvasFrozen=True"
+        "detail": "h(tA)=f0803d5829bbd444, backward=f0803d5829bbd444, freshReload=f0803d5829bbd444, endClamp=40/40, endedCanvasFrozen=True"
       },
       {
         "name": "[Runtime] Silent 1.0s Re-Fire Hold & Auto-Restart Verified",
         "passed": true,
-        "detail": "reset=0, at0.82s=0, at1.27s=0.272, silent=True"
+        "detail": "reset=0, at0.82s=0, at1.27s=0.266, silent=True"
       },
       {
         "name": "[Runtime] Pre-Dispatch Network Enforcement (Single Pinned Three.js r128 Only)",

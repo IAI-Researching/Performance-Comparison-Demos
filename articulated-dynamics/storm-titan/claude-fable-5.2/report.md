@@ -1,6 +1,6 @@
 # Benchmark Execution Report: Claude Fable 5.2 (Max)
 
-- **Benchmark**: `character-action/storm-titan`
+- **Benchmark**: `articulated-dynamics/storm-titan`
 - **Developer Harness**: `Claude Code 2.1.325`
 - **Model ID**: `claude-fable-5-2`
 - **Reasoning Effort**: `Max`

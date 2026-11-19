@@ -1,6 +1,6 @@
 # Autonomous Benchmark Parameters (first passing attempt)
 
-Benchmark: character-action/storm-titan
+Benchmark: articulated-dynamics/storm-titan
 Protocol: Autonomous, first passing attempt (see PROTOCOL.md; each row's protocol_version is in telemetry.json)
 Intervention: Zero human-in-the-loop
 Filesystem Isolation: macOS Seatbelt (`baseline/sandbox.sb`) blocking `/Volumes`, repository roots, sibling `/private/tmp` runs, and personal host folders (`~/Desktop`, `~/Documents`, `~/Downloads`, `~/Projects`, `~/Developer`).

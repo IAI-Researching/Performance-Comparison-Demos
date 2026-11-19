@@ -1,6 +1,6 @@
 # Benchmark Execution Report: Claude Opus 5.5 (Max)
 
-- **Benchmark**: `character-action/storm-titan`
+- **Benchmark**: `articulated-dynamics/storm-titan`
 - **Developer Harness**: `Claude Code 2.1.325`
 - **Model ID**: `claude-opus-5-5`
 - **Reasoning Effort**: `Max`
