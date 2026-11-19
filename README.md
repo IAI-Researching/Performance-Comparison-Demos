@@ -67,8 +67,8 @@ Each benchmark test directory (e.g. [`ballistics/water-balloon/`](ballistics/wat
 
 | Model | Developer Harness | Verification | Wall-Clock | Deliverable |
 | :--- | :--- | :---: | :---: | :---: |
+| **Codex GPT 6.2 Astra (Max)** | Codex CLI | **PASS (100%)** | 3130.5s | [`character-action/storm-titan/codex-gpt-6.2-astra/`](character-action/storm-titan/codex-gpt-6.2-astra/) |
 | **Claude Fable 5.2 (Max)** | Claude Code | **PASS (100%)** | 7666.2s | [`character-action/storm-titan/claude-fable-5.2/`](character-action/storm-titan/claude-fable-5.2/) |
 | **Claude Opus 5.5 (Max)** | Claude Code | **PASS (100%)** | 6208.8s | [`character-action/storm-titan/claude-opus-5.5/`](character-action/storm-titan/claude-opus-5.5/) |
-| **Codex GPT 6.2 Sol (Max)** | Codex CLI | **PASS (100%)** | 2570.8s | [`character-action/storm-titan/codex-gpt-6.2-sol/`](character-action/storm-titan/codex-gpt-6.2-sol/) |
 
 *Showing the 3 most recent benchmark deliverables. See [`TELEMETRY.md`](character-action/storm-titan/TELEMETRY.md) for the complete multi-model leaderboard, full token metrics, cache ratios, and runtime verification logs.*

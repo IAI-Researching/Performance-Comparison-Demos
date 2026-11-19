@@ -54,4 +54,5 @@ codex exec \
   "<PROMPT>"
 
 Models:
+- gpt-6.2-astra (Codex GPT 6.2 Astra, Max; protocol v1.1)
 - gpt-6.2-sol (Codex GPT 6.2 Sol, Max; protocol v1.1)
